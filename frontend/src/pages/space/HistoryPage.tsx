@@ -23,7 +23,7 @@ export function HistoryPage() {
 
   const query = filter.trim().toLowerCase()
   const shown = entries?.filter((entry) => entry.name.toLowerCase().includes(query)) ?? []
-  const categoryName = (id: string | null) => catalog?.categories.find((c) => c.id === id)?.name
+  const categoryOf = (id: string | null) => catalog?.categories.find((c) => c.id === id)
 
   return (
     <Page title={t('history.title')} back={back}>
@@ -36,15 +36,26 @@ export function HistoryPage() {
         )}
         {entries?.length === 0 && <p className="py-6 text-center text-muted">{t('history.empty')}</p>}
         <div className="mt-2">
-          {shown.map((entry) => (
-            <Row
-              key={entry.name}
-              onClick={() => setEditing(entry)}
-              title={entry.name}
-              hint={[categoryName(entry.categoryId), entry.unit].filter(Boolean).join(' · ')}
-              chevron
-            />
-          ))}
+          {shown.map((entry) => {
+            const category = categoryOf(entry.categoryId)
+            return (
+              <Row
+                key={entry.name}
+                onClick={() => setEditing(entry)}
+                // the category color as a dot, like the headers in the list; an empty ring without category
+                start={
+                  <span
+                    aria-hidden="true"
+                    className={`size-3.5 shrink-0 rounded-full ${category ? '' : 'border border-line'}`}
+                    style={{ backgroundColor: category?.color }}
+                  />
+                }
+                title={entry.name}
+                hint={[category?.name, entry.unit].filter(Boolean).join(' · ')}
+                chevron
+              />
+            )
+          })}
         </div>
       </OnlineOnly>
       {editing && <HistoryEntryDialog spaceId={spaceId} entry={editing} onClose={() => setEditing(null)} />}
