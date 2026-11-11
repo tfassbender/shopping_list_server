@@ -23,3 +23,6 @@ data/
 # OS
 .DS_Store
 Thumbs.db
+
+# Playwright MCP snapshots/screenshots (manual UI checks)
+.playwright-mcp/

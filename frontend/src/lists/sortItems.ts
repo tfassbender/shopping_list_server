@@ -14,7 +14,7 @@ export function sortItems(items: Item[], checkedToEnd: boolean): Item[] {
 /** A visible block of the list: one category (colored header), uncategorized items, or the checked items. */
 export interface ItemSection {
   key: string
-  kind: 'category' | 'other' | 'checked'
+  kind: 'category' | 'other' | 'checked' | 'items'
   category?: Category
   items: Item[]
 }
@@ -33,6 +33,33 @@ export function groupItems(orderedItems: Item[], categories: Category[], checked
   const other = grouped.filter((i) => !i.categoryId || !known.has(i.categoryId))
   if (other.length > 0) sections.push({ key: '__other', kind: 'other', items: other })
   const checked = checkedToEnd ? orderedItems.filter((i) => i.checked) : []
+  if (checked.length > 0) sections.push({ key: '__checked', kind: 'checked', items: checked })
+  return sections
+}
+
+/**
+ * Sections for a list the server already sorted for a shop. The server order is kept:
+ * - mode CATEGORIES: a new section starts whenever the category changes (so headers follow the shop),
+ * - mode ITEMS: one section without header (items carry their category color).
+ * With `checkedToEnd`, checked items always form the last section (also right after a local check,
+ * before the server's re-sorted answer arrives).
+ */
+export function groupSorted(sortedItems: Item[], categories: Category[], mode: 'CATEGORIES' | 'ITEMS', checkedToEnd: boolean): ItemSection[] {
+  const byId = new Map(categories.map((c) => [c.id, c]))
+  const open = checkedToEnd ? sortedItems.filter((i) => !i.checked) : sortedItems
+  const sections: ItemSection[] = []
+  if (mode === 'ITEMS') {
+    if (open.length > 0) sections.push({ key: '__items', kind: 'items', items: open })
+  } else {
+    for (const item of open) {
+      const category = item.categoryId ? byId.get(item.categoryId) : undefined
+      const key = category?.id ?? '__other'
+      const last = sections.at(-1)
+      if (last && last.key.split('#')[0] === key) last.items.push(item)
+      else sections.push({ key: `${key}#${sections.length}`, kind: category ? 'category' : 'other', category, items: [item] })
+    }
+  }
+  const checked = checkedToEnd ? sortedItems.filter((i) => i.checked) : []
   if (checked.length > 0) sections.push({ key: '__checked', kind: 'checked', items: checked })
   return sections
 }

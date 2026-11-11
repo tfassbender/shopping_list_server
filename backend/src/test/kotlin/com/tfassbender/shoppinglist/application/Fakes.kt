@@ -112,3 +112,26 @@ class InMemoryCatalogRepository : CatalogRepository {
         catalogs[catalog.spaceId] = catalog
     }
 }
+
+class InMemoryLayoutRepository : com.tfassbender.shoppinglist.application.port.LayoutRepository {
+    private val layouts = linkedMapOf<Pair<SpaceId, com.tfassbender.shoppinglist.domain.list.LayoutId>, com.tfassbender.shoppinglist.domain.list.ShopLayout>()
+
+    override fun findById(spaceId: SpaceId, layoutId: com.tfassbender.shoppinglist.domain.list.LayoutId) = layouts[spaceId to layoutId]
+    override fun findBySpace(spaceId: SpaceId) = layouts.values.filter { it.spaceId == spaceId }
+    override fun save(layout: com.tfassbender.shoppinglist.domain.list.ShopLayout) {
+        layouts[layout.spaceId to layout.id] = layout
+    }
+
+    override fun delete(spaceId: SpaceId, layoutId: com.tfassbender.shoppinglist.domain.list.LayoutId) {
+        layouts.remove(spaceId to layoutId)
+    }
+}
+
+class InMemoryFavoritesRepository : com.tfassbender.shoppinglist.application.port.FavoritesRepository {
+    private val favorites = linkedMapOf<UserId, com.tfassbender.shoppinglist.domain.user.UserFavorites>()
+
+    override fun find(userId: UserId) = favorites[userId] ?: com.tfassbender.shoppinglist.domain.user.UserFavorites(userId)
+    override fun save(favorites: com.tfassbender.shoppinglist.domain.user.UserFavorites) {
+        this.favorites[favorites.userId] = favorites
+    }
+}

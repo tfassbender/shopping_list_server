@@ -15,6 +15,7 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { CatalogPage } from './pages/space/CatalogPage'
 import { InvitePage } from './pages/space/InvitePage'
+import { LayoutEditorPage, LayoutsPage } from './pages/space/LayoutPages'
 import { MembersPage } from './pages/space/MembersPage'
 import { SpacePage } from './pages/space/SpacePage'
 import { applyTheme } from './theme/theme'
@@ -36,6 +37,8 @@ export function AppRoutes() {
         <Route path="spaces/:spaceId/members" element={<RequireAuth><MembersPage /></RequireAuth>} />
         <Route path="spaces/:spaceId/lists/:listId" element={<RequireAuth><ListPage /></RequireAuth>} />
         <Route path="spaces/:spaceId/catalog" element={<RequireAuth><CatalogPage /></RequireAuth>} />
+        <Route path="spaces/:spaceId/layouts" element={<RequireAuth><LayoutsPage /></RequireAuth>} />
+        <Route path="spaces/:spaceId/layouts/:layoutId" element={<RequireAuth><LayoutEditorPage /></RequireAuth>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

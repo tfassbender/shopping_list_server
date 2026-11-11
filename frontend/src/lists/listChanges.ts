@@ -67,30 +67,33 @@ export function applyLocal(list: ShoppingList, change: ListChange): ShoppingList
   }
 }
 
-/** Maps a change to its REST call. Every call returns the updated list. */
-export function sendChange(spaceId: string, listId: string, change: ListChange): Promise<ShoppingList> {
+/**
+ * Maps a change to its REST call. Every call returns the updated list - sorted for the shop `sort`
+ * (layout id) if given, so the response matches what the screen shows.
+ */
+export function sendChange(spaceId: string, listId: string, change: ListChange, sort?: string | null): Promise<ShoppingList> {
   switch (change.type) {
     case 'addItem':
-      return listsApi.addItem(spaceId, listId, change.item)
+      return listsApi.addItem(spaceId, listId, change.item, sort)
     case 'editItem':
-      return listsApi.editItem(spaceId, listId, change.itemId, change.fields)
+      return listsApi.editItem(spaceId, listId, change.itemId, change.fields, sort)
     case 'check':
-      return listsApi.check(spaceId, listId, change.itemId)
+      return listsApi.check(spaceId, listId, change.itemId, sort)
     case 'uncheck':
-      return listsApi.uncheck(spaceId, listId, change.itemId)
+      return listsApi.uncheck(spaceId, listId, change.itemId, sort)
     case 'deleteItem':
-      return listsApi.deleteItem(spaceId, listId, change.itemId)
+      return listsApi.deleteItem(spaceId, listId, change.itemId, sort)
     case 'removeChecked':
-      return listsApi.removeChecked(spaceId, listId)
+      return listsApi.removeChecked(spaceId, listId, sort)
     case 'rename':
-      return listsApi.rename(spaceId, listId, change.name)
+      return listsApi.rename(spaceId, listId, change.name, sort)
   }
 }
 
-/** Hook giving a list screen `apply(change)` plus the last error. */
-export function useListChanges(spaceId: string, listId: string) {
+/** Hook giving a list screen `apply(change)` plus the last error. `sort` is the selected shop layout. */
+export function useListChanges(spaceId: string, listId: string, sort?: string | null) {
   const queryClient = useQueryClient()
-  const key = listKeys.detail(spaceId, listId)
+  const key = listKeys.detail(spaceId, listId, sort)
   const pending = useRef<ListChange[]>([])
   const queue = useRef<Promise<unknown>>(Promise.resolve())
   const [error, setError] = useState<unknown>(null)
@@ -105,7 +108,7 @@ export function useListChanges(spaceId: string, listId: string) {
 
       queue.current = queue.current.then(async () => {
         try {
-          const serverList = await sendChange(spaceId, listId, change)
+          const serverList = await sendChange(spaceId, listId, change, sort)
           pending.current.shift()
           queryClient.setQueryData<ShoppingList>(key, pending.current.reduce(applyLocal, serverList))
         } catch (e) {
@@ -117,8 +120,8 @@ export function useListChanges(spaceId: string, listId: string) {
         void queryClient.invalidateQueries({ queryKey: listKeys.all(spaceId), exact: true })
       })
     },
-    // `key` is derived from spaceId/listId, so it isn't listed separately.
-    [queryClient, spaceId, listId],
+    // `key` is derived from spaceId/listId/sort, so it isn't listed separately.
+    [queryClient, spaceId, listId, sort],
   )
 
   return { apply, error }

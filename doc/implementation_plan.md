@@ -4,7 +4,7 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–4 done. Next: Phase 5.
+**Status:** Phases 0–5 done. Next: Phase 6.
 
 ## Guiding principles
 
@@ -172,17 +172,23 @@ Tests: suggestion ranking, history updates, REST tests.
 Goal: sort a list by the layout of the shop you are in.
 
 Backend:
-- [ ] Domain `ShopLayout` (space, name, mode `CATEGORIES` (default) or `ITEMS`, ordered entries,
+- [x] Domain `ShopLayout` (space, name, mode `CATEGORIES` (default) or `ITEMS`, ordered entries,
       connected list ids – usable by several lists)
-- [ ] `UserFavorites` (personal, per layout) in `data/users/<id>/favorites.json`
-- [ ] REST: layouts CRUD, connect/disconnect lists, reorder entries; favorites add/remove
-- [ ] Sorting as domain logic (layout order → favorites → most used first → name), exposed via a
+- [x] `UserFavorites` (personal, per layout) in `data/users/<id>/favorites.json`
+- [x] REST: layouts CRUD, connect/disconnect lists, reorder entries; favorites add/remove
+- [x] Sorting as domain logic (layout order → favorites → most used first → name), exposed via a
       `sort=<layoutId>` parameter so all clients sort identically
 
 Frontend:
-- [ ] Layout editor: drag & drop order of categories or items, mode switch, connected lists
-- [ ] Shop selector on the list screen (remember last used layout per list locally)
-- [ ] Mark favorites
+- [x] Layout editor: drag & drop order of categories or items, mode switch, connected lists
+- [x] Shop selector on the list screen (remember last used layout per list locally)
+- [x] Mark favorites
+
+Decided while implementing: sort keys are checked-to-end (personal setting) → layout position
+(CATEGORIES: layout order, then remaining categories in the space order, uncategorized last; ITEMS: item
+names case-insensitive, unknown last) → personal favorites → most bought → name. `?sort=` is accepted on
+all list endpoints so mutation responses stay sorted. Item favorites are stored as normalized names per
+layout. The shop selector offers connected layouts first, then the other shops of the space.
 
 Tests: sort logic (unit, incl. checked-to-end interaction), REST tests.
 
