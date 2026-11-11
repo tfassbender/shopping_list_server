@@ -43,19 +43,35 @@ describe('ListPage', () => {
     const dialog = screen.getByRole('dialog')
     await userEvent.type(within(dialog).getByLabelText('Name'), 'Milk')
     await userEvent.type(within(dialog).getByLabelText('Amount'), '2 l')
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Add' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add another' }))
 
-    // the dialog stays open, empty, for the next item
+    // the dialog stays open, empty, for the next item; Enter does the same
     expect(within(dialog).getByLabelText('Name')).toHaveValue('')
     await userEvent.type(within(dialog).getByLabelText('Name'), 'Bread{Enter}')
+    expect(within(dialog).getByLabelText('Name')).toHaveValue('')
+
+    // "Done" adds the current item and closes
+    await userEvent.type(within(dialog).getByLabelText('Name'), 'Eggs')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }))
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(screen.getAllByRole('checkbox').map((el) => el.getAttribute('aria-label'))).toEqual(['Milk', 'Bread'])
-    await waitFor(() => expect(server.received('ADD_ITEM')).toHaveLength(2))
+    expect(screen.getAllByRole('checkbox').map((el) => el.getAttribute('aria-label'))).toEqual(['Milk', 'Bread', 'Eggs'])
+    await waitFor(() => expect(server.received('ADD_ITEM')).toHaveLength(3))
     const [added] = server.received('ADD_ITEM') as { itemId: string; name: string; quantity: string; unit: string }[]
     expect(added).toMatchObject({ name: 'Milk', quantity: '2', unit: 'l' })
     expect(added.itemId).toMatch(/^[0-9a-f-]{36}$/) // client-generated UUID
+  })
+
+  it('cancel closes the add dialog without adding the entered item', async () => {
+    const { server } = setup([item('1', 'Milk')])
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Add item' }))
+    await userEvent.type(screen.getByLabelText('Name'), 'Bread')
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'Bread' })).not.toBeInTheDocument()
+    expect(server.received('ADD_ITEM')).toHaveLength(0)
   })
 
   it('checks an item by tapping; it stays in place until the sort button moves it', async () => {
