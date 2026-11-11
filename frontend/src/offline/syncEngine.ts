@@ -1,6 +1,6 @@
 import { ApiError } from '../api/client'
 import type { ShoppingList } from '../api/lists'
-import type { MergeWarningDto, NewSyncOp, SyncApi, SyncOp } from '../api/sync'
+import type { MergeWarningDto, NewSyncOp, PullResponse, SyncApi, SyncOp } from '../api/sync'
 import { applyOp, applyPull, type ListsById } from './applyOp'
 import type { KeyValueStorage } from './storage'
 
@@ -41,6 +41,7 @@ export class SyncEngine {
   private inflight = new Map<string, Promise<void>>()
   private scheduled = new Map<string, ReturnType<typeof setTimeout>>()
   private listeners = new Set<() => void>()
+  private pullListeners = new Set<(spaceId: string, pull: PullResponse) => void>()
   private warningsCache: StoredWarning[] = []
   private statusValue: SyncStatus = 'idle'
 
@@ -49,6 +50,17 @@ export class SyncEngine {
     private storage: KeyValueStorage,
     private options: { debounceMs?: number; now?: () => Date; newId?: () => string } = {},
   ) {}
+
+  /**
+   * Called after every successful pull. The engine itself only keeps lists; the pull also carries the
+   * catalog (incl. item history) and the user's favorites, which the app puts into its query cache.
+   */
+  onPull = (listener: (spaceId: string, pull: PullResponse) => void) => {
+    this.pullListeners.add(listener)
+    return () => {
+      this.pullListeners.delete(listener)
+    }
+  }
 
   // ---- reading (used by React via useSyncExternalStore) ----
 
@@ -174,6 +186,7 @@ export class SyncEngine {
       state.acked = []
       this.recompute(spaceId)
       await this.persist(spaceId)
+      this.pullListeners.forEach((listener) => listener(spaceId, pulled))
       this.setStatus('idle')
     } catch (error) {
       this.handleSyncError(spaceId, error)

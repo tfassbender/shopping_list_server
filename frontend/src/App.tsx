@@ -10,6 +10,7 @@ import { useCurrentUser, useSession } from './auth/useAuth'
 import { Layout } from './components/Layout'
 import { syncEngine } from './offline/engine'
 import { startLiveUpdates } from './offline/liveUpdates'
+import { applyPullToCache } from './offline/pullToCache'
 import { defaultStorage } from './offline/storage'
 import { ListPage } from './lists/ListPage'
 import { ForgotPasswordPage, ResetPasswordPage, VerifyEmailPage } from './pages/auth/EmailTokenPages'
@@ -109,6 +110,9 @@ function SessionRefresher() {
  */
 function OfflineSync() {
   const session = useSession()
+  const queryClient = useQueryClient()
+  // Catalog (incl. item history) and favorites from each pull go into the query cache.
+  useEffect(() => syncEngine.onPull((spaceId, pull) => applyPullToCache(queryClient, spaceId, pull)), [queryClient])
   useEffect(() => {
     if (!session) return
     void syncEngine.start()

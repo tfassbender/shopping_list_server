@@ -152,6 +152,22 @@ describe('SyncEngine', () => {
     expect(names(engine)).toEqual(['A'])
   })
 
+  it('reports every successful pull to its listeners, failed pulls not', async () => {
+    const pulls: [string, number][] = []
+    const stop = engine.onPull((spaceId, pull) => pulls.push([spaceId, pull.seq]))
+
+    server.pull.mockRejectedValueOnce(new ApiError(0, 'NETWORK_ERROR'))
+    await engine.sync(SPACE)
+    expect(pulls).toEqual([])
+
+    await engine.sync(SPACE)
+    expect(pulls).toEqual([[SPACE, server.seq]])
+
+    stop()
+    await engine.sync(SPACE)
+    expect(pulls).toHaveLength(1)
+  })
+
   it('parallel sync calls share one run', async () => {
     engine.enqueue(SPACE, { type: 'ADD_ITEM', listId: 'l1', itemId: 'a', name: 'A' })
     await Promise.all([engine.sync(SPACE), engine.sync(SPACE), engine.syncAll()])

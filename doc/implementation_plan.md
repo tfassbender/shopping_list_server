@@ -327,7 +327,8 @@ Decided while implementing:
   added/updated since `since`) instead of the whole catalog - checking items changes the history all the
   time and the history can hold 2000 entries. The complete `catalog` (incl. history) is sent when
   categories/units changed or entries were removed/renamed (also when the history was full and dropped one).
-  The web app suggests from the cached history when offline.
+  The web app suggests from the cached history when offline; every sync pull updates that history and the
+  favorites in its query cache (`offline/pullToCache.ts`).
 - [x] #2 Android App Links: `GET /.well-known/assetlinks.json` (public, not in OpenAPI), fingerprints from
   configuration, separately for release and debug app (`shoppinglist.android.{release,debug}.*`, empty by
   default, so the release package never trusts the debug key); stable link paths
