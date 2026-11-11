@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { useParams } from 'react-router'
+import { useLocation, useParams } from 'react-router'
 import { catalogApi, catalogKeys, useCatalog, useHistory, type HistoryEntry } from '../../api/catalog'
 import { Page } from '../../components/AppBar'
 import { Dialog, DialogActions } from '../../components/Dialog'
@@ -14,6 +14,8 @@ import { OnlineOnly } from '../../offline/online'
  */
 export function HistoryPage() {
   const { spaceId = '' } = useParams()
+  // Opened from a list's menu, back leads to that list; otherwise to the space page.
+  const back = (useLocation().state as { back?: string } | null)?.back ?? `/spaces/${spaceId}`
   const { data: entries, error, refetch } = useHistory(spaceId)
   const { data: catalog } = useCatalog(spaceId)
   const [filter, setFilter] = useState('')
@@ -24,7 +26,7 @@ export function HistoryPage() {
   const categoryName = (id: string | null) => catalog?.categories.find((c) => c.id === id)?.name
 
   return (
-    <Page title={t('history.title')} back={`/spaces/${spaceId}`}>
+    <Page title={t('history.title')} back={back}>
       <OnlineOnly>
         <Hint>{t('history.explanation')}</Hint>
         {error && !entries && <LoadError error={error} onRetry={() => void refetch()} />}
@@ -39,7 +41,7 @@ export function HistoryPage() {
               key={entry.name}
               onClick={() => setEditing(entry)}
               title={entry.name}
-              hint={[categoryName(entry.categoryId), entry.unit, entry.usageCount > 0 && t('history.bought', { count: entry.usageCount })].filter(Boolean).join(' · ')}
+              hint={[categoryName(entry.categoryId), entry.unit].filter(Boolean).join(' · ')}
               chevron
             />
           ))}

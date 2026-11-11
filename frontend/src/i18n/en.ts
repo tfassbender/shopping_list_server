@@ -298,7 +298,6 @@ export const en = {
   'history.explanation': 'These items are suggested when adding and placed in their category automatically. Fix typos or remove items nobody needs anymore.',
   'history.search': 'Search',
   'history.empty': 'No items yet. Items you add to a list appear here.',
-  'history.bought': 'bought {count}×',
   'history.count': '{count} items',
   'history.renameHint': 'If the new name is already known, both are combined. Items on lists are not changed.',
   'history.remove': 'Remove',

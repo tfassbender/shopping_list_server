@@ -27,7 +27,7 @@ describe('items used before', () => {
   it('lists, filters, renames and removes items', async () => {
     const spy = setup()
 
-    expect(await screen.findByText('Dairy · bought 3×')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^Mlich/ })).toHaveTextContent('MlichDairy')
     await userEvent.type(screen.getByLabelText('Search'), 'ml')
     expect(screen.queryByText('Brot/Brötchen')).not.toBeInTheDocument()
     await userEvent.clear(screen.getByLabelText('Search'))

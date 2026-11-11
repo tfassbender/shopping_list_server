@@ -114,6 +114,8 @@ export function ListPage() {
         'divider',
         { label: t('space.catalog'), icon: 'categories', onSelect: () => navigate(`/spaces/${spaceId}/catalog`) },
         { label: t('space.layouts'), icon: 'shops', onSelect: () => navigate(`/spaces/${spaceId}/layouts`) },
+        // The history page leads back here instead of to the space page (see HistoryPage).
+        { label: t('history.title'), icon: 'history', onSelect: () => navigate(`/spaces/${spaceId}/history`, { state: { back: `/spaces/${spaceId}/lists/${listId}` } }) },
         ...(space?.myRole === 'OWNER' ? ['divider' as const, { label: t('list.delete'), icon: 'delete' as const, danger: true, onSelect: () => setDialog('delete') }] : []),
       ]}
     >

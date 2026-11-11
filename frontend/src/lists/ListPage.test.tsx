@@ -101,6 +101,17 @@ describe('ListPage', () => {
     await waitFor(() => expect(server.list('l1').items[0].checked).toBe(false))
   })
 
+  it('opens the items used before from the menu, back leads to the list', async () => {
+    setup([item('1', 'Milk')], { 'GET /api/spaces/s1/catalog/history': [] })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Menu' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Items used before' }))
+    expect(await screen.findByRole('heading', { name: 'Items used before' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('link', { name: 'Back' }))
+    expect(await screen.findByRole('checkbox', { name: 'Milk' })).toBeInTheDocument()
+  })
+
   it('removes the checked items via the menu', async () => {
     const { server } = setup([item('1', 'Milk', { checked: true }), item('2', 'Bread')])
 

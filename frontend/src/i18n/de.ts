@@ -297,7 +297,6 @@ export const de: Record<MessageKey, string> = {
   'history.explanation': 'Diese Artikel werden beim Hinzufügen vorgeschlagen und automatisch in ihre Kategorie einsortiert. Korrigiere Tippfehler oder entferne Artikel, die niemand mehr braucht.',
   'history.search': 'Suchen',
   'history.empty': 'Noch keine Artikel. Artikel, die du zu einer Liste hinzufügst, erscheinen hier.',
-  'history.bought': '{count}× gekauft',
   'history.count': '{count} Artikel',
   'history.renameHint': 'Ist der neue Name schon bekannt, werden beide zusammengeführt. Artikel auf Listen bleiben unverändert.',
   'history.remove': 'Entfernen',
