@@ -17,7 +17,7 @@ import { ItemEditor } from './ItemEditor'
 import { setLastList } from './lastList'
 import { useListActions } from './listChanges'
 import { normalizeName, sortForLayout } from './sortForLayout'
-import { amountText, groupItems, groupSorted, sortItems, type ItemSection } from './sortItems'
+import { amountText, groupSorted, sortItems, type ItemSection } from './sortItems'
 
 type DialogName = 'add' | 'shop' | 'rename' | 'delete' | null
 
@@ -69,9 +69,11 @@ export function ListPage() {
   const categories = catalog?.categories ?? []
   const favorites = new Set(favoriteNames ?? [])
   const isFavorite = (item: Item) => favorites.has(normalizeName(item.name))
+  // Without a shop the list is exactly in the order of adding - no category groups, which would look like
+  // a shop's sorting.
   const sections = layout
     ? groupSorted(sortForLayout(list.items, layout, categories, favorites, catalog?.usage ?? {}, false), categories, layout.mode, movedToEnd)
-    : groupItems(sortItems(list.items), categories, movedToEnd)
+    : groupSorted(sortItems(list.items), categories, 'ITEMS', movedToEnd)
   const checked = list.items.filter((i) => i.checked)
 
   function toggle(item: Item) {

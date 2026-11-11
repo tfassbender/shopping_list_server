@@ -30,21 +30,6 @@ function withCheckedSection(sections: ItemSection[], atEnd: Item[]): ItemSection
 }
 
 /**
- * Groups already ordered items by category in the given category order; items without a (known)
- * category come after the categories. The order of items inside a section is kept.
- */
-export function groupItems(orderedItems: Item[], categories: Category[], movedToEnd: ReadonlySet<string> = new Set()): ItemSection[] {
-  const { inPlace, atEnd } = splitMoved(orderedItems, movedToEnd)
-  const known = new Set(categories.map((c) => c.id))
-  const sections: ItemSection[] = categories
-    .map((category) => ({ key: category.id, kind: 'category' as const, category, items: inPlace.filter((i) => i.categoryId === category.id) }))
-    .filter((s) => s.items.length > 0)
-  const other = inPlace.filter((i) => !i.categoryId || !known.has(i.categoryId))
-  if (other.length > 0) sections.push({ key: '__other', kind: 'other', items: other })
-  return withCheckedSection(sections, atEnd)
-}
-
-/**
  * Sections for a list sorted for a shop (see sortForLayout). The given order is kept:
  * - mode CATEGORIES: a new section starts whenever the category changes (so headers follow the shop),
  * - mode ITEMS: one section without header (items carry their category color).

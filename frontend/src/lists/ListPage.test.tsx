@@ -178,12 +178,14 @@ describe('ListPage', () => {
     await waitFor(() => expect(screen.queryByText(/unsaved/)).not.toBeInTheDocument())
   })
 
-  it('groups items by category in category order', async () => {
+  it('without a shop shows the items in the order of adding, not grouped by category', async () => {
     setup([item('1', 'Milk', { categoryId: 'dairy' }), item('2', 'Carrots', { categoryId: 'veg' }), item('3', 'Batteries')])
 
-    await screen.findByRole('list', { name: 'Dairy' })
-    expect(screen.getAllByRole('list').map((section) => section.getAttribute('aria-label'))).toEqual(['Vegetables', 'Dairy', 'Other'])
-    expect(within(screen.getByRole('list', { name: 'Dairy' })).getByRole('checkbox', { name: 'Milk' })).toBeInTheDocument()
+    await screen.findByRole('checkbox', { name: 'Milk' })
+    expect(screen.getByRole('button', { name: /Order of adding/ })).toBeInTheDocument()
+    expect(screen.getAllByRole('list')).toHaveLength(1)
+    expect(screen.queryByRole('heading', { name: 'Dairy' })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('checkbox').map((el) => el.getAttribute('aria-label'))).toEqual(['Milk', 'Carrots', 'Batteries'])
   })
 
   it('picking an autocomplete suggestion adds the item with category and unit', async () => {
@@ -197,7 +199,7 @@ describe('ListPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Milk/ }))
     await userEvent.click(screen.getByRole('button', { name: 'Done' }))
 
-    expect(await screen.findByRole('list', { name: 'Dairy' })).toBeInTheDocument()
+    expect(await screen.findByRole('checkbox', { name: 'Milk' })).toBeInTheDocument()
     await waitFor(() => expect(server.received('ADD_ITEM')[0]).toMatchObject({ name: 'Milk', categoryId: 'dairy', unit: 'l' }))
   })
 

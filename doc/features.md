@@ -125,6 +125,8 @@ Decided:
   automatically) **or by individual items**.
 - A list can have **several layouts** (e.g. Aldi and Rewe for the grocery list); the user picks one.
 - "Checked items to the end" is a **personal setting** (per user).
+- **Without a shop** a list shows its items exactly in the **order of adding** (no category groups - they
+  would look like a shop's sorting).
 
 
 ### 3.3 Voice input

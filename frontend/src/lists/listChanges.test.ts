@@ -2,7 +2,7 @@ import type { Item, ShoppingList } from '../api/lists'
 import type { NewSyncOp, SyncOp } from '../api/sync'
 import { applyOp, applyPull } from '../offline/applyOp'
 import { toSyncOps } from './listChanges'
-import { amountText, groupItems, sortItems } from './sortItems'
+import { amountText, sortItems } from './sortItems'
 
 const item = (id: string, overrides: Partial<Item> = {}): Item => ({
   id,
@@ -95,37 +95,5 @@ describe('sortItems', () => {
     expect(amountText({ quantity: '2', unit: 'l' })).toBe('2 l')
     expect(amountText({ quantity: null, unit: 'kg' })).toBe('kg')
     expect(amountText({ quantity: null, unit: null })).toBe('')
-  })
-})
-
-describe('groupItems', () => {
-  const categories = [
-    { id: 'veg', name: 'Vegetables', color: '#00ff00' },
-    { id: 'dairy', name: 'Dairy', color: '#0000ff' },
-  ]
-  const items = [
-    item('a', { categoryId: 'dairy' }),
-    item('bb', { categoryId: 'veg', checked: true }),
-    item('ccc', { categoryId: null }),
-    item('dddd', { categoryId: 'deleted-category' }),
-    item('eeeee', { categoryId: 'veg' }),
-  ]
-  const summary = (movedToEnd: ReadonlySet<string>) =>
-    groupItems(items, categories, movedToEnd).map((s) => `${s.key}:${s.items.map((i) => i.id).join(',')}`)
-
-  it('groups in category order, unknown categories in "other", moved checked items last', () => {
-    expect(summary(new Set(['bb']))).toEqual(['veg:eeeee', 'dairy:a', '__other:ccc,dddd', '__checked:bb'])
-  })
-
-  it('keeps checked items in their category until they are moved', () => {
-    expect(summary(new Set())).toEqual(['veg:bb,eeeee', 'dairy:a', '__other:ccc,dddd'])
-  })
-
-  it('does not move an item that was unchecked again', () => {
-    expect(summary(new Set(['a']))).toEqual(['veg:bb,eeeee', 'dairy:a', '__other:ccc,dddd'])
-  })
-
-  it('omits empty sections', () => {
-    expect(groupItems([], categories)).toEqual([])
   })
 })
