@@ -6,6 +6,7 @@ export const en = {
   appName: 'Shopping List',
   'common.loading': 'Loading...',
   'common.save': 'Save',
+  'common.apply': 'Apply',
   'common.saved': 'Saved.',
   'common.cancel': 'Cancel',
   'common.delete': 'Delete',

@@ -5,6 +5,7 @@ export const de: Record<MessageKey, string> = {
   appName: 'Einkaufsliste',
   'common.loading': 'Lädt...',
   'common.save': 'Speichern',
+  'common.apply': 'Übernehmen',
   'common.saved': 'Gespeichert.',
   'common.cancel': 'Abbrechen',
   'common.delete': 'Löschen',

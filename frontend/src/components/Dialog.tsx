@@ -1,4 +1,5 @@
 import { useEffect, type FormEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { t } from '../i18n/messages'
 import { Button } from './ui'
 
@@ -6,6 +7,10 @@ import { Button } from './ui'
  * Modal dialog: a sheet sliding up from the bottom on phones (thumb-friendly), a centered box from `sm`
  * up. A click on the dark backdrop or Escape closes it; `aria-modal` tells screen readers that the page
  * behind is inactive. With `onSubmit` the content is a form (Enter submits).
+ *
+ * The dialog is rendered into <body> (a React portal), not where it is used: a dialog opened from inside a
+ * form would otherwise be a form inside a form (invalid HTML, the inner one breaks), and a moved parent
+ * (e.g. a sortable row with a CSS transform) would shift its `position: fixed`.
  */
 export function Dialog(props: {
   title: string
@@ -29,7 +34,7 @@ export function Dialog(props: {
       {props.children}
     </>
   )
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center" onClick={onClose}>
       {props.onSubmit ? (
         <form
@@ -40,6 +45,9 @@ export function Dialog(props: {
           onClick={(e) => e.stopPropagation()}
           onSubmit={(event: FormEvent) => {
             event.preventDefault() // React handles the form; no page reload
+            // React passes events up the component tree even across the portal: without this, a form
+            // around the place where the dialog is used would be submitted as well.
+            event.stopPropagation()
             props.onSubmit!()
           }}
         >
@@ -50,7 +58,8 @@ export function Dialog(props: {
           {content}
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   )
 }
 

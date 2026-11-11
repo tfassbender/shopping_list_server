@@ -49,7 +49,7 @@ export function ColorPicker({ value, label, onChange, size = 'size-9' }: { value
 
 /**
  * Three ways to pick, all editing one draft color: a palette tap, the hue slider (soft colors like the
- * palette) or a hex code typed in. "Save" applies the draft.
+ * palette) or a hex code typed in. "Apply" takes the draft.
  */
 function ColorDialog({ initial, label, onSave, onClose }: { initial: string; label: string; onSave: (color: string) => void; onClose: () => void }) {
   const [color, setColor] = useState(initial)
@@ -123,7 +123,7 @@ function ColorDialog({ initial, label, onSave, onClose }: { initial: string; lab
           {t('common.cancel')}
         </Button>
         <Button type="submit" disabled={!valid}>
-          {t('common.save')}
+          {t('common.apply')}
         </Button>
       </DialogActions>
     </Dialog>
