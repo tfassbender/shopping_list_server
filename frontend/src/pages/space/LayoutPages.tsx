@@ -31,7 +31,7 @@ export function LayoutsPage() {
       <PageTitle action={<BackLink to={`/spaces/${spaceId}`} />}>{t('layouts.title')}</PageTitle>
       <p className="text-sm text-gray-600 dark:text-gray-400">{t('layouts.explanation')}</p>
       <ErrorText error={error ?? create.error} />
-      {layouts?.length === 0 && <p className="text-gray-500 dark:text-gray-400">{t('layouts.empty')}</p>}
+      {layouts?.length === 0 && <p className="text-gray-500 dark:text-gray-400">{t('layouts.emptyHint')}</p>}
       <ul className="space-y-2">
         {layouts?.map((layout) => (
           <li key={layout.id}>

@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import type { Catalog } from '../api/catalog'
 import type { EditableField, Item } from '../api/lists'
 import { Button, TextField } from '../components/ui'
@@ -88,12 +88,21 @@ export function ItemEditor(props: {
 
 export type EditValues = Record<EditableField, string>
 
-/** Simple modal: dark backdrop (click closes), panel at the bottom on phones, centered from `sm` up. */
+/**
+ * Simple modal: dark backdrop (click or Escape closes), panel at the bottom on phones, centered from `sm`
+ * up. `aria-modal` tells screen readers that the page behind is inactive.
+ */
 export function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
   return (
     <div className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 sm:items-center" onClick={onClose}>
       <div
         role="dialog"
+        aria-modal="true"
         aria-label={title}
         className="max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-white p-4 shadow-xl sm:max-w-md sm:rounded-2xl dark:bg-gray-900"
         onClick={(e) => e.stopPropagation()}

@@ -5,14 +5,9 @@ import { authApi, type Language } from '../../api/auth'
 import { safeRedirect } from '../../auth/RequireAuth'
 import { useAuthActions, useSession } from '../../auth/useAuth'
 import { Button, ErrorText, PageTitle, SuccessText, TextField } from '../../components/ui'
-import { t } from '../../i18n/messages'
+import { getLanguage, t } from '../../i18n/messages'
 
 const MIN_PASSWORD_LENGTH = 8
-
-/** Guess the language from the browser; it also decides the language of default categories. */
-function browserLanguage(): Language {
-  return navigator.language.toLowerCase().startsWith('de') ? 'de' : 'en'
-}
 
 export function RegisterPage() {
   const [searchParams] = useSearchParams()
@@ -25,7 +20,7 @@ export function RegisterPage() {
   const [password, setPassword] = useState('')
 
   const register = useMutation({
-    mutationFn: () => authApi.register({ email, displayName, password, language: browserLanguage() }),
+    mutationFn: () => authApi.register({ email, displayName, password, language: getLanguage() satisfies Language }),
     onSuccess: (response) => {
       if (response.token) {
         startSession(response)

@@ -10,8 +10,8 @@ A shopping list app with user management and list sharing between users.
 - **Web frontend:** React + TypeScript (Vite), mobile-first
 - **Android app:** planned later, uses the same REST API
 
-**Status:** planning phase. Tech stack and features are settled; implementation plan in `doc/implementation_plan.md`.
-Phase 0 (project setup) is done.
+**Status:** Phases 0–10 of `doc/implementation_plan.md` are implemented (accounts, spaces, lists, catalog,
+shop layouts, API tokens, offline sync, live updates, i18n/PWA). Next: UI improvements, then deployment.
 
 ## Documentation (`doc/`)
 
@@ -62,6 +62,13 @@ Workflow: tech stack → feature analysis → implementation plan → implementa
 ## Open decisions
 
 - Live updates in the Android app (SSE or e.g. FCM push).
+
+## Where things are (beyond `doc/`)
+
+- Merge rules of the offline sync: `domain/list/ShoppingList.kt` + `Merge.kt` (tests: `MergeRulesTest`).
+- Web offline layer: `frontend/src/offline/` (`SyncEngine`, IndexedDB storage, live updates via SSE).
+- Texts: `frontend/src/i18n/en.ts` / `de.ts` - add every new text to both.
+- Manual offline checks: `doc/offline_test_checklist.md`.
 
 Don't hard-code undecided details – ask.
 

@@ -3,13 +3,13 @@ import { Link } from 'react-router'
 import { spaceKeys, spacesApi, useSpaces } from '../api/spaces'
 import { HealthIndicator } from '../components/HealthIndicator'
 import { InlineForm } from '../components/InlineForm'
-import { Card, ErrorText, Loading, PageTitle } from '../components/ui'
+import { Card, ErrorText, LoadError, Loading, PageTitle } from '../components/ui'
 import { t } from '../i18n/messages'
 import { OnlineOnly } from '../offline/online'
 
 /** Start page: the user's spaces. A space holds lists and is shared with its members. */
 export function HomePage() {
-  const { data: spaces, isPending, error } = useSpaces()
+  const { data: spaces, isPending, error, refetch } = useSpaces()
   const queryClient = useQueryClient()
   const create = useMutation({
     mutationFn: spacesApi.create,
@@ -20,7 +20,7 @@ export function HomePage() {
     <section className="space-y-4">
       <PageTitle>{t('spaces.title')}</PageTitle>
       {isPending && <Loading />}
-      <ErrorText error={error} />
+      {error && !spaces && <LoadError error={error} onRetry={() => void refetch()} />}
       {spaces?.length === 0 && <p className="text-gray-600 dark:text-gray-400">{t('spaces.empty')}</p>}
       <ul className="space-y-2">
         {spaces?.map((space) => (

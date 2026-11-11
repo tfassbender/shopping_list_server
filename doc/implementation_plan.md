@@ -4,7 +4,7 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–9 done. Next: Phase 10.
+**Status:** Phases 0–10 done. Next: UI improvements, then Phase 11 (deployment).
 
 ## Guiding principles
 
@@ -286,10 +286,22 @@ full sync after each (re)connect; the periodic sync fallback is now every 5 minu
 
 ## Phase 10 – i18n, polish & Could-features
 
-- [ ] German + English UI, language saved in user settings
-- [ ] Installable PWA (manifest, icons) – *Could*
-- [ ] Voice input via Web Speech API where available – *Could*
-- [ ] UX polish: empty states, loading/error states, accessibility, touch target sizes
+- [x] German + English UI, language saved in user settings
+- [x] Installable PWA (manifest, icons) – *Could*
+- [x] Voice input via Web Speech API where available – *Could*
+- [x] UX polish: empty states, loading/error states, accessibility, touch target sizes
+
+Decided while implementing:
+- i18n without a library: `i18n/en.ts` (reference) and `i18n/de.ts` typed `Record<MessageKey, string>`, so
+  a missing German text is a compile error; a test checks that the placeholders match. Language = user
+  setting once logged in, before that the last choice on the device (DE/EN toggle in the header) or the
+  browser language. Registering takes the current UI language (it decides the default categories).
+- PWA: `manifest.json` + PNG icons (incl. maskable), apple-touch icon. Caching headers: everything except
+  the content-hashed `/assets/` is served `no-cache`, so new deployments reach users (found while testing:
+  without it browsers kept an old app shell).
+- Voice input: microphone button only where the browser has the Web Speech API; the recognized text goes
+  into the quick-add field and is confirmed with Enter.
+- Polish: load errors with retry, empty-state hints, Escape closes dialogs (`aria-modal`).
 
 ## Phase 11 – Deployment
 

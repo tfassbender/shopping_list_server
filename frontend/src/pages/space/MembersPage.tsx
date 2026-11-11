@@ -26,6 +26,7 @@ export function MembersPage() {
           <MemberRow key={member.userId} spaceId={spaceId} member={member} isMe={member.userId === me.id} canManage={isOwner} />
         ))}
       </ul>
+      {members.data?.length === 1 && isOwner && <p className="text-sm text-gray-600 dark:text-gray-400">{t('members.alone')}</p>}
       {isOwner && <InvitesSection spaceId={spaceId} />}
       </OnlineOnly>
     </section>

@@ -83,6 +83,18 @@ export function PageTitle({ children, action }: { children: ReactNode; action?: 
   )
 }
 
+/** A failed load with a retry button (e.g. server unreachable and nothing cached yet). */
+export function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  return (
+    <div className="space-y-2">
+      <ErrorText error={error} />
+      <Button variant="secondary" onClick={onRetry}>
+        {t('common.retry')}
+      </Button>
+    </div>
+  )
+}
+
 export function Loading() {
   return <p className="text-gray-500 dark:text-gray-400">{t('common.loading')}</p>
 }

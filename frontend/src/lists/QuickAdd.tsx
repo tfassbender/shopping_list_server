@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { useSuggestions, type Category, type Suggestion } from '../api/catalog'
 import { Button } from '../components/ui'
 import { t } from '../i18n/messages'
+import { isVoiceInputSupported, listenOnce } from './voiceInput'
 
 export interface NewItem {
   name: string
@@ -29,6 +30,15 @@ export function QuickAdd({ spaceId, categories, onAdd }: { spaceId: string; cate
   const query = useDebounced(name, 150)
   const { data } = useSuggestions(spaceId, query)
   const suggestions = name.trim() ? (data ?? []) : []
+  const [listening, setListening] = useState(false)
+  const [voiceFailed, setVoiceFailed] = useState(false)
+
+  function startVoiceInput() {
+    setVoiceFailed(false)
+    setListening(true)
+    // The recognized text goes into the field; the user confirms with Enter (speech is sometimes wrong).
+    listenOnce({ onText: setName, onError: () => setVoiceFailed(true), onEnd: () => setListening(false) })
+  }
 
   function add(item: NewItem) {
     onAdd(item)
@@ -76,10 +86,27 @@ export function QuickAdd({ spaceId, categories, onAdd }: { spaceId: string; cate
           }}
           className="min-h-12 min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 text-base focus:border-green-600 focus:ring-2 focus:ring-green-600/30 focus:outline-none dark:border-gray-600 dark:bg-gray-900"
         />
+        {isVoiceInputSupported() && (
+          <Button
+            variant="secondary"
+            aria-label={listening ? t('voice.listening') : t('voice.start')}
+            aria-pressed={listening}
+            onClick={startVoiceInput}
+            disabled={listening}
+            className={`min-h-12 ${listening ? 'animate-pulse' : ''}`}
+          >
+            {/* Microphone icon */}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-5" aria-hidden="true">
+              <rect x="9" y="3" width="6" height="11" rx="3" />
+              <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+            </svg>
+          </Button>
+        )}
         <Button type="submit" aria-label={t('list.add')} disabled={!name.trim()} className="min-h-12 text-xl">
           +
         </Button>
       </div>
+      {voiceFailed && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{t('voice.error')}</p>}
       {suggestions.length > 0 && (
         <ul id="quick-add-suggestions" role="listbox" className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
           {suggestions.map((suggestion, index) => (

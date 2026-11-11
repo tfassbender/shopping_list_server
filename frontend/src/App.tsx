@@ -23,12 +23,22 @@ import { InvitePage } from './pages/space/InvitePage'
 import { LayoutEditorPage, LayoutsPage } from './pages/space/LayoutPages'
 import { MembersPage } from './pages/space/MembersPage'
 import { SpacePage } from './pages/space/SpacePage'
+import { setLanguage, useLanguage } from './i18n/messages'
 import { applyTheme } from './theme/theme'
 
-/** Route table. Every page is rendered inside <Layout> (header + content area). */
+/**
+ * Route table. Every page is rendered inside <Layout> (header + content area). The `key` remounts all
+ * pages when the language changes, so every text is rendered again in the new language.
+ */
 export function AppRoutes() {
+  const language = useLanguage()
+  // Once logged in, the language is a user setting (shared by all devices of the user).
+  const userLanguage = useCurrentUser().data?.settings.language
+  useEffect(() => {
+    if (userLanguage) setLanguage(userLanguage)
+  }, [userLanguage])
   return (
-    <Routes>
+    <Routes key={language}>
       <Route element={<Layout />}>
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />

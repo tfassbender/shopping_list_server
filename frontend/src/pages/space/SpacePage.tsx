@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { newId } from '../../api/lists'
 import { spaceKeys, spacesApi, useSpace } from '../../api/spaces'
 import { InlineForm } from '../../components/InlineForm'
-import { Button, Card, ErrorText, Loading, PageTitle } from '../../components/ui'
+import { Button, Card, ErrorText, LoadError, Loading, PageTitle } from '../../components/ui'
 import { t } from '../../i18n/messages'
 import { syncEngine, useSpaceLists } from '../../offline/engine'
 import { OnlineOnly } from '../../offline/online'
@@ -12,7 +12,7 @@ import { OnlineOnly } from '../../offline/online'
 /** A space: its lists plus links to members and (owner) rename/delete. */
 export function SpacePage() {
   const { spaceId = '' } = useParams()
-  const { data: space, error } = useSpace(spaceId)
+  const { data: space, error, refetch } = useSpace(spaceId)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [renaming, setRenaming] = useState(false)
@@ -32,7 +32,7 @@ export function SpacePage() {
     },
   })
 
-  if (error) return <ErrorText error={error} />
+  if (!space && error) return <LoadError error={error} onRetry={() => void refetch()} />
   if (!space) return <Loading />
   const isOwner = space.myRole === 'OWNER'
 
@@ -96,7 +96,7 @@ function SpaceLists({ spaceId }: { spaceId: string }) {
     <div className="space-y-3">
       <h3 className="text-lg font-semibold">{t('lists.title')}</h3>
       {lists === undefined && <Loading />}
-      {lists?.length === 0 && <p className="text-gray-500 dark:text-gray-400">{t('lists.empty')}</p>}
+      {lists?.length === 0 && <p className="text-gray-500 dark:text-gray-400">{t('lists.emptyHint')}</p>}
       <ul className="space-y-2">
         {lists?.map((list) => (
           <li key={list.id}>
