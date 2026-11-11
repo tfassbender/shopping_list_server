@@ -7,6 +7,7 @@ import { listsApi, useLists } from '../../api/lists'
 import { InlineForm } from '../../components/InlineForm'
 import { SortableList } from '../../components/SortableList'
 import { Page } from '../../components/AppBar'
+import { Icon } from '../../components/Icon'
 import { Button, ErrorText, Fab, Hint, Loading, Row, SectionTitle, Switch } from '../../components/ui'
 import { t, tDynamic } from '../../i18n/messages'
 import { OnlineOnly, useOnline } from '../../offline/online'
@@ -112,7 +113,7 @@ export function LayoutEditorPage() {
     <Page title={layout.name} back={`/spaces/${spaceId}/layouts`}>
       <ErrorText error={update.error ?? remove.error} />
       <OnlineOnly>
-      <div className="space-y-6">
+      <div className="space-y-6 pt-4">
       <InlineForm
         key={layout.name}
         label={t('common.name')}
@@ -149,6 +150,11 @@ export function LayoutEditorPage() {
               </span>
             )}
           />
+          {/* back from the categories leads to this shop again */}
+          <Button variant="secondary" onClick={() => navigate(`/spaces/${spaceId}/catalog`, { state: { back: `/spaces/${spaceId}/layouts/${layoutId}` } })}>
+            <Icon name="categories" />
+            {t('layouts.editCategories')}
+          </Button>
         </div>
       ) : (
         <ItemOrderEditor spaceId={spaceId} layout={layout} onChange={setItemOrder} />

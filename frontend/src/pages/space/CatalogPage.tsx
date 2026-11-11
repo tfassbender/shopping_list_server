@@ -5,7 +5,7 @@ import { catalogApi, catalogKeys, useCatalog, type Catalog, type Category } from
 import { ColorPicker } from '../../components/ColorPicker'
 import { InlineForm } from '../../components/InlineForm'
 import { SortableList } from '../../components/SortableList'
-import { Page } from '../../components/AppBar'
+import { Page, useBackTo } from '../../components/AppBar'
 import { Button, ErrorText, Loading, SectionTitle, TextField } from '../../components/ui'
 import { t } from '../../i18n/messages'
 import { OnlineOnly } from '../../offline/online'
@@ -13,6 +13,8 @@ import { OnlineOnly } from '../../offline/online'
 /** Manage categories (name, color, order) and units of a space. */
 export function CatalogPage() {
   const { spaceId = '' } = useParams()
+  // Opened from a list or a shop, back leads there; otherwise to the space page.
+  const back = useBackTo(`/spaces/${spaceId}`)
   const { data: catalog, error } = useCatalog(spaceId)
   const queryClient = useQueryClient()
   // Every catalog call returns the new catalog: put it straight into the cache.
@@ -23,7 +25,7 @@ export function CatalogPage() {
 
   if (!catalog) {
     return (
-      <Page title={t('catalog.title')} back={`/spaces/${spaceId}`}>
+      <Page title={t('catalog.title')} back={back}>
         {error ? <ErrorText error={error} /> : <Loading />}
       </Page>
     )
@@ -37,7 +39,7 @@ export function CatalogPage() {
   }
 
   return (
-    <Page title={t('catalog.title')} back={`/spaces/${spaceId}`}>
+    <Page title={t('catalog.title')} back={back}>
       <ErrorText error={update.error} />
       <OnlineOnly>
       <div className="space-y-6">

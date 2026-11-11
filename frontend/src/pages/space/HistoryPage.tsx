@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { useLocation, useParams } from 'react-router'
+import { useParams } from 'react-router'
 import { catalogApi, catalogKeys, useCatalog, useHistory, type HistoryEntry } from '../../api/catalog'
-import { Page } from '../../components/AppBar'
+import { Page, useBackTo } from '../../components/AppBar'
 import { Dialog, DialogActions } from '../../components/Dialog'
 import { Button, ErrorText, Hint, LoadError, Loading, Row, TextField } from '../../components/ui'
 import { t } from '../../i18n/messages'
@@ -15,7 +15,7 @@ import { OnlineOnly } from '../../offline/online'
 export function HistoryPage() {
   const { spaceId = '' } = useParams()
   // Opened from a list's menu, back leads to that list; otherwise to the space page.
-  const back = (useLocation().state as { back?: string } | null)?.back ?? `/spaces/${spaceId}`
+  const back = useBackTo(`/spaces/${spaceId}`)
   const { data: entries, error, refetch } = useHistory(spaceId)
   const { data: catalog } = useCatalog(spaceId)
   const [filter, setFilter] = useState('')

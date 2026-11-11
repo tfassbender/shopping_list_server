@@ -105,6 +105,22 @@ describe('shop selection on the list screen', () => {
 describe('layout editor', () => {
   beforeEach(() => loginForTest())
 
+  it('opens the categories from the shop, back leads to the shop again', async () => {
+    mockApi({
+      'GET /api/users/me': testUser,
+      'GET /api/spaces/s1/catalog': catalog,
+      'GET /api/spaces/s1/layouts': [layout],
+      'GET /api/spaces/s1/lists': [],
+    })
+    renderWithProviders(<AppRoutes />, '/spaces/s1/layouts/aldi')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit categories' }))
+    expect(await screen.findByRole('heading', { name: 'Categories & units' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('link', { name: 'Back' }))
+    expect(await screen.findByRole('heading', { name: 'Aldi' })).toBeInTheDocument()
+  })
+
   it('switches the mode, adds item entries and connects lists', async () => {
     let current = { ...layout }
     const spy = mockApi({

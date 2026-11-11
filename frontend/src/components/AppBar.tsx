@@ -109,6 +109,14 @@ function LanguageToggle() {
   )
 }
 
+/**
+ * Where the back arrow of a page leads: the page it was opened from, if that page passed itself as
+ * `navigate(to, { state: { back } })` (e.g. a list opening the categories), otherwise [fallback].
+ */
+export function useBackTo(fallback: string): string {
+  return (useLocation().state as { back?: string } | null)?.back ?? fallback
+}
+
 /** A page: header bar plus the content in a centered column (full width on phones). */
 export function Page(props: { title: string; back?: string; sub?: ReactNode; actions?: ReactNode; menu?: MenuEntry[]; children: ReactNode }) {
   return (
