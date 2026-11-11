@@ -39,6 +39,8 @@ class SpaRoutingTest {
         assertFalse(SpaRouting.isSpaRoute("/"))
         assertFalse(SpaRouting.isSpaRoute("/api/health"))
         assertFalse(SpaRouting.isSpaRoute("/q/openapi"))
+        assertFalse(SpaRouting.isSpaRoute("/.well-known/assetlinks.json"))
+        assertFalse(SpaRouting.isSpaRoute("/.well-known/"))
         assertFalse(SpaRouting.isSpaRoute("/assets/index-abc.js"))
     }
 }

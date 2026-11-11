@@ -167,6 +167,10 @@ Rules are defined in `doc/features.md` 3.5. Technical approach:
 
 - Native Kotlin app using the same REST API (e.g. Retrofit/Ktor client + Jetpack Compose)
 - Requirement for the backend now: everything must be possible via REST, no logic only in the web frontend
+- **Android App Links:** the server serves `/.well-known/assetlinks.json` (package names and SHA-256
+  signing certificate fingerprints from `shoppinglist.android.*` in `application.properties`; empty by
+  default). The link paths are stable, so the app's intent filters can match them:
+  `<public-base-url>/invite/<token>`, `/verify-email?token=<token>`, `/reset-password?token=<token>`.
 
 ## Project Structure (planned)
 

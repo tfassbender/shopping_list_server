@@ -328,10 +328,14 @@ Decided while implementing:
   time and the history can hold 2000 entries. The complete `catalog` (incl. history) is sent when
   categories/units changed or entries were removed/renamed (also when the history was full and dropped one).
   The web app suggests from the cached history when offline.
+- [x] #2 Android App Links: `GET /.well-known/assetlinks.json` (public, not in OpenAPI), fingerprints from
+  configuration (`shoppinglist.android.sha256-cert-fingerprints`, empty by default); stable link paths
+  documented in `tech_stack.md` and the OpenAPI description.
 
 ## Phase 11 – Deployment
 
-- [ ] Production config: JWT key, SMTP, data dir, public base URL (invite/verification links)
+- [ ] Production config: JWT key, SMTP, data dir, public base URL (invite/verification links),
+      Android signing certificate fingerprints (App Links)
 - [ ] Packaging (single JAR incl. SPA), service setup, HTTPS, backups of the data dir
 
 ## Later

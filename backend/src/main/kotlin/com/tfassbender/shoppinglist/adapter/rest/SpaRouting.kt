@@ -9,8 +9,9 @@ import jakarta.enterprise.event.Observes
  * Client-side routing support for the React SPA: deep links like `/lists/123` don't exist as files, so
  * they are rerouted to `/` (which serves `index.html`) and React Router takes over in the browser.
  *
- * Not rerouted: the API (`/api/...`), Quarkus endpoints (`/q/...` – OpenAPI, Swagger UI, dev UI) and
- * anything that looks like a file (contains a dot in the last path segment, e.g. `/assets/app.js`).
+ * Not rerouted: the API (`/api/...`), Quarkus endpoints (`/q/...` – OpenAPI, Swagger UI, dev UI),
+ * well-known files (`/.well-known/...`, e.g. Android App Links) and anything that looks like a file
+ * (contains a dot in the last path segment, e.g. `/assets/app.js`).
  */
 @ApplicationScoped
 class SpaRouting {
@@ -29,7 +30,7 @@ class SpaRouting {
 
     companion object {
         fun isSpaRoute(path: String): Boolean {
-            if (path == "/" || path.startsWith("/api/") || path == "/api" || path.startsWith("/q/")) {
+            if (path == "/" || path.startsWith("/api/") || path == "/api" || path.startsWith("/q/") || path.startsWith("/.well-known/")) {
                 return false
             }
             val lastSegment = path.substringAfterLast('/')
