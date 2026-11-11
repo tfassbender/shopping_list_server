@@ -27,7 +27,7 @@ export function NewListDialog({ spaces, defaultSpaceId, onClose }: { spaces: Spa
 
   return (
     <Dialog title={t('newList.title')} onClose={onClose} onSubmit={create}>
-      <TextField label={t('common.name')} required autoFocus maxLength={60} placeholder={t('newList.namePlaceholder')} value={name} onChange={(e) => setName(e.target.value)} />
+      <TextField label={t('common.name')} required autoFocus maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
       {spaces.length > 1 && (
         <div className="space-y-2">
           <span className="block text-sm text-muted">{t('newList.space')}</span>
@@ -64,7 +64,6 @@ export function NameDialog(props: {
   title: string
   label?: string
   initialValue?: string
-  placeholder?: string
   submitLabel: string
   maxLength?: number
   pending?: boolean
@@ -80,7 +79,6 @@ export function NameDialog(props: {
         required
         autoFocus
         maxLength={props.maxLength ?? 60}
-        placeholder={props.placeholder}
         value={value}
         onChange={(e) => setValue(e.target.value)}
       />
@@ -111,7 +109,6 @@ export function NewSpaceDialog({ onClose, onCreated }: { onClose: () => void; on
   return (
     <NameDialog
       title={t('spaces.new')}
-      placeholder={t('spaces.namePlaceholder')}
       submitLabel={t('common.create')}
       pending={create.isPending}
       error={create.error}

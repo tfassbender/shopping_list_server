@@ -6,7 +6,7 @@ import { ColorPicker } from '../../components/ColorPicker'
 import { InlineForm } from '../../components/InlineForm'
 import { SortableList } from '../../components/SortableList'
 import { Page } from '../../components/AppBar'
-import { Button, ErrorText, Loading, SectionTitle } from '../../components/ui'
+import { Button, ErrorText, Loading, SectionTitle, TextField } from '../../components/ui'
 import { t } from '../../i18n/messages'
 import { OnlineOnly } from '../../offline/online'
 
@@ -99,16 +99,9 @@ function NewCategoryForm({ onAdd }: { onAdd: (name: string, color: string) => vo
     setName('')
   }
   return (
-    <form onSubmit={submit} className="flex items-center gap-2">
-      <ColorPicker label={t('catalog.newColor')} value={color} onChange={setColor} size="size-11" />
-      <input
-        aria-label={t('catalog.newCategory')}
-        placeholder={t('catalog.newCategory')}
-        value={name}
-        maxLength={40}
-        onChange={(e) => setName(e.target.value)}
-        className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3"
-      />
+    <form onSubmit={submit} className="flex items-end gap-2">
+      <ColorPicker label={t('catalog.newColor')} value={color} onChange={setColor} size="size-12" />
+      <TextField className="min-w-0 flex-1" label={t('catalog.newCategory')} value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
       <Button type="submit" disabled={!name.trim()}>
         {t('common.create')}
       </Button>

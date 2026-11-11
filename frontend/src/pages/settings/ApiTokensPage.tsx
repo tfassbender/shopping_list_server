@@ -113,7 +113,7 @@ function NewTokenDialog({ onCreated, onClose }: { onCreated: () => void; onClose
   }
   return (
     <Dialog title={t('tokens.create')} onClose={onClose} onSubmit={() => name.trim() && create.mutate()}>
-      <TextField label={t('tokens.name')} placeholder={t('tokens.namePlaceholder')} required autoFocus maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
+      <TextField label={t('tokens.name')} required autoFocus maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
       <div className="space-y-2">
         <span className="block text-sm text-muted">{t('tokens.scope')}</span>
         <Segmented

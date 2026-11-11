@@ -16,7 +16,7 @@ describe('t', () => {
   it('switches the language and remembers it on the device', () => {
     setLanguage('de')
     expect(getLanguage()).toBe('de')
-    expect(t('list.addPlaceholder')).toBe('Artikel hinzufügen...')
+    expect(t('addItem.title')).toBe('Artikel hinzufügen')
     expect(errorMessage('INVALID_CREDENTIALS')).toBe('E-Mail oder Passwort falsch.')
     expect(errorMessage('SOMETHING_NEW')).toBe('Etwas ist schiefgelaufen. Bitte versuch es noch einmal.')
     expect(localStorage.getItem('shoppinglist.language')).toBe('de')

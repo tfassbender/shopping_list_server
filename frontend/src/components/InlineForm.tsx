@@ -1,10 +1,10 @@
-import { useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent } from 'react'
 import { t } from '../i18n/messages'
 import { Button } from './ui'
 
 /**
- * A one-field form with a submit button (create / rename something). Clears itself after submitting
- * when `clearOnSubmit` is set.
+ * A one-field form with a submit button (create / rename something), the label above the field. Clears
+ * itself after submitting when `clearOnSubmit` is set.
  */
 export function InlineForm(props: {
   label: string
@@ -17,6 +17,7 @@ export function InlineForm(props: {
   onCancel?: () => void
 }) {
   const [value, setValue] = useState(props.initialValue ?? '')
+  const id = useId()
 
   function submit(event: FormEvent) {
     event.preventDefault()
@@ -27,15 +28,19 @@ export function InlineForm(props: {
   }
 
   return (
-    <form onSubmit={submit} className="flex gap-2">
-      <input
-        aria-label={props.label}
-        placeholder={props.label}
-        value={value}
-        maxLength={props.maxLength ?? 60}
-        onChange={(e) => setValue(e.target.value)}
-        className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-base focus:border-accent focus:ring-2 focus:ring-accent/30 focus:outline-none"
-      />
+    <form onSubmit={submit} className="flex items-end gap-2">
+      <div className="min-w-0 flex-1">
+        <label htmlFor={id} className="mb-1 block text-sm text-muted">
+          {props.label}
+        </label>
+        <input
+          id={id}
+          value={value}
+          maxLength={props.maxLength ?? 60}
+          onChange={(e) => setValue(e.target.value)}
+          className="block min-h-12 w-full rounded-lg border border-line bg-raised px-3 text-base focus:border-accent focus:ring-2 focus:ring-accent/30 focus:outline-none"
+        />
+      </div>
       <Button type="submit" disabled={props.disabled || !value.trim()}>
         {props.submitLabel}
       </Button>

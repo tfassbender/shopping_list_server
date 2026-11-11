@@ -46,7 +46,6 @@ export function LayoutsPage() {
       {creating && (
         <NameDialog
           title={t('layouts.new')}
-          placeholder={t('layouts.namePlaceholder')}
           submitLabel={t('common.create')}
           pending={create.isPending}
           error={create.error}
