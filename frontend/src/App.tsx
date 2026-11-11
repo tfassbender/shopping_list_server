@@ -12,6 +12,9 @@ import { RegisterPage } from './pages/auth/RegisterPage'
 import { HomePage } from './pages/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { InvitePage } from './pages/space/InvitePage'
+import { MembersPage } from './pages/space/MembersPage'
+import { SpacePage } from './pages/space/SpacePage'
 import { applyTheme } from './theme/theme'
 
 /** Route table. Every page is rendered inside <Layout> (header + content area). */
@@ -26,6 +29,9 @@ export function AppRoutes() {
         <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route index element={<RequireAuth><HomePage /></RequireAuth>} />
         <Route path="settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+        <Route path="invite/:token" element={<RequireAuth><InvitePage /></RequireAuth>} />
+        <Route path="spaces/:spaceId" element={<RequireAuth><SpacePage /></RequireAuth>} />
+        <Route path="spaces/:spaceId/members" element={<RequireAuth><MembersPage /></RequireAuth>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

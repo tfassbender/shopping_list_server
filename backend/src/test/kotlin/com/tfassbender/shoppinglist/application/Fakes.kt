@@ -1,9 +1,12 @@
 package com.tfassbender.shoppinglist.application
 
 import com.tfassbender.shoppinglist.application.port.EmailSender
+import com.tfassbender.shoppinglist.application.port.SpaceRepository
 import com.tfassbender.shoppinglist.application.port.SessionToken
 import com.tfassbender.shoppinglist.application.port.TokenIssuer
 import com.tfassbender.shoppinglist.application.port.UserRepository
+import com.tfassbender.shoppinglist.domain.space.Space
+import com.tfassbender.shoppinglist.domain.space.SpaceId
 import com.tfassbender.shoppinglist.domain.user.Email
 import com.tfassbender.shoppinglist.domain.user.Language
 import com.tfassbender.shoppinglist.domain.user.User
@@ -59,5 +62,20 @@ class MutableClock(var now: Instant = Instant.parse("2026-01-01T10:00:00Z")) : C
     override fun instant(): Instant = now
     fun advance(duration: Duration) {
         now = now.plus(duration)
+    }
+}
+
+class InMemorySpaceRepository : SpaceRepository {
+    val spaces = linkedMapOf<SpaceId, Space>()
+
+    override fun findById(id: SpaceId) = spaces[id]
+    override fun findByMember(userId: UserId) = spaces.values.filter { it.isMember(userId) }
+    override fun findByInviteTokenHash(hash: String) = spaces.values.firstOrNull { s -> s.invites.any { it.tokenHash == hash } }
+    override fun save(space: Space) {
+        spaces[space.id] = space
+    }
+
+    override fun delete(id: SpaceId) {
+        spaces.remove(id)
     }
 }

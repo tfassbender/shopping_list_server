@@ -1,5 +1,6 @@
 package com.tfassbender.shoppinglist.adapter.persistence
 
+import com.tfassbender.shoppinglist.application.port.SpaceRepository
 import com.tfassbender.shoppinglist.application.port.UserRepository
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.inject.Produces
@@ -20,4 +21,8 @@ class PersistenceProducers(
     @Produces
     @ApplicationScoped
     fun userRepository(): UserRepository = FileUserRepository(files)
+
+    @Produces
+    @ApplicationScoped
+    fun spaceRepository(): SpaceRepository = FileSpaceRepository(files)
 }

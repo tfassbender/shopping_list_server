@@ -4,7 +4,7 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–1 done. Next: Phase 2.
+**Status:** Phases 0–2 done. Next: Phase 3.
 
 ## Guiding principles
 
@@ -88,22 +88,27 @@ Tests: service unit tests, `AuthResource` REST tests, e2e register → login →
 Goal: users create spaces and share them via single-use invite links.
 
 Backend:
-- [ ] Domain `Space` aggregate: name, members (`UserId`, role, joined-at), invites; invariants
+- [x] Domain `Space` aggregate: name, members (`UserId`, role, joined-at), invites; invariants
       (exactly one owner, owner can't leave without handover, single-use invites, expiry)
-- [ ] `FileSpaceRepository` (`data/spaces/<id>/space.json`), `ReentrantLock` per space
-- [ ] `SpaceService` + REST: create, list my spaces, rename, delete (owner)
-- [ ] Invites (owner): create with configurable expiry (default 1 day), list, revoke;
+- [x] `FileSpaceRepository` (`data/spaces/<id>/space.json`), `ReentrantLock` per space
+- [x] `SpaceService` + REST: create, list my spaces, rename, delete (owner)
+- [x] Invites (owner): create with configurable expiry (default 1 day), list, revoke;
       accept via token (logged in user joins as member); only token hash stored
-- [ ] Members: list (display names only), remove (owner), leave (member), transfer ownership (owner)
-- [ ] Account deletion: owned spaces pass to longest-standing member, otherwise deleted; memberships removed
-- [ ] Central permission check helper used by all later services (`requireMember`, `requireOwner`)
+- [x] Members: list (display names only), remove (owner), leave (member), transfer ownership (owner)
+- [x] Account deletion: owned spaces pass to longest-standing member, otherwise deleted; memberships removed
+- [x] Central permission check helper used by all later services (`requireMember`, `requireOwner`)
 
 Frontend:
-- [ ] Space overview (start page) + create / rename / delete
-- [ ] Members screen: member list, remove, leave, transfer ownership
-- [ ] Invite: create link (expiry picker), copy/share (Web Share API on mobile), revoke
-- [ ] Invite acceptance page `/invite/<token>` (redirects through login/register)
-- [ ] Delete account (with confirmation)
+- [x] Space overview (start page) + create / rename / delete
+- [x] Members screen: member list, remove, leave, transfer ownership
+- [x] Invite: create link (expiry picker), copy/share (Web Share API on mobile), revoke
+- [x] Invite acceptance page `/invite/<token>` (redirects through login/register)
+- [x] Delete account (with confirmation)
+
+Decided while implementing: non-members get `404 SPACE_NOT_FOUND` (existence of foreign spaces isn't
+revealed), members calling owner actions get `403 OWNER_ONLY`. Invite validity 1 h – 30 days.
+`SpaceLocks` (per-space `ReentrantLock`) lives in the application layer, as the services define the
+load-modify-save unit.
 
 Tests: `Space` invariants (unit), permission matrix (REST tests per role), e2e invite flow with two users.
 
