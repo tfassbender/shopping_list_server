@@ -12,6 +12,18 @@ describe('App routing and auth', () => {
     expect(screen.getByRole('heading', { name: 'Log in' })).toBeInTheDocument()
   })
 
+  it('leads to the start page via the title in the header bar', async () => {
+    loginForTest()
+    mockApi({ 'GET /api/users/me': testUser, 'GET /api/spaces': [] })
+    renderWithProviders(<AppRoutes />, '/settings')
+
+    await userEvent.click(await screen.findByRole('link', { name: 'Settings' }))
+
+    expect(await screen.findByRole('heading', { name: 'Lists' })).toBeInTheDocument()
+    // on the start page itself the title is no link
+    expect(screen.queryByRole('link', { name: 'Lists' })).not.toBeInTheDocument()
+  })
+
   it('shows the not found page for unknown routes', () => {
     mockApi({})
     renderWithProviders(<AppRoutes />, '/does/not/exist')

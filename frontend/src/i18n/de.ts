@@ -223,6 +223,7 @@ export const de: Record<MessageKey, string> = {
   'voice.error': 'Die Spracheingabe hat nicht funktioniert. Bitte tippe den Artikel ein.',
   'error.loadFailed': 'Die Daten konnten nicht geladen werden.',
   'nav.menu': 'Menü',
+  'nav.toStart': 'Zur Startseite',
   'common.done': 'Fertig',
   'start.title': 'Listen',
   'start.noSpaces': 'Listen liegen in einem Bereich, den du mit anderen teilen kannst. Leg deinen ersten Bereich an, um loszulegen.',

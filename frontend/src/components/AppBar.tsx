@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { useSession } from '../auth/useAuth'
 import { getLanguage, setLanguage, t } from '../i18n/messages'
 import { SyncIndicator } from '../offline/SyncIndicator'
@@ -14,6 +14,7 @@ export type MenuEntry = { label: string; onSelect: () => void; danger?: boolean;
  */
 export function AppBar(props: { title: string; back?: string; sub?: ReactNode; actions?: ReactNode; menu?: MenuEntry[] }) {
   const session = useSession()
+  const onStartPage = useLocation().pathname === '/'
   return (
     <header className="sticky top-0 z-20 bg-brand pt-[env(safe-area-inset-top)] text-brand-ink">
       <div className={`relative mx-auto flex min-h-16 max-w-2xl items-center gap-1 pr-1 ${props.back ? 'pl-1' : 'pl-4'}`}>
@@ -24,9 +25,21 @@ export function AppBar(props: { title: string; back?: string; sub?: ReactNode; a
             </svg>
           </Link>
         )}
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[1.35rem] font-bold">{props.title}</h1>
-          {props.sub}
+        <div className="flex min-w-0 flex-1 flex-col self-stretch">
+          {/*
+           * On every page but the start page, a tap on the title row (including the empty space after the
+           * title) leads to the start page. The line below (e.g. the shop) keeps its own function.
+           */}
+          {session && !onStartPage ? (
+            <Link to="/" title={t('nav.toStart')} className={`flex flex-1 items-center ${props.sub ? 'pt-2' : ''}`}>
+              <h1 className="truncate text-[1.35rem] font-bold">{props.title}</h1>
+            </Link>
+          ) : (
+            <div className={`flex flex-1 items-center ${props.sub ? 'pt-2' : ''}`}>
+              <h1 className="truncate text-[1.35rem] font-bold">{props.title}</h1>
+            </div>
+          )}
+          {props.sub && <div className="pb-2">{props.sub}</div>}
         </div>
         {session ? <SyncIndicator /> : <LanguageToggle />}
         {props.actions}

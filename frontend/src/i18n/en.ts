@@ -224,6 +224,7 @@ export const en = {
   'layouts.emptyHint': 'Create a shop to sort your lists in the order you walk through it.',
   'members.alone': 'You are the only member. Invite someone below.',
   'nav.menu': 'Menu',
+  'nav.toStart': 'To the start page',
   'common.done': 'Done',
   'start.title': 'Lists',
   'start.noSpaces': 'Lists live in a space, which you can share with others. Create your first space to get started.',
