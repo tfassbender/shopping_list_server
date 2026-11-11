@@ -1,0 +1,837 @@
+<title>Shopping List Mockup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* Layout: the web app as it would run in a browser - full-width header bar, content in a centered
+     column (mobile-first: on a phone the column is the screen). */
+  :root {
+    --brand: #8ccff5;        /* header bar, primary actions - light blue */
+    --brand-ink: #0b2a42;    /* dark navy text on the light blue (white would be unreadable) */
+    --accent-text: #0a6aa6;  /* blue for small text on white, readable */
+    --bg: #ffffff;           /* page */
+    --raised: #f1f6fa;       /* hover, input fills - blue-tinted */
+    --line: #dde7ee;
+    --fg: #13212b;
+    --muted: #5f7180;
+    --danger: #dc2626;
+    --overlay: rgba(8, 24, 38, 0.42);
+    --hover-on-brand: rgba(11, 42, 66, 0.1);
+    --strip: #f1ecdf;        /* the mockup note strip - deliberately not part of the app palette */
+    --strip-fg: #5b4d2b;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --column: 720px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --brand: #6dbbe8; --brand-ink: #0b2a42; --accent-text: #8fd0f7; --bg: #0f171e; --raised: #18232d; --line: #24323e;
+      --fg: #e6eef4; --muted: #93a6b5; --danger: #f87171; --overlay: rgba(0, 0, 0, 0.55); --hover-on-brand: rgba(11, 42, 66, 0.14);
+      --strip: #2a2619; --strip-fg: #d9caa0; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --brand: #6dbbe8; --brand-ink: #0b2a42; --accent-text: #8fd0f7; --bg: #0f171e; --raised: #18232d; --line: #24323e;
+    --fg: #e6eef4; --muted: #93a6b5; --danger: #f87171; --overlay: rgba(0, 0, 0, 0.55); --hover-on-brand: rgba(11, 42, 66, 0.14);
+    --strip: #2a2619; --strip-fg: #d9caa0; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  /* Large type throughout: the app is used one-handed in a shop, often at arm's length. */
+  body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 17px; line-height: 1.35; }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--brand); }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  /* One centered column inside every full-width band. */
+  .wrap {
+    max-width: var(--column); margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  /* ---- mockup note strip (not part of the app) ---- */
+  .strip { background: var(--strip); color: var(--strip-fg); font-size: 13px; }
+  .strip summary { cursor: pointer; padding-block: 8px; list-style: none; }
+  .strip summary::-webkit-details-marker { display: none; }
+  .strip summary::after { content: " ▸"; }
+  .strip[open] summary::after { content: " ▾"; }
+  .notes { padding-block: 4px 18px; line-height: 1.55; columns: 2 300px; column-gap: 32px; }
+  .notes h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 6px; break-after: avoid; }
+  .notes ul { margin: 0 0 14px; padding-left: 18px; break-inside: avoid; }
+
+  /* ---- app bar ---- */
+  .appbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--brand); color: var(--brand-ink); }
+  .appbar .wrap { display: flex; align-items: center; gap: 4px; min-height: 64px; position: relative; }
+  .appbar.has-back .wrap { padding-left: max(4px, env(safe-area-inset-left, 0px)); }
+  .appbar .titles { flex: 1; min-width: 0; }
+  .appbar h1 { margin: 0; font-size: 23px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .appbar .sub { display: inline-flex; align-items: center; gap: 4px; padding: 0; font-size: 15px; opacity: 0.85; }
+  .icon-btn { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; }
+  .icon-btn:hover { background: var(--hover-on-brand); }
+  .icon-btn svg { width: 24px; height: 24px; }
+  .appbar .wrap > .icon-btn:last-child { margin-right: -10px; }
+
+  main { padding-bottom: 96px; }
+
+  /* ---- start page: all lists ---- */
+  .space-label { margin: 24px 0 6px; font-size: 14px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .list-row {
+    display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+    padding: 14px 8px; border-bottom: 1px solid var(--line); border-radius: 0;
+  }
+  .list-row:hover { background: var(--raised); }
+  .list-row .text { flex: 1; min-width: 0; }
+  .list-row .name { font-size: 20px; font-weight: 600; }
+  .list-row .preview { display: block; font-size: 16px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .count {
+    min-width: 32px; height: 32px; padding: 0 10px; border-radius: 999px; display: grid; place-items: center;
+    background: var(--raised); font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums;
+  }
+  .count.done { color: var(--muted); font-weight: 500; }
+  .last-used { font-size: 14px; color: var(--accent-text); font-weight: 650; }
+
+  /* ---- list page ---- */
+  .cat { display: flex; align-items: center; gap: 8px; margin: 20px 0 4px; font-size: 14px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .item { display: flex; align-items: stretch; border-bottom: 1px solid var(--line); }
+  .item .check { flex: 1; min-width: 0; display: flex; align-items: center; padding: 13px 4px 13px 8px; text-align: left; min-height: 58px; font-size: 19px; }
+  .item:hover { background: var(--raised); }
+  /* Checked = greyed out and struck through, no checkbox. */
+  .item.checked .label { color: var(--muted); text-decoration: line-through; }
+  .item.checked .amount { font-weight: 500; }
+  .amount { font-weight: 650; margin-right: 6px; }
+  .note { display: block; font-size: 15px; color: var(--muted); }
+  .more { width: 48px; color: var(--muted); display: grid; place-items: center; flex-shrink: 0; }
+  .more:hover { color: var(--fg); }
+  .empty { padding: 40px 24px; text-align: center; color: var(--muted); font-size: 18px; }
+
+  /* The + button: the one way to add something (item, space, token). Bottom right of the content column. */
+  .fab-anchor { position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; pointer-events: none; }
+  .fab-anchor .wrap { display: flex; justify-content: flex-end; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+  .fab {
+    pointer-events: auto; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--brand); color: var(--brand-ink); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  }
+  .fab svg { width: 30px; height: 30px; }
+  .with-mic { display: flex; gap: 8px; align-items: end; }
+  .with-mic .field { flex: 1; min-width: 0; }
+  .mic { width: 50px; height: 50px; border-radius: 10px; display: grid; place-items: center; color: var(--muted); border: 1px solid var(--line); }
+  .mic svg { width: 22px; height: 22px; }
+
+  /* ---- settings & space pages: sections of plain rows ---- */
+  .section { margin: 28px 0 4px; font-size: 14px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .section:first-child { margin-top: 20px; }
+  .srow {
+    display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; text-align: left;
+    padding: 10px 8px; border-bottom: 1px solid var(--line);
+  }
+  button.srow:hover { background: var(--raised); }
+  .srow .text { flex: 1; min-width: 0; }
+  .srow .value { color: var(--muted); }
+  .srow .hint { display: block; font-size: 15px; color: var(--muted); }
+  .srow.danger { color: var(--danger); }
+  .chev { color: var(--muted); width: 20px; height: 20px; flex-shrink: 0; }
+  .avatar {
+    width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0;
+    background: var(--raised); color: var(--accent-text); font-weight: 700;
+  }
+  .textline { padding: 12px 8px; color: var(--muted); font-size: 16px; margin: 0; }
+  .inline-actions { display: flex; gap: 10px; flex-wrap: wrap; padding: 14px 0; }
+  .version { padding: 28px 8px 0; color: var(--muted); font-size: 14px; }
+
+  /* Segmented control: a few exclusive choices side by side (language, theme, access, validity). */
+  .segmented { display: flex; padding: 3px; border-radius: 12px; background: var(--raised); border: 1px solid var(--line); }
+  .segmented button { flex: 1; min-height: 44px; border-radius: 9px; font-size: 16px; padding: 0 8px; }
+  .segmented button[aria-pressed="true"] { background: var(--bg); color: var(--fg); font-weight: 650; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); }
+  .setting { display: grid; gap: 8px; padding: 12px 8px 16px; border-bottom: 1px solid var(--line); }
+
+  /* On/off switch: a styled checkbox, so it keeps keyboard and screen reader support. */
+  .switch { position: relative; width: 52px; height: 30px; flex-shrink: 0; }
+  .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .switch span { position: absolute; inset: 0; border-radius: 999px; background: var(--line); transition: background 0.15s; pointer-events: none; }
+  .switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform 0.15s; }
+  .switch input:checked + span { background: var(--accent-text); }
+  .switch input:checked + span::after { transform: translateX(22px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  /* Choice chips (space of a new list). */
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chips button { min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); font-size: 17px; }
+  .chips button[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); font-weight: 650; }
+  .label { font-size: 15px; color: var(--muted); }
+  .secret { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 15px; word-break: break-all; padding: 12px; border-radius: 10px; background: var(--raised); border: 1px solid var(--line); }
+
+  /* ---- overlays ---- */
+  .scrim { position: fixed; inset: 0; background: var(--overlay); z-index: 20; }
+  .menu {
+    position: absolute; top: 58px; right: 6px; z-index: 30; min-width: 250px; font-size: 18px; padding: 6px 0; color: var(--fg);
+    background: var(--bg); border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); border: 1px solid var(--line);
+  }
+  .menu button { display: block; width: 100%; text-align: left; padding: 14px 20px; }
+  .menu button:hover { background: var(--raised); }
+  .menu .danger, .option.danger { color: var(--danger); }
+  .menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
+  /* Bottom sheet on phones, centered dialog on wide screens. */
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--bg);
+    border-radius: 20px 20px 0 0; display: grid; gap: 14px; max-height: 90dvh; overflow-y: auto;
+    padding: 10px max(18px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+  }
+  .sheet::before { content: ""; justify-self: center; width: 40px; height: 4px; border-radius: 2px; background: var(--line); }
+  @media (min-width: 640px) {
+    .sheet { left: 50%; right: auto; bottom: auto; top: 14vh; width: 460px; transform: translateX(-50%); border-radius: 16px; padding: 22px; }
+    .sheet::before { display: none; }
+  }
+  .sheet h2 { margin: 0; font-size: 22px; }
+  .sheet p { margin: 0; }
+  .sheet .muted { color: var(--muted); font-size: 16px; }
+  .field { display: grid; gap: 4px; font-size: 15px; color: var(--muted); }
+  .field input, .field select {
+    height: 50px; border-radius: 10px; border: 1px solid var(--line); background: var(--raised); color: var(--fg);
+    padding: 0 12px; font: inherit; font-size: 18px;
+  }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > * { flex: 1 1 160px; min-width: 0; }
+  .actions { display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+  .btn { height: 50px; padding: 0 20px; border-radius: 12px; font-weight: 600; font-size: 18px; }
+  .btn.primary { background: var(--brand); color: var(--brand-ink); }
+  .btn.outline { border: 1px solid var(--line); }
+  .btn.danger { background: var(--danger); color: #fff; }
+  .btn.text-danger { color: var(--danger); margin-right: auto; padding-left: 0; }
+  .option { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 14px 4px; font-size: 18px; border-bottom: 1px solid var(--line); text-align: left; }
+  .option .hint { display: block; font-size: 15px; color: var(--muted); }
+  .snackbar {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 40;
+    width: min(440px, calc(100% - 24px)); display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 18px; border-radius: 12px; background: #13212b; color: #fff; font-size: 16px;
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<details class="strip">
+  <summary class="wrap">Mockup of the web app - click around. Design notes</summary>
+  <div class="wrap notes">
+    <h3>Start page</h3>
+    <ul>
+      <li>All lists of all spaces. The space name is only a small label (hidden with just one space).</li>
+      <li>⋮ menu: New list, Spaces &amp; sharing, Settings.</li>
+    </ul>
+    <h3>List page</h3>
+    <ul>
+      <li>No checkboxes: tap an item to check it, tap again to uncheck. ⋯ opens its details.</li>
+      <li>Checked items stay in place; the sort button in the header bar moves them to the end on demand.</li>
+      <li>+ opens the add dialog (stays open for the next item).</li>
+    </ul>
+    <h3>New list</h3>
+    <ul>
+      <li>Name plus the space as chips - preselected is the space of the last used list. With only one space the chips are hidden.</li>
+      <li>After "Create" the new list opens directly.</li>
+    </ul>
+    <h3>Spaces &amp; sharing</h3>
+    <ul>
+      <li>One row per space with its members. + creates a space.</li>
+      <li>A space page shows members, open invites and the space's categories and shops. ⋮: rename and delete (owner), leave (member).</li>
+      <li>Owners manage members via ⋯ (make owner, remove). "Invite someone" asks how long the link is valid, then shows it with Copy and Share.</li>
+    </ul>
+    <h3>Settings</h3>
+    <ul>
+      <li>Plain sections: profile, display, AI agents, account. Language and theme are segmented buttons and apply at once (try the theme).</li>
+      <li>"Move checked items to the end" is gone - that is the sort button now.</li>
+      <li>API tokens on their own page; a new token is shown once with Copy.</li>
+    </ul>
+    <h3>Open questions</h3>
+    <ul>
+      <li>Open the last used list directly, with the start page one click back?</li>
+      <li>"Tap = check, ⋯ = details" - or swipe to delete?</li>
+    </ul>
+  </div>
+</details>
+
+<div id="app"></div>
+
+<script>
+  // ---- sample data (example content, not real lists) ----
+  const categories = {
+    veg: { name: 'Fruit & vegetables', color: '#4caf50' },
+    bakery: { name: 'Bakery', color: '#d4a056' },
+    dairy: { name: 'Dairy & eggs', color: '#64b5f6' },
+    drinks: { name: 'Drinks', color: '#9575cd' },
+    household: { name: 'Household', color: '#a1887f' },
+    hygiene: { name: 'Hygiene', color: '#f06292' },
+  }
+  const shops = ['Aldi', 'Rewe']
+  let nextId = 100
+  const item = (name, cat, extra = {}) => ({ id: nextId++, name, cat, checked: false, ...extra })
+  const me = { name: 'Tobias', email: 'tobias@example.com' }
+  const spaces = [
+    {
+      id: 'home', name: 'Home', owner: true,
+      members: [{ name: 'Tobias', you: true, owner: true }, { name: 'Anna' }],
+      invites: [{ id: 1, until: 'tomorrow, 18:40' }],
+      lists: [
+        {
+          id: 'groceries', name: 'Groceries', shop: 'Aldi', lastUsed: true,
+          items: [
+            item('Bananas', 'veg'), item('Tomatoes', 'veg', { amount: '500 g' }), item('Bread', 'bakery', { note: 'the dark one' }),
+            item('Milk', 'dairy', { amount: '2 l' }), item('Eggs', 'dairy', { amount: '10' }),
+            item('Coffee', 'drinks', { checked: true }), item('Dish soap', 'household', { checked: true }),
+          ],
+        },
+        { id: 'drugstore', name: 'Drugstore', shop: null, items: [item('Toothpaste', 'hygiene'), item('Shampoo', 'hygiene')] },
+        { id: 'hardware', name: 'Hardware store', shop: null, items: [] },
+      ],
+    },
+    {
+      id: 'flat', name: 'Flat share', owner: false,
+      members: [{ name: 'Lea', owner: true }, { name: 'Tobias', you: true }, { name: 'Max' }, { name: 'Sam' }],
+      invites: [],
+      lists: [
+        { id: 'party', name: 'Party on Saturday', shop: 'Rewe', items: [item('Lemonade', 'drinks', { amount: '6' }), item('Chips', null), item('Napkins', 'household', { checked: true })] },
+      ],
+    },
+  ]
+  const tokens = [
+    { id: 1, name: 'Claude', scope: 'Full access', info: 'expires 12 Feb · used today' },
+    { id: 2, name: 'Home dashboard', scope: 'Read only', info: 'no expiry · used yesterday' },
+  ]
+  const settings = { language: 'English', theme: 'System', mergeNotes: true }
+  const order = ['veg', 'bakery', 'dairy', 'drinks', 'household', 'hygiene', null]
+
+  // ---- tiny view state ----
+  const state = { view: 'home', listId: null, spaceId: null, overlay: null, editing: null, sheet: {}, toast: null }
+  const app = document.getElementById('app')
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+  const findList = (id) => spaces.flatMap((s) => s.lists).find((l) => l.id === id)
+  const findSpace = (id) => spaces.find((s) => s.id === id)
+
+  const icons = {
+    menu: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>',
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+    chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>',
+    next: '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
+    dots: '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+    sortDone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M4 11h7"/><path d="M4 17l2 2 3-4"/><path d="M18 5v14M15 16l3 3 3-3"/></svg>',
+    mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    tick: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>',
+  }
+
+  /** Header bar. `back` names the page the back arrow returns to. */
+  function appbar({ title, back, sub, menu, extra }) {
+    return `<header class="appbar ${back ? 'has-back' : ''}"><div class="wrap">
+        ${back ? `<button class="icon-btn" data-go="${back}" aria-label="Back">${icons.back}</button>` : ''}
+        <div class="titles"><h1>${title}</h1>${sub ?? ''}</div>
+        ${extra ?? ''}
+        ${menu ? `<button class="icon-btn" data-action="menu" aria-label="Menu">${icons.menu}</button>` : ''}
+        ${state.overlay === 'menu' && menu ? `
+          <div class="scrim" data-action="close" style="background:transparent"></div>
+          <div class="menu" role="menu">${menu}</div>` : ''}
+      </div></header>`
+  }
+
+  const fab = (action, label) => `<div class="fab-anchor"><div class="wrap">
+      <button class="fab" data-action="${action}" aria-label="${label}">${icons.plus}</button></div></div>`
+  const scrim = '<div class="scrim" data-action="close"></div>'
+  const segmented = (key, options, current) => `<div class="segmented" role="group">${options.map((o) =>
+    `<button type="button" data-seg="${key}" data-value="${o}" aria-pressed="${o === current}">${o}</button>`).join('')}</div>`
+
+  // ---- pages ----
+  function homeView() {
+    const multipleSpaces = spaces.length > 1
+    const rows = spaces.map((space) => {
+      const lists = space.lists.map((list) => {
+        const open = list.items.filter((i) => !i.checked)
+        const preview = open.length ? open.slice(0, 4).map((i) => i.name).join(', ') + (open.length > 4 ? ' …' : '') : 'All done'
+        return `<button class="list-row" data-open="${list.id}">
+          <span class="text">
+            <span class="name">${esc(list.name)}</span>${list.lastUsed ? '<span class="last-used"> · last used</span>' : ''}
+            <span class="preview">${esc(preview)}</span>
+          </span>
+          <span class="count ${open.length ? '' : 'done'}">${open.length || '✓'}</span>
+        </button>`
+      }).join('')
+      return (multipleSpaces ? `<div class="space-label">${esc(space.name)}</div>` : '') + lists
+    }).join('')
+    return appbar({
+      title: 'Lists',
+      menu: `<button data-action="new-list">New list</button>
+             <button data-go="spaces">Spaces &amp; sharing</button><hr>
+             <button data-go="settings">Settings</button>`,
+    }) + `<main class="wrap">${rows}</main>`
+  }
+
+  function listView() {
+    const list = findList(state.listId)
+    const done = list.items.filter((i) => i.checked)
+    // Checked items stay in place. Only the sort button moves them ("atEnd") into a last group.
+    const inPlace = list.items.filter((i) => !i.atEnd)
+    const atEnd = list.items.filter((i) => i.atEnd)
+    const groups = order.map((cat) => ({ cat, items: inPlace.filter((i) => i.cat === cat) })).filter((g) => g.items.length)
+    const body = list.items.length === 0
+      ? '<p class="empty">This list is empty.<br>Add the first item with the + button.</p>'
+      : groups.map((g) => `
+          <div class="cat"><span class="dot" style="background:${g.cat ? categories[g.cat].color : 'var(--line)'}"></span>${g.cat ? categories[g.cat].name : 'Other'}</div>
+          ${g.items.map(itemRow).join('')}`).join('') +
+        (atEnd.length ? `<div class="cat">Checked</div>${atEnd.map(itemRow).join('')}` : '')
+    const sub = `<button class="sub" data-action="shop">${list.shop ? 'Sorted for ' + esc(list.shop) : 'Order of adding'}
+        ${icons.chevron.replace('<svg', '<svg width="14" height="14"')}</button>`
+    return appbar({
+      title: esc(list.name), back: 'home', sub,
+      extra: `<button class="icon-btn" data-action="sort-checked" ${done.length ? '' : 'disabled style="opacity:.45"'}
+          aria-label="Move checked items to the end" title="Move checked items to the end">${icons.sortDone}</button>`,
+      menu: `<button data-action="todo" data-what="Rename list">Rename list</button>
+             <button data-action="remove-checked" ${done.length ? '' : 'disabled style="opacity:.45"'}>Remove ${done.length} checked</button><hr>
+             <button data-action="todo" data-what="Categories & units">Categories &amp; units</button>
+             <button data-action="todo" data-what="Shops">Shops</button><hr>
+             <button class="danger" data-action="todo" data-what="Delete list (with confirmation)">Delete list</button>`,
+    }) + `<main class="wrap">${body}</main>${fab('add-item', 'Add item')}`
+  }
+
+  function itemRow(i) {
+    return `<div class="item ${i.checked ? 'checked' : ''}">
+      <button class="check" data-check="${i.id}" role="checkbox" aria-checked="${i.checked}">
+        <span class="label">${i.amount ? `<span class="amount">${esc(i.amount)}</span>` : ''}${esc(i.name)}
+          ${i.note ? `<span class="note">${esc(i.note)}</span>` : ''}</span>
+      </button>
+      <button class="more" data-edit="${i.id}" aria-label="Details of ${esc(i.name)}">${icons.dots}</button>
+    </div>`
+  }
+
+  const memberSummary = (s) => {
+    const others = s.members.filter((m) => !m.you).map((m) => m.name)
+    return others.length === 0 ? 'Only you' : others.length <= 2 ? `You and ${others.join(' and ')}` : `You, ${others[0]} and ${others.length - 1} more`
+  }
+
+  function spacesView() {
+    return appbar({ title: 'Spaces &amp; sharing', back: 'home' }) + `
+      <main class="wrap">
+        <p class="textline">A space holds lists, categories and shops. Everyone in a space sees and edits the same lists.</p>
+        ${spaces.map((s) => `
+          <button class="srow" data-space="${s.id}">
+            <span class="avatar">${esc(s.name[0])}</span>
+            <span class="text"><span style="font-size:20px;font-weight:600">${esc(s.name)}</span>
+              <span class="hint">${s.lists.length} lists · ${esc(memberSummary(s))}${s.owner ? '' : ' · owner: ' + esc(s.members.find((m) => m.owner).name)}</span></span>
+            ${icons.next}
+          </button>`).join('')}
+      </main>${fab('new-space', 'New space')}`
+  }
+
+  function spaceView() {
+    const s = findSpace(state.spaceId)
+    const memberRow = (m, index) => `
+      <div class="srow">
+        <span class="avatar">${esc(m.name[0])}</span>
+        <span class="text">${esc(m.name)}${m.you ? ' <span class="value">(you)</span>' : ''}
+          <span class="hint">${m.owner ? 'Owner' : 'Member'}</span></span>
+        ${s.owner && !m.you ? `<button class="more" data-member="${index}" aria-label="Options for ${esc(m.name)}">${icons.dots}</button>` : ''}
+      </div>`
+    const invites = s.owner && s.invites.length ? `
+      <div class="section">Open invite links</div>
+      ${s.invites.map((inv) => `
+        <div class="srow"><span class="text">Link for one person<span class="hint">valid until ${esc(inv.until)}</span></span>
+          <button class="btn outline" data-revoke="${inv.id}">Revoke</button></div>`).join('')}` : ''
+    return appbar({
+      title: esc(s.name), back: 'spaces',
+      menu: s.owner
+        ? `<button data-action="rename-space">Rename space</button><hr>
+           <button class="danger" data-action="delete-space">Delete space</button>`
+        : `<button class="danger" data-action="leave-space">Leave space</button>`,
+    }) + `
+      <main class="wrap">
+        <div class="section">Members</div>
+        ${s.members.map(memberRow).join('')}
+        ${s.owner
+          ? '<div class="inline-actions"><button class="btn primary" data-action="invite">Invite someone</button></div>'
+          : '<p class="textline">Only the owner can invite people.</p>'}
+        ${invites}
+        <div class="section">Used by all lists in this space</div>
+        <button class="srow" data-action="todo" data-what="Categories & units"><span class="text">Categories &amp; units<span class="hint">${Object.keys(categories).length} categories</span></span>${icons.next}</button>
+        <button class="srow" data-action="todo" data-what="Shops"><span class="text">Shops<span class="hint">${shops.join(', ')}</span></span>${icons.next}</button>
+      </main>`
+  }
+
+  function settingsView() {
+    return appbar({ title: 'Settings', back: 'home' }) + `
+      <main class="wrap">
+        <div class="section">Profile</div>
+        <button class="srow" data-action="display-name"><span class="text">Display name<span class="hint">Shown to the other members of your spaces</span></span>
+          <span class="value">${esc(me.name)}</span>${icons.next}</button>
+        <div class="srow"><span class="text">Email</span><span class="value">${esc(me.email)}</span></div>
+
+        <div class="section">Display</div>
+        <div class="setting"><span>Language</span>${segmented('language', ['Deutsch', 'English'], settings.language)}</div>
+        <div class="setting"><span>Theme</span>${segmented('theme', ['System', 'Light', 'Dark'], settings.theme)}</div>
+        <label class="srow"><span class="text">Show notes about merged changes<span class="hint">After offline changes of several people met</span></span>
+          <span class="switch"><input type="checkbox" id="merge-notes" data-setting="mergeNotes" ${settings.mergeNotes ? 'checked' : ''}><span></span></span></label>
+
+        <div class="section">AI agents</div>
+        <button class="srow" data-go="tokens"><span class="text">API tokens<span class="hint">Let an AI agent use your lists</span></span>
+          <span class="value">${tokens.length}</span>${icons.next}</button>
+
+        <div class="section">Account</div>
+        <button class="srow" data-action="password"><span class="text">Change password</span>${icons.next}</button>
+        <button class="srow" data-action="logout-everywhere"><span class="text">Log out on other devices</span></button>
+        <button class="srow" data-action="todo" data-what="Log out"><span class="text">Log out</span></button>
+        <button class="srow danger" data-action="delete-account"><span class="text">Delete account</span></button>
+        <p class="version">Shopping List 0.1.0 · connected</p>
+      </main>`
+  }
+
+  function tokensView() {
+    return appbar({ title: 'API tokens', back: 'settings' }) + `
+      <main class="wrap">
+        <p class="textline">An AI agent or script can use your lists with a token, via the REST API.
+          Read-only tokens can't change anything.</p>
+        ${tokens.length === 0 ? '<p class="empty">No tokens yet. Create one with +.</p>' : tokens.map((t) => `
+          <div class="srow"><span class="text">${esc(t.name)}<span class="hint">${t.scope} · ${t.info}</span></span>
+            <button class="btn outline" data-revoke-token="${t.id}">Revoke</button></div>`).join('')}
+      </main>${fab('new-token', 'New API token')}`
+  }
+
+  // ---- sheets / dialogs ----
+  function sheets() {
+    const o = state.overlay
+    if (o === 'new-list') return newListSheet()
+    if (o === 'add') return addSheet()
+    if (o === 'shop') return shopSheet(findList(state.listId))
+    if (o === 'edit') return editSheet()
+    if (o === 'new-space') return nameSheet('New space', 'e.g. Family', '', 'Create', 'new-space')
+    if (o === 'rename-space') return nameSheet('Rename space', '', findSpace(state.spaceId).name, 'Save', 'rename-space')
+    if (o === 'display-name') return nameSheet('Display name', '', me.name, 'Save', 'display-name')
+    if (o === 'invite') return inviteSheet()
+    if (o === 'member') return memberSheet()
+    if (o === 'password') return passwordSheet()
+    if (o === 'new-token') return tokenSheet()
+    if (o === 'confirm') return confirmSheet()
+    return ''
+  }
+
+  function newListSheet() {
+    const preselected = state.sheet.spaceId ?? spaces.find((s) => s.lists.some((l) => l.lastUsed))?.id ?? spaces[0].id
+    return `${scrim}
+      <form class="sheet" data-form="new-list" role="dialog" aria-label="New list">
+        <h2>New list</h2>
+        <label class="field">Name<input id="new-list-name" name="name" required placeholder="e.g. Weekend"></label>
+        ${spaces.length > 1 ? `<div style="display:grid;gap:6px"><span class="label">In space</span>
+          <div class="chips">${spaces.map((s) => `<button type="button" data-pick-space="${s.id}" aria-pressed="${s.id === preselected}">${esc(s.name)}</button>`).join('')}</div>
+          <span class="label">Everyone in the space sees this list.</span></div>` : ''}
+        <input type="hidden" name="space" value="${preselected}">
+        <div class="actions"><button type="button" class="btn" data-action="close">Cancel</button><button class="btn primary">Create</button></div>
+      </form>`
+  }
+
+  /* The + button opens this. "Add" keeps the dialog open for the next item; Escape or Done closes it. */
+  function addSheet() {
+    return `${scrim}
+      <form class="sheet" data-form="add" role="dialog" aria-label="Add item">
+        <h2>Add item</h2>
+        <div class="with-mic">
+          <label class="field">Name<input id="add-name" name="name" required autocomplete="off" placeholder="e.g. Milk"></label>
+          <button type="button" class="mic" data-action="todo" data-what="Voice input" aria-label="Speak an item">${icons.mic}</button>
+        </div>
+        <div class="row">
+          <label class="field">Amount<input id="add-amount" name="amount" placeholder="optional"></label>
+          <label class="field">Category<select id="add-cat" name="cat">
+            <option value="">Automatic</option>
+            ${Object.entries(categories).map(([id, c]) => `<option value="${id}">${c.name}</option>`).join('')}
+          </select></label>
+        </div>
+        <div class="actions"><button type="button" class="btn" data-action="close">Done</button><button class="btn primary">Add</button></div>
+      </form>`
+  }
+
+  function shopSheet(list) {
+    const choice = (value, label, hint) => `<button class="option" data-shop="${value}">
+        <span>${label}<span class="hint">${hint}</span></span>${(list.shop || '') === value ? icons.tick : ''}</button>`
+    return `${scrim}
+      <div class="sheet" role="dialog" aria-label="Choose shop">
+        <h2>Where are you shopping?</h2>
+        <div>${choice('', 'No shop', 'Order of adding')}${shops.map((s) => choice(s, s, 'Sorted by the way through the shop')).join('')}</div>
+      </div>`
+  }
+
+  function editSheet() {
+    const i = findList(state.listId).items.find((x) => x.id === state.editing)
+    return `${scrim}
+      <form class="sheet" data-form="edit" role="dialog" aria-label="Item details">
+        <h2>${esc(i.name)}</h2>
+        <div class="row">
+          <label class="field">Amount<input id="edit-amount" name="amount" value="${esc(i.amount || '')}"></label>
+          <label class="field">Category<select id="edit-cat" name="cat">
+            <option value="">No category</option>
+            ${Object.entries(categories).map(([id, c]) => `<option value="${id}" ${i.cat === id ? 'selected' : ''}>${c.name}</option>`).join('')}
+          </select></label>
+        </div>
+        <label class="field">Note<input id="edit-note" name="note" value="${esc(i.note || '')}"></label>
+        <div class="actions">
+          <button type="button" class="btn text-danger" data-action="delete-item">Delete</button>
+          <button type="button" class="btn" data-action="close">Cancel</button>
+          <button class="btn primary">Save</button>
+        </div>
+      </form>`
+  }
+
+  function nameSheet(title, placeholder, value, submit, form) {
+    return `${scrim}
+      <form class="sheet" data-form="${form}" role="dialog" aria-label="${title}">
+        <h2>${title}</h2>
+        <label class="field">Name<input id="name-input" name="name" required maxlength="60" value="${esc(value)}" placeholder="${placeholder}"></label>
+        <div class="actions"><button type="button" class="btn" data-action="close">Cancel</button><button class="btn primary">${submit}</button></div>
+      </form>`
+  }
+
+  /* Step 1: how long is the link valid? Step 2: the link, shown once, with Copy and Share. */
+  function inviteSheet() {
+    const validity = state.sheet.validity ?? '1 day'
+    if (!state.sheet.link) {
+      return `${scrim}
+        <div class="sheet" role="dialog" aria-label="Invite someone">
+          <h2>Invite someone</h2>
+          <p class="muted">You get a link for exactly one person. Whoever opens it joins this space.</p>
+          <div style="display:grid;gap:6px"><span class="label">Link valid for</span>${segmented('validity', ['1 hour', '1 day', '1 week'], validity)}</div>
+          <div class="actions"><button class="btn" data-action="close">Cancel</button><button class="btn primary" data-action="create-invite">Create link</button></div>
+        </div>`
+    }
+    return `${scrim}
+      <div class="sheet" role="dialog" aria-label="Invite link">
+        <h2>Send this link</h2>
+        <p class="secret">${state.sheet.link}</p>
+        <p class="muted">Valid for ${esc(validity)}, for one person. It is shown only now.</p>
+        <div class="actions"><button class="btn" data-action="close">Done</button>
+          <button class="btn outline" data-action="todo" data-what="Share via the phone's share menu">Share</button>
+          <button class="btn primary" data-action="copied">Copy</button></div>
+      </div>`
+  }
+
+  function memberSheet() {
+    const s = findSpace(state.spaceId)
+    const m = s.members[state.sheet.member]
+    return `${scrim}
+      <div class="sheet" role="dialog" aria-label="${esc(m.name)}">
+        <h2>${esc(m.name)}</h2>
+        <div>
+          <button class="option" data-action="make-owner"><span>Make owner<span class="hint">You become a normal member</span></span></button>
+          <button class="option danger" data-action="remove-member"><span>Remove from space<span class="hint">${esc(m.name)} loses access to all lists of “${esc(s.name)}”</span></span></button>
+        </div>
+      </div>`
+  }
+
+  function passwordSheet() {
+    return `${scrim}
+      <form class="sheet" data-form="password" role="dialog" aria-label="Change password">
+        <h2>Change password</h2>
+        <label class="field">Current password<input id="pw-current" type="password" required autocomplete="current-password"></label>
+        <label class="field">New password<input id="pw-new" type="password" required minlength="8" autocomplete="new-password"></label>
+        <p class="muted">At least 8 characters. Your other devices will be logged out.</p>
+        <div class="actions"><button type="button" class="btn" data-action="close">Cancel</button><button class="btn primary">Change</button></div>
+      </form>`
+  }
+
+  function tokenSheet() {
+    if (state.sheet.created) {
+      return `${scrim}
+        <div class="sheet" role="dialog" aria-label="New API token">
+          <h2>Copy your token</h2>
+          <p class="secret">slt_7f3c9a2e_Qm9vbGVhbi1zZWNyZXQtZXhhbXBsZS10b2tlbg</p>
+          <p class="muted">This is the only time it is shown. Give it to your agent as “Authorization: Bearer …”.</p>
+          <div class="actions"><button class="btn" data-action="close">Done</button><button class="btn primary" data-action="copied">Copy</button></div>
+        </div>`
+    }
+    return `${scrim}
+      <form class="sheet" data-form="new-token" role="dialog" aria-label="New API token">
+        <h2>New API token</h2>
+        <label class="field">Name<input id="token-name" name="name" required placeholder="e.g. Claude"></label>
+        <div style="display:grid;gap:6px"><span class="label">Access</span>${segmented('access', ['Read only', 'Full access'], state.sheet.access ?? 'Read only')}</div>
+        <div style="display:grid;gap:6px"><span class="label">Valid for</span>${segmented('tokenValidity', ['30 days', '1 year', 'No expiry'], state.sheet.tokenValidity ?? '30 days')}</div>
+        <div class="actions"><button type="button" class="btn" data-action="close">Cancel</button><button class="btn primary">Create</button></div>
+      </form>`
+  }
+
+  /* One confirmation dialog for all destructive actions. */
+  function confirmSheet() {
+    const c = state.sheet.confirm
+    return `${scrim}
+      <div class="sheet" role="alertdialog" aria-label="${esc(c.title)}">
+        <h2>${esc(c.title)}</h2>
+        <p class="muted">${esc(c.text)}</p>
+        <div class="actions"><button class="btn" data-action="close">Cancel</button><button class="btn danger" data-action="confirm">${esc(c.button)}</button></div>
+      </div>`
+  }
+
+  function confirm(title, text, button, onConfirm) {
+    state.overlay = 'confirm'
+    state.sheet = { confirm: { title, text, button, onConfirm } }
+  }
+
+  // ---- rendering & events ----
+  const views = { home: homeView, list: listView, spaces: spacesView, space: spaceView, settings: settingsView, tokens: tokensView }
+
+  function render() {
+    app.innerHTML = views[state.view]() + sheets()
+    if (state.toast) app.insertAdjacentHTML('beforeend', `<div class="snackbar" role="status"><span>${esc(state.toast)}</span></div>`)
+    app.querySelector('.sheet input:not([type=hidden])')?.focus()
+  }
+
+  let toastTimer
+  function toast(text) {
+    state.toast = text
+    clearTimeout(toastTimer)
+    toastTimer = setTimeout(() => { state.toast = null; render() }, 2400)
+  }
+
+  function go(view) {
+    Object.assign(state, { view, overlay: null, sheet: {} })
+    window.scrollTo(0, 0)
+  }
+
+  function openSheet(name, sheet = {}) {
+    state.overlay = name
+    state.sheet = sheet
+  }
+
+  function applyTheme(theme) {
+    if (theme === 'System') document.documentElement.removeAttribute('data-theme')
+    else document.documentElement.setAttribute('data-theme', theme.toLowerCase())
+  }
+
+  app.addEventListener('click', (e) => {
+    const t = e.target.closest('button, .scrim')
+    if (!t) return
+    const d = t.dataset
+    const list = state.listId && findList(state.listId)
+    const space = state.spaceId && findSpace(state.spaceId)
+    if (d.go) go(d.go)
+    else if (d.open) { state.listId = d.open; go('list') }
+    else if (d.space) { state.spaceId = d.space; go('space') }
+    else if (d.check) {
+      const i = list.items.find((x) => x.id === Number(d.check))
+      i.checked = !i.checked
+      if (!i.checked) i.atEnd = false // unchecked items return to their category
+    }
+    else if (d.edit) { state.editing = Number(d.edit); openSheet('edit') }
+    else if (d.shop !== undefined) { list.shop = d.shop || null; state.overlay = null }
+    else if (d.seg || d.pickSpace) {
+      // Only mark the chosen button - a re-render would wipe what was already typed into the dialog.
+      t.parentElement.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === t)))
+      if (d.pickSpace) state.sheet.spaceId = d.pickSpace
+      else if (d.seg === 'theme') { settings.theme = d.value; applyTheme(d.value) }
+      else if (d.seg === 'language') { settings.language = d.value; toast('The whole app would switch to ' + d.value) }
+      else state.sheet[d.seg] = d.value
+      if (d.seg !== 'language') return
+    }
+    else if (d.member) openSheet('member', { member: Number(d.member) })
+    else if (d.revoke) space.invites = space.invites.filter((i) => i.id !== Number(d.revoke))
+    else if (d.revokeToken) {
+      const token = tokens.find((x) => x.id === Number(d.revokeToken))
+      confirm(`Revoke “${token.name}”?`, 'Agents using this token lose access immediately.', 'Revoke',
+        () => tokens.splice(tokens.indexOf(token), 1))
+    }
+    else {
+      const a = d.action
+      if (a === 'menu') state.overlay = state.overlay === 'menu' ? null : 'menu'
+      else if (a === 'close') { state.overlay = null; state.sheet = {} }
+      else if (a === 'new-list') openSheet('new-list')
+      else if (a === 'shop') openSheet('shop')
+      else if (a === 'add-item') openSheet('add')
+      else if (a === 'sort-checked') list.items.forEach((i) => { i.atEnd = i.checked })
+      else if (a === 'remove-checked') { list.items = list.items.filter((i) => !i.checked); state.overlay = null }
+      else if (a === 'delete-item') { list.items = list.items.filter((i) => i.id !== state.editing); state.overlay = null }
+      else if (a === 'new-space') openSheet('new-space')
+      else if (a === 'rename-space') openSheet('rename-space')
+      else if (a === 'invite') openSheet('invite')
+      else if (a === 'create-invite') {
+        state.sheet.link = location.origin.replace(/^null$/, 'https://lists.example.com') + '/invite/a8Fq2LmX0pRt'
+        space.invites.push({ id: nextId++, until: state.sheet.validity === '1 hour' ? 'today, 19:40' : state.sheet.validity === '1 week' ? 'next Thursday' : 'tomorrow, 18:40' })
+      }
+      else if (a === 'copied') toast('Copied')
+      else if (a === 'make-owner') {
+        const m = space.members[state.sheet.member]
+        confirm(`Make ${m.name} the owner?`, `${m.name} can then invite and remove people. You become a normal member.`, 'Make owner', () => {
+          space.members.forEach((x) => { x.owner = x === m })
+          space.owner = false
+        })
+      }
+      else if (a === 'remove-member') {
+        const m = space.members[state.sheet.member]
+        confirm(`Remove ${m.name}?`, `${m.name} loses access to all lists of “${space.name}”.`, 'Remove',
+          () => space.members.splice(space.members.indexOf(m), 1))
+      }
+      else if (a === 'delete-space') {
+        confirm(`Delete “${space.name}”?`, `All ${space.lists.length} lists of this space are deleted for all members.`, 'Delete space', () => {
+          spaces.splice(spaces.indexOf(space), 1)
+          go('spaces')
+        })
+      }
+      else if (a === 'leave-space') {
+        confirm(`Leave “${space.name}”?`, 'You need a new invite link to come back.', 'Leave', () => {
+          spaces.splice(spaces.indexOf(space), 1)
+          go('spaces')
+        })
+      }
+      else if (a === 'display-name') openSheet('display-name')
+      else if (a === 'password') openSheet('password')
+      else if (a === 'new-token') openSheet('new-token')
+      else if (a === 'logout-everywhere') {
+        confirm('Log out on other devices?', 'All your other phones and browsers have to log in again. This one stays logged in.', 'Log out others', () => toast('Other devices logged out'))
+      }
+      else if (a === 'delete-account') {
+        confirm('Delete your account?', 'Spaces you own go to their longest member, or are deleted if you are alone. This cannot be undone.', 'Delete account', () => toast('(Mockup) The account would be deleted now'))
+      }
+      else if (a === 'confirm') { const run = state.sheet.confirm.onConfirm; state.overlay = null; state.sheet = {}; run() }
+      else if (a === 'todo') { state.overlay = null; toast(`Not part of this mockup: ${d.what}`) }
+      else return
+    }
+    render()
+  })
+
+  app.addEventListener('change', (e) => {
+    if (e.target.dataset.setting) settings[e.target.dataset.setting] = e.target.checked
+  })
+
+  app.addEventListener('submit', (e) => {
+    e.preventDefault()
+    const form = e.target
+    const data = new FormData(form)
+    const name = String(data.get('name') ?? '').trim()
+    switch (form.dataset.form) {
+      case 'add':
+        if (!name) return
+        // "Automatic" stands for the category the item history knows (here: none).
+        findList(state.listId).items.push(item(name, data.get('cat') || null, { amount: String(data.get('amount')).trim() }))
+        render() // the dialog stays open, empty, for the next item
+        return
+      case 'new-list': {
+        const id = 'list-' + nextId++
+        findSpace(state.sheet.spaceId ?? data.get('space')).lists.push({ id, name, shop: null, items: [] })
+        state.listId = id
+        go('list')
+        break
+      }
+      case 'edit': {
+        const i = findList(state.listId).items.find((x) => x.id === state.editing)
+        Object.assign(i, { amount: String(data.get('amount')).trim(), cat: data.get('cat') || null, note: String(data.get('note')).trim() })
+        state.overlay = null
+        break
+      }
+      case 'new-space': {
+        const id = 'space-' + nextId++
+        spaces.push({ id, name, owner: true, members: [{ name: me.name, you: true, owner: true }], invites: [], lists: [] })
+        state.spaceId = id
+        go('space')
+        break
+      }
+      case 'rename-space': findSpace(state.spaceId).name = name; state.overlay = null; break
+      case 'display-name': me.name = name; state.overlay = null; break
+      case 'password': state.overlay = null; toast('Password changed. Other devices were logged out.'); break
+      case 'new-token':
+        tokens.push({ id: nextId++, name, scope: state.sheet.access ?? 'Read only', info: (state.sheet.tokenValidity ?? '30 days') === 'No expiry' ? 'no expiry · never used' : 'expires in ' + (state.sheet.tokenValidity ?? '30 days') + ' · never used' })
+        state.sheet.created = true
+        break
+    }
+    render()
+  })
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && state.overlay) { state.overlay = null; state.sheet = {}; render() }
+  })
+
+  render()
+</script>
