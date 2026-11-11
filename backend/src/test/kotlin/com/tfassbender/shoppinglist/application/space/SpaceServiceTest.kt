@@ -111,6 +111,69 @@ class SpaceServiceTest {
     }
 
     @Test
+    fun `owner renames and deletes the space`() {
+        val space = service.create(owner, "Home")
+
+        assertEquals("Holiday home", service.rename(owner, space.id, "  Holiday home ").name)
+        assertEquals("Holiday home", spaces.findById(space.id)!!.name)
+        assertEquals("INVALID_NAME", assertThrows<DomainException> { service.rename(owner, space.id, " ") }.code)
+
+        service.delete(owner, space.id)
+        assertNull(spaces.findById(space.id))
+        assertEquals("SPACE_NOT_FOUND", assertThrows<DomainException> { service.get(owner, space.id) }.code)
+    }
+
+    @Test
+    fun `preview tells members they already belong and survives a deleted inviter`() {
+        val space = service.create(owner, "Home")
+        join(space.id, anna)
+        val created = service.createInvite(owner, space.id)
+
+        assertTrue(service.previewInvite(anna, created.rawToken).alreadyMember)
+        users.delete(owner)
+        assertEquals("?", service.previewInvite(bob, created.rawToken).invitedBy)
+    }
+
+    @Test
+    fun `an expired invite can't be previewed or accepted`() {
+        val space = service.create(owner, "Home")
+        val created = service.createInvite(owner, space.id, Duration.ofHours(1))
+        clock.advance(Duration.ofHours(1).plusSeconds(1))
+
+        assertEquals("INVITE_INVALID", assertThrows<DomainException> { service.previewInvite(anna, created.rawToken) }.code)
+        assertEquals("INVITE_INVALID", assertThrows<DomainException> { service.acceptInvite(anna, created.rawToken) }.code)
+        assertEquals("INVITE_INVALID", assertThrows<DomainException> { service.acceptInvite(anna, "never-issued") }.code)
+    }
+
+    @Test
+    fun `creating an invite drops expired ones from the space`() {
+        val space = service.create(owner, "Home")
+        service.createInvite(owner, space.id, Duration.ofHours(1))
+        clock.advance(Duration.ofHours(2))
+
+        val fresh = service.createInvite(owner, space.id)
+
+        assertEquals(listOf(fresh.invite.id), spaces.findById(space.id)!!.invites.map { it.id })
+    }
+
+    @Test
+    fun `members whose account is gone are shown with a placeholder name`() {
+        val space = service.create(owner, "Home")
+        join(space.id, anna)
+        users.delete(anna)
+
+        assertEquals(listOf("Olga", "?"), service.members(owner, space.id).map { it.displayName })
+    }
+
+    @Test
+    fun `ownership can only go to members, and only members can be removed`() {
+        val space = service.create(owner, "Home")
+        assertEquals("MEMBER_NOT_FOUND", assertThrows<DomainException> { service.transferOwnership(owner, space.id, bob) }.code)
+        assertEquals("MEMBER_NOT_FOUND", assertThrows<DomainException> { service.removeMember(owner, space.id, bob) }.code)
+        assertEquals("SPACE_NOT_FOUND", assertThrows<DomainException> { service.leave(bob, space.id) }.code)
+    }
+
+    @Test
     fun `members list resolves display names, owner first`() {
         val space = service.create(owner, "Home")
         join(space.id, anna)

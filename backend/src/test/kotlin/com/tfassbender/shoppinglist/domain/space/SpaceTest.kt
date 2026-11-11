@@ -90,6 +90,19 @@ class SpaceTest {
     }
 
     @Test
+    fun `transferring ownership to the current owner changes nothing`() {
+        val space = spaceWith("anna")
+        assertSame(space, space.transferOwnership(owner))
+    }
+
+    @Test
+    fun `invariant - members are unique`() {
+        assertThrows<IllegalArgumentException> {
+            Space(SpaceId("s"), "x", listOf(Member(owner, Role.OWNER, t0), Member(owner, Role.MEMBER, t0)), emptyList(), t0)
+        }
+    }
+
+    @Test
     fun `deleted owner hands over to the longest-standing member`() {
         val space = spaceWith("anna", "bob") // anna joined before bob
         val remaining = space.removeDeletedUser(owner)!!

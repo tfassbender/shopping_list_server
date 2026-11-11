@@ -47,6 +47,26 @@ class SpaceCatalogTest {
         }
 
         @Test
+        fun `updating an unknown category is not found`() {
+            assertEquals("CATEGORY_NOT_FOUND", assertThrows<DomainException> { catalog.updateCategory(CategoryId("nope"), "X", "#000000") }.code)
+        }
+
+        @Test
+        fun `at most MAX_CATEGORIES categories`() {
+            val full = (catalog.categories.size until SpaceCatalog.MAX_CATEGORIES).fold(catalog) { c, i ->
+                c.addCategory(Category(CategoryId("c$i"), "Category $i", "#000000"))
+            }
+            val oneMore = Category(CategoryId("one-more"), "One more", "#000000")
+            assertEquals("TOO_MANY_CATEGORIES", assertThrows<DomainException> { full.addCategory(oneMore) }.code)
+        }
+
+        @Test
+        fun `deleting a category leaves the history of other categories alone`() {
+            val learned = catalog.learn("Milk", dairy.id, "l", t0).learn("Bread", bakery.id, null, t0).deleteCategory(dairy.id)
+            assertEquals(bakery.id, learned.suggestedCategory("bread"))
+        }
+
+        @Test
         fun `deleting a category clears it from the history`() {
             val learned = catalog.learn("Milk", dairy.id, "l", t0).deleteCategory(dairy.id)
             assertNull(learned.historyFor("milk")!!.categoryId)
@@ -59,6 +79,13 @@ class SpaceCatalogTest {
         val result = catalog.withUnits(listOf(" kg ", "g", "KG", "", "l"))
         assertEquals(listOf("kg", "g", "l"), result.units)
         assertThrows<DomainException> { catalog.withUnits(listOf("x".repeat(21))) }
+    }
+
+    @Test
+    fun `at most MAX_UNITS units, counted after deduplication`() {
+        val max = (1..SpaceCatalog.MAX_UNITS).map { "u$it" }
+        assertEquals(SpaceCatalog.MAX_UNITS, catalog.withUnits(max + max.map { it.uppercase() }).units.size)
+        assertEquals("TOO_MANY_UNITS", assertThrows<DomainException> { catalog.withUnits(max + "one-more") }.code)
     }
 
     @Nested
@@ -106,6 +133,25 @@ class SpaceCatalogTest {
             assertEquals(SpaceCatalog.MAX_HISTORY, after.history.size)
             assertEquals(9, after.historyFor("New")!!.seq)
             assertEquals(9, after.seq)
+        }
+
+        @Test
+        fun `a full history forgets the least bought, then the least recently used entries`() {
+            val full = (1..SpaceCatalog.MAX_HISTORY).fold(catalog) { c, i -> c.learn("Item $i", null, null, t0.plusSeconds(i.toLong())) }
+                .countUsage("Item 1", null, null, t0) // the oldest entry, but bought once
+
+            val after = full.learn("New", null, null, t0.plusSeconds(100_000))
+
+            assertEquals(SpaceCatalog.MAX_HISTORY, after.history.size)
+            assertNull(after.historyFor("Item 2")) // never bought and the oldest of those
+            assertEquals(1, after.historyFor("Item 1")!!.usageCount)
+            assertEquals(0, after.historyFor("New")!!.usageCount)
+        }
+
+        @Test
+        fun `blank names are not remembered`() {
+            assertEquals(catalog, catalog.learn("   ", dairy.id, null, t0))
+            assertEquals(catalog, catalog.countUsage("", dairy.id, null, t0))
         }
 
         @Test

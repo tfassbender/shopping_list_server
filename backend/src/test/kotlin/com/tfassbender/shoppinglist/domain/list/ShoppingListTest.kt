@@ -216,5 +216,27 @@ class ShoppingListTest {
             val full = (1..ShoppingList.MAX_ITEMS).fold(empty) { list, i -> list.apply(AddItem(ItemId("i$i"), "Item $i"), 2, t0) }
             assertEquals("LIST_FULL", assertThrows<DomainException> { full.applyAll(AddItem(ItemId("one-more"), "X")) }.code)
         }
+
+        @Test
+        fun `deleted items don't count towards the item limit`() {
+            val full = (1..ShoppingList.MAX_ITEMS).fold(empty) { list, i -> list.apply(AddItem(ItemId("i$i"), "Item $i"), 2, t0) }
+            val oneDeleted = full.apply(DeleteItem(ItemId("i1")), 3, t0)
+
+            val list = oneDeleted.apply(AddItem(ItemId("one-more"), "X"), 4, t0)
+
+            assertEquals(ShoppingList.MAX_ITEMS, list.activeItems.size)
+            assertTrue(list.item(ItemId("i1"))!!.deleted) // the tombstone is still kept for the sync
+        }
+
+        @Test
+        fun `tombstones without deletion time are never purged`() {
+            // Files written before deletedAt existed have tombstones without it; they must not vanish silently.
+            val legacy = withTwo.copy(items = withTwo.items.map { if (it.id == milk) it.copy(deleted = true, deletedAt = null) else it })
+
+            val (purged, purgedSeq) = legacy.purgeTombstones(t0.plusSeconds(1_000_000))
+
+            assertTrue(purged.item(milk)!!.deleted)
+            assertEquals(0, purgedSeq)
+        }
     }
 }

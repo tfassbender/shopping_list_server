@@ -109,6 +109,45 @@ class ListResourceTest {
     }
 
     @Test
+    fun `an edit without any editable field is a 400`() {
+        val listId = createList()
+        val milk = addItem(listId, "Milk")
+        member.request().body("""{"checked": true}""").patch("${lists()}/$listId/items/$milk")
+            .then().statusCode(400).body("code", equalTo("INVALID_REQUEST"))
+    }
+
+    @Test
+    fun `editing several fields at once applies all of them`() {
+        val listId = createList()
+        val milk = addItem(listId, "Milk")
+        member.request().body(mapOf("name" to "Oat milk", "categoryId" to "dairy")).patch("${lists()}/$listId/items/$milk")
+            .then().statusCode(200).body("items[0].name", equalTo("Oat milk")).body("items[0].categoryId", equalTo("dairy"))
+        member.request().body("""{"categoryId": ""}""").patch("${lists()}/$listId/items/$milk")
+            .then().statusCode(200).body("items[0].categoryId", nullValue())
+    }
+
+    @Test
+    fun `sorting by an unknown layout is a 404, a blank sort means order of adding`() {
+        val listId = createList()
+        addItem(listId, "Milk")
+        member.request().queryParam("sort", "no-such-layout").get("${lists()}/$listId")
+            .then().statusCode(404).body("code", equalTo("LAYOUT_NOT_FOUND"))
+        member.request().queryParam("sort", "").get("${lists()}/$listId")
+            .then().statusCode(200).body("sortedBy", nullValue()).body("items.name", contains("Milk"))
+    }
+
+    @Test
+    fun `list summaries count open and checked items`() {
+        val listId = createList()
+        val milk = addItem(listId, "Milk")
+        addItem(listId, "Bread")
+        member.request().post("${lists()}/$listId/items/$milk/check").then().statusCode(200)
+
+        member.request().get(lists()).then().statusCode(200)
+            .body("[0].openItems", equalTo(1)).body("[0].checkedItems", equalTo(1))
+    }
+
+    @Test
     fun `seq increases with every change`() {
         val listId = createList()
         val first: Int = member.request().body(mapOf("name" to "A")).post("${lists()}/$listId/items").then().extract().path("items[0].seq")

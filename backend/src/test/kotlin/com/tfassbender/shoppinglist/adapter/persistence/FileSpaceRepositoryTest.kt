@@ -14,6 +14,7 @@ import kotlin.io.path.exists
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class FileSpaceRepositoryTest {
 
@@ -42,6 +43,36 @@ class FileSpaceRepositoryTest {
         assertEquals(listOf(space.id), repository.findByMember(UserId("anna")).map { it.id })
         assertEquals(space.id, repository.findByInviteTokenHash("hash2")?.id)
         assertNull(repository.findByInviteTokenHash("hash"))
+    }
+
+    @Test
+    fun `unknown and crafted ids find nothing`() {
+        repository.save(space)
+        assertNull(repository.findById(SpaceId("missing")))
+        assertNull(repository.findById(SpaceId("../users")))
+    }
+
+    @Test
+    fun `space directories without a space file are skipped`() {
+        // E.g. a sequence file written for a space whose space.json is gone.
+        repository.save(space)
+        Files.createDirectories(dataDir.resolve("spaces/orphan"))
+        Files.writeString(dataDir.resolve("spaces/orphan/sequence.json"), "{}")
+
+        assertEquals(listOf(space.id), repository.findByMember(UserId("owner")).map { it.id })
+    }
+
+    @Test
+    fun `older files without invites load`() {
+        Files.createDirectories(dataDir.resolve("spaces/old"))
+        Files.writeString(
+            dataDir.resolve("spaces/old/space.json"),
+            """{"id":"old","name":"Old","createdAt":"2026-01-01T10:00:00Z","members":[{"userId":"owner","role":"OWNER","joinedAt":"2026-01-01T10:00:00Z"}]}""",
+        )
+
+        val loaded = repository.findById(SpaceId("old"))!!
+        assertEquals(UserId("owner"), loaded.owner.userId)
+        assertTrue(loaded.invites.isEmpty())
     }
 
     @Test

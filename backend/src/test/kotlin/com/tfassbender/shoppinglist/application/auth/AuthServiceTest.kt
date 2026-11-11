@@ -81,6 +81,14 @@ class AuthServiceTest {
         }
 
         @Test
+        fun `a password longer than BCrypt can hash is just a wrong password at login`() {
+            // BCrypt throws beyond 72 bytes; that must not surface as a 500.
+            auth.register(command)
+            val tooLong = "secret-password" + "x".repeat(Passwords.MAX_BYTES)
+            assertEquals("INVALID_CREDENTIALS", assertThrows<DomainException> { auth.login("anna@example.com", tooLong) }.code)
+        }
+
+        @Test
         fun `email flows are unavailable`() {
             assertEquals("EMAIL_DISABLED", assertThrows<DomainException> { auth.requestPasswordReset("a@b.cd") }.code)
             assertEquals("EMAIL_DISABLED", assertThrows<DomainException> { auth.verifyEmail("x") }.code)
