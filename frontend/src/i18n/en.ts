@@ -238,7 +238,6 @@ export const en = {
   'start.noSpaces': 'Lists live in a space, which you can share with others. Create your first space to get started.',
   'start.createSpace': 'Create a space',
   'start.noLists': 'No lists yet.',
-  'start.allDone': 'All done',
   'start.lastUsed': 'last used',
   'newList.title': 'New list',
   'newList.space': 'In space',

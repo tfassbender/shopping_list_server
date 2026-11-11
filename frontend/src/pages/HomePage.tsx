@@ -67,18 +67,17 @@ function SpaceLists(props: { space: Space; showName: boolean; lastListId?: strin
         </Hint>
       )}
       {lists?.map((list) => {
+        // Only the number of open items, no item names: the start page stays calm and quick to scan.
         const open = list.items.filter((i) => !i.checked)
-        const preview = open.length ? open.slice(0, 4).map((i) => i.name).join(', ') + (open.length > 4 ? ' …' : '') : t('start.allDone')
         return (
           <Link
             key={list.id}
             to={`/spaces/${props.space.id}/lists/${list.id}`}
-            className="flex items-center gap-3 border-b border-line px-2 py-3.5 hover:bg-raised"
+            className="flex min-h-16 items-center gap-3 border-b border-line px-2 py-3 hover:bg-raised"
           >
             <span className="min-w-0 flex-1">
               <span className="text-xl font-semibold">{list.name}</span>
               {list.id === props.lastListId && <span className="text-sm font-semibold text-accent"> · {t('start.lastUsed')}</span>}
-              <span className="block truncate text-muted">{preview}</span>
             </span>
             <span
               aria-label={t('lists.openCount', { count: open.length })}

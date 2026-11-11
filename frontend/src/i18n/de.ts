@@ -237,7 +237,6 @@ export const de: Record<MessageKey, string> = {
   'start.noSpaces': 'Listen liegen in einem Bereich, den du mit anderen teilen kannst. Leg deinen ersten Bereich an, um loszulegen.',
   'start.createSpace': 'Bereich anlegen',
   'start.noLists': 'Noch keine Listen.',
-  'start.allDone': 'Alles erledigt',
   'start.lastUsed': 'zuletzt benutzt',
   'newList.title': 'Neue Liste',
   'newList.space': 'Im Bereich',
