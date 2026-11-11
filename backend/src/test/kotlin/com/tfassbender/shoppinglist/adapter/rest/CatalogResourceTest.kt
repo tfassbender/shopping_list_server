@@ -4,6 +4,7 @@ import io.quarkus.test.junit.QuarkusTest
 import org.hamcrest.Matchers.contains
 import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.hasItem
+import org.hamcrest.Matchers.hasItems
 import org.hamcrest.Matchers.not
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -26,7 +27,7 @@ class CatalogResourceTest {
     fun `new spaces have German defaults for a German user`() {
         user.request().get(catalog()).then().statusCode(200)
             .body("categories.name", hasItem("Obst & Gemüse"))
-            .body("units", hasItem("Stk"))
+            .body("units", hasItems("Stk", "x"))
     }
 
     @Test

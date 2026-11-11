@@ -24,8 +24,8 @@ object CatalogDefaults {
     )
 
     private val UNITS = mapOf(
-        Language.EN to listOf("pcs", "g", "kg", "ml", "l", "pack", "can", "bottle"),
-        Language.DE to listOf("Stk", "g", "kg", "ml", "l", "Pck", "Dose", "Flasche"),
+        Language.EN to listOf("pcs", "x", "g", "kg", "ml", "l", "pack", "can", "bottle"),
+        Language.DE to listOf("Stk", "x", "g", "kg", "ml", "l", "Pck", "Dose", "Flasche"),
     )
 
     /** Category ids only need to be unique within the space, so the readable keys are used. */
