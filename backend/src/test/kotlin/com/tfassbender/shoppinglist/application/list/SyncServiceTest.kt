@@ -268,6 +268,31 @@ class SyncServiceTest {
         }
 
         @Test
+        fun `history changes from list changes are sent as delta, not as the whole catalog`() {
+            val since = current()
+            lists.apply(anna, spaceId, listId, ListChange.CheckItem(milk))
+            sync.push(bob, spaceId, since, listOf(change(ListChange.AddItem(ItemId("bread"), "Bread"))))
+
+            val result = sync.pull(bob, spaceId, since)
+
+            assertNull(result.catalog)
+            assertEquals(listOf("Bread" to 0, "Milk" to 1), result.historyChanges.map { it.name to it.usageCount })
+            assertTrue(sync.pull(bob, spaceId, current()).historyChanges.isEmpty())
+        }
+
+        @Test
+        fun `removing a history entry sends the whole catalog instead of a delta`() {
+            val since = current()
+            catalog.removeHistory(anna, spaceId, "Milk")
+            lists.apply(anna, spaceId, listId, ListChange.AddItem(ItemId("bread"), "Bread"))
+
+            val result = sync.pull(bob, spaceId, since)
+
+            assertEquals(listOf("Bread"), result.catalog!!.historyEntries().map { it.name })
+            assertTrue(result.historyChanges.isEmpty())
+        }
+
+        @Test
         fun `strangers can't pull`() {
             assertThrows<DomainException> { sync.pull(UserId("x"), spaceId, 0) }
         }

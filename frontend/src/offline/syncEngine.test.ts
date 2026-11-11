@@ -41,7 +41,7 @@ class FakeServer implements SyncApi {
       deleted: false,
       items: l.items.map((i) => ({ ...i, deleted: false })),
     }))
-    return { seq: this.seq, fullResync: true, lists, listIds: Object.keys(this.lists), catalog: null, layouts: null, layoutIds: [] }
+    return { seq: this.seq, fullResync: true, lists, listIds: Object.keys(this.lists), catalog: null, historyChanges: [], layouts: null, layoutIds: [] }
   })
 }
 
@@ -175,7 +175,7 @@ describe('SyncEngine', () => {
         { id: 'l2', name: 'Hardware', createdAt: '2026-01-01T00:00:00Z', seq: 12, deleted: true, items: [] },
       ],
       listIds: ['l1'],
-      catalog: null,
+      catalog: null, historyChanges: [],
       layouts: null,
       layoutIds: [],
     })
@@ -191,7 +191,7 @@ describe('SyncEngine', () => {
     await engine.sync(SPACE)
     server.pullOverride = () => ({
       seq: 50, fullResync: true, lists: [{ id: 'l9', name: 'Fresh', createdAt: '', seq: 50, deleted: false, items: [] }],
-      listIds: ['l9'], catalog: null, layouts: null, layoutIds: [],
+      listIds: ['l9'], catalog: null, historyChanges: [], layouts: null, layoutIds: [],
     })
     await engine.sync(SPACE)
     expect(Object.keys(engine.listsOf(SPACE)!)).toEqual(['l9'])

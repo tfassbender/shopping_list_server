@@ -319,6 +319,16 @@ Decided while implementing:
   stays in the API for now.
 - Confirmations use an in-app dialog (`ConfirmDialog`) instead of `window.confirm`.
 
+## API additions for the Android app (GitHub issues)
+
+- [x] #1 Item history for offline autocomplete: `CatalogDto.history` (complete history; the ranking of
+  `getSuggestions` is described in its OpenAPI description). History changes from adding/checking items now
+  reach the pull: each history entry carries its own seq, and the pull sends `historyChanges` (entries
+  added/updated since `since`) instead of the whole catalog - checking items changes the history all the
+  time and the history can hold 2000 entries. The complete `catalog` (incl. history) is sent when
+  categories/units changed or entries were removed/renamed (also when the history was full and dropped one).
+  The web app suggests from the cached history when offline.
+
 ## Phase 11 – Deployment
 
 - [ ] Production config: JWT key, SMTP, data dir, public base URL (invite/verification links)

@@ -73,7 +73,7 @@ class ShoppingListService(
             val enriched = catalog.enrich(spaceId, changes)
             val updated = enriched.fold(load(spaceId, listId)) { list, change -> list.apply(change, context).list }
             store.save(updated)
-            catalog.recordItemChanges(spaceId, updated, enriched)
+            catalog.recordItemChanges(spaceId, updated, enriched, context.seq)
             updated
         }
 

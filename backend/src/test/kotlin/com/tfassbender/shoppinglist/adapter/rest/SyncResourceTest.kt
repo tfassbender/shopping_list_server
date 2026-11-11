@@ -52,6 +52,9 @@ class SyncResourceTest {
             .body("lists[0].name", equalTo("Offline"))
             .body("lists[0].items[0].checked", equalTo(true))
             .body("lists[0].items[0].deleted", equalTo(false))
+            .body("catalog", equalTo(null))
+            .body("historyChanges.name", contains("Milk"))
+            .body("historyChanges[0].usageCount", equalTo(1))
     }
 
     @Test

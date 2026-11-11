@@ -64,6 +64,10 @@ class CatalogResourceTest {
             .body("[0].unit", equalTo("l"))
             .body("[0].usageCount", equalTo(1))
         user.request().get(catalog()).then().body("usage.milch", equalTo(1))
+            .body("history[0].name", equalTo("Milch"))
+            .body("history[0].categoryId", equalTo("dairy"))
+            .body("history[0].unit", equalTo("l"))
+            .body("history[0].usageCount", equalTo(1))
 
         // auto-placement: same name again without a category
         user.request().body(mapOf("name" to "milch", "id" to "m2")).post(items)

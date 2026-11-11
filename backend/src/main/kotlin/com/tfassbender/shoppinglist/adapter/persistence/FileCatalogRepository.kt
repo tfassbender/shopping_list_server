@@ -24,7 +24,7 @@ class FileCatalogRepository(private val files: JsonFiles) : CatalogRepository {
 
 data class CategoryFile(val id: String, val name: String, val color: String)
 
-data class HistoryFile(val name: String, val categoryId: String?, val unit: String?, val usageCount: Int, val lastUsed: Instant)
+data class HistoryFile(val name: String, val categoryId: String?, val unit: String?, val usageCount: Int, val lastUsed: Instant, val seq: Long = 0)
 
 data class CatalogFile(
     val schemaVersion: Int = 1,
@@ -38,7 +38,7 @@ data class CatalogFile(
         categories = categories.map { Category(CategoryId(it.id), it.name, it.color) },
         units = units,
         history = history.associate {
-            SpaceCatalog.normalize(it.name) to HistoryEntry(it.name, it.categoryId?.let(::CategoryId), it.unit, it.usageCount, it.lastUsed)
+            SpaceCatalog.normalize(it.name) to HistoryEntry(it.name, it.categoryId?.let(::CategoryId), it.unit, it.usageCount, it.lastUsed, it.seq)
         },
         seq = seq,
     )
@@ -48,7 +48,7 @@ data class CatalogFile(
             categories = catalog.categories.map { CategoryFile(it.id.value, it.name, it.color) },
             units = catalog.units,
             history = catalog.history.values.sortedBy { it.name.lowercase() }
-                .map { HistoryFile(it.name, it.categoryId?.value, it.unit, it.usageCount, it.lastUsed) },
+                .map { HistoryFile(it.name, it.categoryId?.value, it.unit, it.usageCount, it.lastUsed, it.seq) },
             seq = catalog.seq,
         )
     }

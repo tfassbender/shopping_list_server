@@ -31,6 +31,7 @@ export function fakeSyncServer(spaceId: string, initial: ShoppingList[]) {
           lists: Object.values(lists).map((l) => ({ ...l, deleted: false, items: l.items.map((i) => ({ ...i, deleted: false })) })),
           listIds: Object.keys(lists),
           catalog: null,
+          historyChanges: [],
           layouts: null,
           layoutIds: [],
         }

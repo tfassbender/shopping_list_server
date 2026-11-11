@@ -17,6 +17,7 @@ import com.tfassbender.shoppinglist.domain.list.ListId
 import com.tfassbender.shoppinglist.domain.list.MergeWarning
 import com.tfassbender.shoppinglist.domain.list.ShopLayout
 import com.tfassbender.shoppinglist.domain.list.ShoppingList
+import com.tfassbender.shoppinglist.domain.space.HistoryEntry
 import com.tfassbender.shoppinglist.domain.space.SpaceCatalog
 import com.tfassbender.shoppinglist.domain.space.SpaceId
 import com.tfassbender.shoppinglist.domain.user.UserId
@@ -57,7 +58,10 @@ data class PullResult(
     /** Changed lists with only their changed items (incl. tombstones); on full resync everything active. */
     val lists: List<ShoppingList>,
     val listIds: List<ListId>,
+    /** The complete catalog (incl. history) if categories/units changed or history entries were removed. */
     val catalog: SpaceCatalog?,
+    /** History entries added/updated since `since`; empty if [catalog] is sent (it contains them). */
+    val historyChanges: List<HistoryEntry>,
     val layouts: List<ShopLayout>?,
     val layoutIds: List<String>,
 )
@@ -122,13 +126,15 @@ class SyncService(
                 .map { list -> list.copy(items = list.items.filter { it.seq > since }) }
         }
         val spaceCatalog = catalogs.find(spaceId)
+        val catalogChanged = full || spaceCatalog.seq > since
         val spaceLayouts = layouts.findBySpace(spaceId)
         return PullResult(
             seq = current,
             fullResync = full,
             lists = changed,
             listIds = all.filterNot { it.deleted }.map { it.id },
-            catalog = spaceCatalog.takeIf { full || it.seq > since },
+            catalog = spaceCatalog.takeIf { catalogChanged },
+            historyChanges = if (catalogChanged) emptyList() else spaceCatalog.historyChangedSince(since),
             layouts = spaceLayouts.takeIf { layoutList -> full || layoutList.any { it.seq > since } },
             layoutIds = spaceLayouts.map { it.id.value },
         )
@@ -189,7 +195,7 @@ class SyncService(
         fun saveTouchedLists() {
             touched.values.forEach { list ->
                 store.save(list)
-                catalog.recordItemChanges(spaceId, list, appliedChanges[list.id].orEmpty())
+                catalog.recordItemChanges(spaceId, list, appliedChanges[list.id].orEmpty(), context.seq)
             }
         }
     }

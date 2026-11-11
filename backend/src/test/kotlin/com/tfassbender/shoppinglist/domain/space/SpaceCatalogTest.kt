@@ -88,6 +88,27 @@ class SpaceCatalogTest {
         }
 
         @Test
+        fun `changed entries are stamped with the seq, unchanged ones keep theirs`() {
+            val before = catalog.learn("Milk", dairy.id, "l", t0).learn("Bread", bakery.id, null, t0).stampHistoryChanges(catalog, 3)
+            val after = before.countUsage("Milk", dairy.id, "l", t0.plusSeconds(1)).stampHistoryChanges(before, 7)
+
+            assertEquals(3, after.historyFor("Bread")!!.seq)
+            assertEquals(7, after.historyFor("Milk")!!.seq)
+            assertEquals(listOf("Milk"), after.historyChangedSince(3).map { it.name })
+            assertEquals(catalog.seq, after.seq)
+        }
+
+        @Test
+        fun `dropping entries marks the whole catalog as changed`() {
+            val full = (1..SpaceCatalog.MAX_HISTORY).fold(catalog) { c, i -> c.learn("Item $i", null, null, t0) }
+            val after = full.countUsage("New", null, null, t0.plusSeconds(1)).stampHistoryChanges(full, 9)
+
+            assertEquals(SpaceCatalog.MAX_HISTORY, after.history.size)
+            assertEquals(9, after.historyFor("New")!!.seq)
+            assertEquals(9, after.seq)
+        }
+
+        @Test
         fun `whitespace in names is normalized`() {
             assertEquals(catalog.learn("Whole   milk", null, null, t0).historyFor("whole milk")!!.name, "Whole   milk")
         }

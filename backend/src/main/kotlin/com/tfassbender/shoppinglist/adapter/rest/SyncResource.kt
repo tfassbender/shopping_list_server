@@ -115,8 +115,16 @@ data class PullResponse(
     val lists: List<SyncListDto>,
     @field:Schema(description = "Ids of all existing lists")
     val listIds: List<String>,
-    @field:Schema(description = "Categories and units, only if changed")
+    @field:Schema(
+        description = "The complete catalog (categories, units, usage, history), only if categories/units changed or " +
+            "history entries were removed or renamed - replace the local catalog including its history",
+    )
     val catalog: CatalogDto?,
+    @field:Schema(
+        description = "History entries added or updated since `since` (e.g. items added or checked); empty if `catalog` " +
+            "is sent. Merge into the local history by normalized name and update `usage` from their usageCount",
+    )
+    val historyChanges: List<HistoryEntryDto>,
     @field:Schema(description = "All layouts, only if one changed")
     val layouts: List<LayoutDto>?,
     val layoutIds: List<String>,
@@ -172,6 +180,7 @@ class SyncResource(
             lists = result.lists.map(SyncListDto::from),
             listIds = result.listIds.map { it.value },
             catalog = result.catalog?.let(CatalogDto::from),
+            historyChanges = result.historyChanges.map(HistoryEntryDto::from),
             layouts = result.layouts?.map(LayoutDto::from),
             layoutIds = result.layoutIds,
         )
