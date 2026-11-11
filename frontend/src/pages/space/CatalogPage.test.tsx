@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import { AppRoutes } from '../../App'
+import { hueOf, softColor } from '../../components/ColorPicker'
 import { mockApi, sentBodies, testUser } from '../../test/mockApi'
 import { loginForTest, renderWithProviders } from '../../test/render'
 
@@ -56,12 +57,34 @@ describe('CatalogPage', () => {
     await userEvent.keyboard('{Escape}')
 
     await userEvent.click(screen.getByRole('button', { name: 'Color of the new category' }))
-    await userEvent.click(within(screen.getByRole('dialog')).getByRole('radio', { name: '#4db6ac' }))
+    const dialog = screen.getByRole('dialog')
+    await userEvent.click(within(dialog).getByRole('radio', { name: '#4db6ac' }))
+    // the choice shows in the hex field and is applied with Save
+    expect(within(dialog).getByLabelText('Hex code')).toHaveValue('#4db6ac')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('New category'), 'Snacks')
     await userEvent.click(screen.getAllByRole('button', { name: 'Create' })[0])
 
     await waitFor(() => expect(sentBodies(spy, 'POST', '/api/spaces/s1/catalog/categories')).toEqual([{ name: 'Snacks', color: '#4db6ac' }]))
+  })
+
+  it('takes a typed hex code (with or without #) and only saves valid ones', async () => {
+    const spy = setup()
+    renderWithProviders(<AppRoutes />, '/spaces/s1/catalog')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Color of the new category' }))
+    const dialog = screen.getByRole('dialog')
+    const hex = within(dialog).getByLabelText('Hex code')
+    await userEvent.clear(hex)
+    await userEvent.type(hex, '12AB')
+    expect(within(dialog).getByRole('button', { name: 'Save' })).toBeEnabled() // still the previous valid color
+    await userEvent.type(hex, '9F')
+    expect(within(dialog).getByRole('slider', { name: 'Hue' })).toHaveValue(String(hueOf('#12ab9f')))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    await userEvent.type(screen.getByLabelText('New category'), 'Snacks{Enter}')
+
+    await waitFor(() => expect(sentBodies(spy, 'POST', '/api/spaces/s1/catalog/categories')).toEqual([{ name: 'Snacks', color: '#12ab9f' }]))
   })
 
   it('renames on blur and deletes after confirmation', async () => {
@@ -91,5 +114,16 @@ describe('CatalogPage', () => {
     await userEvent.type(screen.getByLabelText('New unit'), 'box')
     await userEvent.click(screen.getAllByRole('button', { name: 'Create' })[1])
     await waitFor(() => expect(sentBodies(spy, 'PUT', '/api/spaces/s1/catalog/units')).toHaveLength(2))
+  })
+})
+
+describe('color helpers', () => {
+  it('converts between hue and soft colors', () => {
+    expect(hueOf('#ff0000')).toBe(0)
+    expect(hueOf('#00ff00')).toBe(120)
+    expect(hueOf('#0000ff')).toBe(240)
+    expect(hueOf('#808080')).toBe(0) // grey has no hue
+    for (const hue of [0, 45, 120, 200, 300]) expect(hueOf(softColor(hue))).toBeCloseTo(hue, -1)
+    expect(softColor(0)).toMatch(/^#[0-9a-f]{6}$/)
   })
 })

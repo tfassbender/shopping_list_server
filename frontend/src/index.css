@@ -67,3 +67,33 @@ html.dark {
     -webkit-tap-highlight-color: transparent;
   }
 }
+
+/*
+ * The hue slider of the color picker: the track shows all hues (soft, like the palette), the thumb is a
+ * white ring. Browsers style range inputs differently, so both thumb variants (Chrome/Safari and
+ * Firefox) are set; `appearance: none` removes the default look first.
+ */
+.hue-slider {
+  appearance: none;
+  height: 1.75rem;
+  border-radius: 9999px;
+  background: linear-gradient(to right, #e06666, #e0e066, #66e066, #66e0e0, #6666e0, #e066e0, #e06666);
+  cursor: pointer;
+}
+.hue-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  border: 4px solid #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.25), 0 1px 3px rgb(0 0 0 / 0.3);
+  background: transparent;
+}
+.hue-slider::-moz-range-thumb {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  border: 4px solid #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.25), 0 1px 3px rgb(0 0 0 / 0.3);
+  background: transparent;
+}
