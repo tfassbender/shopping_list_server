@@ -81,12 +81,24 @@ class OpenApiContractTest {
             Triple("/api/spaces/{spaceId}/lists/{listId}", "get", "sort"),
             Triple("/api/spaces/{spaceId}/catalog/suggestions", "get", "q"),
             Triple("/api/spaces/{spaceId}/catalog/suggestions", "get", "limit"),
-            Triple("/api/spaces/{spaceId}/catalog/history", "delete", "name"),
             Triple("/api/spaces/{spaceId}/changes", "get", "since"),
         )
         optional.forEach { (path, method, name) ->
             val required = spec.get<Boolean?>("paths.'$path'.$method.parameters.find { it.name == '$name' }.required")
             assertFalse(required == true, "$method $path ?$name")
+        }
+    }
+
+    @Test
+    fun `the item name of history and favorite operations is required`() {
+        val required = listOf(
+            "/api/spaces/{spaceId}/catalog/history" to "put",
+            "/api/spaces/{spaceId}/catalog/history" to "delete",
+            "/api/spaces/{spaceId}/layouts/{layoutId}/favorites" to "delete",
+        )
+        required.forEach { (path, method) ->
+            val flag = spec.get<Boolean?>("paths.'$path'.$method.parameters.find { it.name == 'name' }.required")
+            assertTrue(flag == true, "$method $path ?name")
         }
     }
 

@@ -154,7 +154,7 @@ class LayoutResource(
     fun removeFavorite(
         @PathParam("spaceId") spaceId: String,
         @PathParam("layoutId") layoutId: String,
-        @QueryParam("name") @Parameter(required = false, description = ITEM_NAME_DESCRIPTION) name: String?,
+        @QueryParam("name") @Parameter(required = true, description = ITEM_NAME_DESCRIPTION) name: String?,
     ) =
         FavoritesDto(layoutService.removeFavorite(currentUser.id(), SpaceId(spaceId), LayoutId(layoutId), name ?: "").sorted())
 }

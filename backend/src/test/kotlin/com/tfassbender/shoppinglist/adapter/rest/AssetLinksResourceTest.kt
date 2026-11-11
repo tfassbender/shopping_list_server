@@ -6,10 +6,10 @@ import org.hamcrest.Matchers.contains
 import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.startsWith
 import org.junit.jupiter.api.Test
-import java.util.Optional
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** The test profile configures one fingerprint (lowercase, see application.properties). */
+/** The test profile configures one fingerprint for the release app only (lowercase, see application.properties). */
 @QuarkusTest
 class AssetLinksResourceTest {
 
@@ -26,8 +26,23 @@ class AssetLinksResourceTest {
     }
 
     @Test
+    fun `only apps with fingerprints are listed, each with its own`() {
+        val release = AndroidApp("com.tfassbender.shoppinglist", listOf(" aa:bb "))
+        val debug = AndroidApp("com.tfassbender.shoppinglist.debug", listOf("cc:dd"))
+
+        val statements = AssetLinksResource.statementsFor(listOf(release, debug))
+        assertEquals(
+            listOf("com.tfassbender.shoppinglist" to listOf("AA:BB"), "com.tfassbender.shoppinglist.debug" to listOf("CC:DD")),
+            statements.map { it.target.packageName to it.target.sha256CertFingerprints },
+        )
+
+        // the test profile configures only the release app, so the debug app is left out there
+        assertEquals(1, AssetLinksResource.statementsFor(listOf(release, debug.copy(fingerprints = listOf(" ")))).size)
+    }
+
+    @Test
     fun `without fingerprints the list is empty`() {
-        val resource = AssetLinksResource(Optional.of(listOf("com.tfassbender.shoppinglist")), Optional.empty())
-        assertTrue(resource.assetLinks().isEmpty())
+        val apps = listOf(AndroidApp("com.tfassbender.shoppinglist", emptyList()), AndroidApp("", listOf("AA:BB")))
+        assertTrue(AssetLinksResource.statementsFor(apps).isEmpty())
     }
 }

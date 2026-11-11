@@ -158,7 +158,7 @@ class CatalogResource(
     @Operation(operationId = "renameHistoryItem", summary = "Rename an item of the history (merged if the new name exists); returns the history")
     fun renameHistory(
         @PathParam("spaceId") spaceId: String,
-        @QueryParam("name") @Parameter(required = false, description = ITEM_NAME_DESCRIPTION) name: String?,
+        @QueryParam("name") @Parameter(required = true, description = ITEM_NAME_DESCRIPTION) name: String?,
         request: RenameHistoryRequest,
     ): List<HistoryEntryDto> =
         catalogService.renameHistory(currentUser.id(), SpaceId(spaceId), name ?: "", request.name).map(HistoryEntryDto::from)
@@ -168,7 +168,7 @@ class CatalogResource(
     @Operation(operationId = "removeHistoryItem", summary = "Forget an item of the history (no longer suggested); returns the history")
     fun removeHistory(
         @PathParam("spaceId") spaceId: String,
-        @QueryParam("name") @Parameter(required = false, description = ITEM_NAME_DESCRIPTION) name: String?,
+        @QueryParam("name") @Parameter(required = true, description = ITEM_NAME_DESCRIPTION) name: String?,
     ): List<HistoryEntryDto> =
         catalogService.removeHistory(currentUser.id(), SpaceId(spaceId), name ?: "").map(HistoryEntryDto::from)
 }

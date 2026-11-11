@@ -329,7 +329,8 @@ Decided while implementing:
   categories/units changed or entries were removed/renamed (also when the history was full and dropped one).
   The web app suggests from the cached history when offline.
 - [x] #2 Android App Links: `GET /.well-known/assetlinks.json` (public, not in OpenAPI), fingerprints from
-  configuration (`shoppinglist.android.sha256-cert-fingerprints`, empty by default); stable link paths
+  configuration, separately for release and debug app (`shoppinglist.android.{release,debug}.*`, empty by
+  default, so the release package never trusts the debug key); stable link paths
   documented in `tech_stack.md` and the OpenAPI description.
 - [x] #3 Favorites in the sync pull: `favorites` (layout id -> names) is always sent complete - it is small
   and personal, so no seq per favorite. Changing a favorite now runs under the space lock and takes a new
