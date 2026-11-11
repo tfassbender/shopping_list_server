@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState } from 'react'
+import { useCatalog } from '../api/catalog'
 import { useNavigate, useParams } from 'react-router'
 import { listKeys, listsApi, newId, useList, type Item } from '../api/lists'
 import { useSpace } from '../api/spaces'
@@ -10,7 +11,8 @@ import { t } from '../i18n/messages'
 import { BackLink } from '../pages/space/MembersPage'
 import { ItemEditor } from './ItemEditor'
 import { useListChanges } from './listChanges'
-import { amountText, sortItems } from './sortItems'
+import { QuickAdd } from './QuickAdd'
+import { amountText, groupItems, sortItems, type ItemSection } from './sortItems'
 
 const UNDO_TIMEOUT_MS = 5000
 
@@ -19,6 +21,7 @@ export function ListPage() {
   const { data: list, error: loadError } = useList(spaceId, listId)
   const { data: space } = useSpace(spaceId)
   const { data: user } = useCurrentUser()
+  const { data: catalog } = useCatalog(spaceId)
   const { apply, error } = useListChanges(spaceId, listId)
   const [editing, setEditing] = useState<Item | null>(null)
   const [renaming, setRenaming] = useState(false)
@@ -34,7 +37,8 @@ export function ListPage() {
   if (loadError) return <ErrorText error={loadError} />
   if (!list) return <Loading />
 
-  const items = sortItems(list.items, user?.settings.checkedItemsToEnd ?? true)
+  const checkedToEnd = user?.settings.checkedItemsToEnd ?? true
+  const sections = groupItems(sortItems(list.items, checkedToEnd), catalog?.categories ?? [], checkedToEnd)
   const checkedCount = list.items.filter((i) => i.checked).length
 
   function toggle(item: Item) {
@@ -68,15 +72,13 @@ export function ListPage() {
         <BackLink to={`/spaces/${spaceId}`} />
       </div>
 
-      <QuickAdd onAdd={(name) => apply({ type: 'addItem', item: { id: newId(), name } })} />
+      <QuickAdd spaceId={spaceId} categories={catalog?.categories ?? []} onAdd={(item) => apply({ type: 'addItem', item: { id: newId(), ...item } })} />
       <ErrorText error={error} />
 
-      {items.length === 0 && <p className="text-gray-500 dark:text-gray-400">{t('list.empty')}</p>}
-      <ul className="divide-y divide-gray-200 overflow-hidden rounded-xl border border-gray-200 dark:divide-gray-800 dark:border-gray-800">
-        {items.map((item) => (
-          <ItemRow key={item.id} item={item} onToggle={() => toggle(item)} onEdit={() => setEditing(item)} />
-        ))}
-      </ul>
+      {list.items.length === 0 && <p className="text-gray-500 dark:text-gray-400">{t('list.empty')}</p>}
+      {sections.map((section) => (
+        <Section key={section.key} section={section} onToggle={toggle} onEdit={setEditing} />
+      ))}
 
       <div className="flex flex-wrap gap-2">
         {checkedCount > 0 && (
@@ -90,6 +92,7 @@ export function ListPage() {
       {editing && (
         <ItemEditor
           item={editing}
+          catalog={catalog}
           onSave={(fields) => apply({ type: 'editItem', itemId: editing.id, fields })}
           onDelete={() => apply({ type: 'deleteItem', itemId: editing.id })}
           onClose={() => setEditing(null)}
@@ -108,28 +111,22 @@ export function ListPage() {
   )
 }
 
-function QuickAdd({ onAdd }: { onAdd: (name: string) => void }) {
-  const [name, setName] = useState('')
-  function submit(event: FormEvent) {
-    event.preventDefault()
-    if (!name.trim()) return
-    onAdd(name.trim())
-    setName('') // keep focus in the field for fast entry of the next item
-  }
+/** A block of items under a header: category name with its color, "Other" or "Checked". */
+function Section({ section, onToggle, onEdit }: { section: ItemSection; onToggle: (item: Item) => void; onEdit: (item: Item) => void }) {
+  const title = section.category?.name ?? (section.kind === 'checked' ? t('list.section.checked') : t('list.section.other'))
+  const color = section.category?.color
   return (
-    <form onSubmit={submit} className="flex gap-2">
-      <input
-        aria-label={t('list.addPlaceholder')}
-        placeholder={t('list.addPlaceholder')}
-        value={name}
-        maxLength={100}
-        onChange={(e) => setName(e.target.value)}
-        className="min-h-12 min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 text-base focus:border-green-600 focus:ring-2 focus:ring-green-600/30 focus:outline-none dark:border-gray-600 dark:bg-gray-900"
-      />
-      <Button type="submit" aria-label={t('list.add')} disabled={!name.trim()} className="min-h-12 text-xl">
-        +
-      </Button>
-    </form>
+    <div>
+      <h3 className="mb-1 flex items-center gap-2 text-sm font-semibold tracking-wide text-gray-600 uppercase dark:text-gray-400">
+        {color && <span className="size-3 rounded-full" style={{ backgroundColor: color }} />}
+        {title}
+      </h3>
+      <ul aria-label={title} className="divide-y divide-gray-200 overflow-hidden rounded-xl border border-gray-200 dark:divide-gray-800 dark:border-gray-800">
+        {section.items.map((item) => (
+          <ItemRow key={item.id} item={item} color={color} onToggle={() => onToggle(item)} onEdit={() => onEdit(item)} />
+        ))}
+      </ul>
+    </div>
   )
 }
 

@@ -29,7 +29,11 @@ private fun requireClientId(value: String, kind: String) {
 }
 
 @JvmInline
-value class CategoryId(val value: String)
+value class CategoryId(val value: String) {
+    init {
+        requireClientId(value, "category")
+    }
+}
 
 /**
  * An item on a list. [seq] is the space sequence number of its last change (for "changes since" sync);

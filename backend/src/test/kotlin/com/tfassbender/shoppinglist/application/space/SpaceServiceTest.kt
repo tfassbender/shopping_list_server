@@ -1,5 +1,6 @@
 package com.tfassbender.shoppinglist.application.space
 
+import com.tfassbender.shoppinglist.application.InMemoryCatalogRepository
 import com.tfassbender.shoppinglist.application.InMemorySpaceRepository
 import com.tfassbender.shoppinglist.application.InMemoryUserRepository
 import com.tfassbender.shoppinglist.application.MutableClock
@@ -22,7 +23,8 @@ class SpaceServiceTest {
     private val spaces = InMemorySpaceRepository()
     private val clock = MutableClock()
     private val locks = SpaceLocks()
-    private val service = SpaceService(spaces, users, SpaceAccess(spaces), locks, clock)
+    private val catalogs = InMemoryCatalogRepository()
+    private val service = SpaceService(spaces, users, SpaceAccess(spaces), locks, clock, CatalogService(catalogs, SpaceAccess(spaces), locks, clock))
 
     private val owner = user("owner", "Olga")
     private val anna = user("anna", "Anna")
@@ -44,6 +46,18 @@ class SpaceServiceTest {
         service.create(anna, "Anna's")
 
         assertEquals(listOf("home", "Work"), service.listMine(owner).map { it.name })
+    }
+
+    @Test
+    fun `a new space gets default categories and units in the creator's language`() {
+        users.save(users.findById(owner)!!.copy(settings = com.tfassbender.shoppinglist.domain.user.UserSettings(language = com.tfassbender.shoppinglist.domain.user.Language.DE)))
+        val space = service.create(owner, "Zuhause")
+        val catalog = catalogs.find(space.id)
+        assertTrue(catalog.categories.any { it.name == "Obst & Gemüse" })
+        assertTrue("Stk" in catalog.units)
+
+        val english = service.create(anna, "Home")
+        assertTrue(catalogs.find(english.id).categories.any { it.name == "Fruit & vegetables" })
     }
 
     @Test

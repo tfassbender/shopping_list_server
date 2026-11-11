@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
+import type { Catalog } from '../api/catalog'
 import type { EditableField, Item } from '../api/lists'
 import { Button, TextField } from '../components/ui'
 import { t } from '../i18n/messages'
@@ -9,8 +10,7 @@ import { t } from '../i18n/messages'
  */
 export function ItemEditor(props: {
   item: Item
-  /** Extra fields (e.g. the category picker in Phase 4). */
-  extraFields?: (values: EditValues, setValue: (field: EditableField, value: string) => void) => ReactNode
+  catalog?: Catalog
   onSave: (changed: Partial<Record<EditableField, string | null>>) => void
   onDelete: () => void
   onClose: () => void
@@ -42,9 +42,27 @@ export function ItemEditor(props: {
         <TextField label={t('item.name')} required maxLength={100} value={values.name} onChange={(e) => setValue('name', e.target.value)} />
         <div className="flex gap-2">
           <TextField label={t('item.quantity')} className="flex-1" maxLength={20} inputMode="decimal" value={values.quantity} onChange={(e) => setValue('quantity', e.target.value)} />
-          <TextField label={t('item.unit')} className="flex-1" maxLength={20} value={values.unit} onChange={(e) => setValue('unit', e.target.value)} />
+          {/* `list` links to the <datalist>: the browser suggests the space's units but allows free text. */}
+          <TextField label={t('item.unit')} className="flex-1" maxLength={20} list="unit-options" value={values.unit} onChange={(e) => setValue('unit', e.target.value)} />
+          <datalist id="unit-options">
+            {props.catalog?.units.map((unit) => <option key={unit} value={unit} />)}
+          </datalist>
         </div>
-        {props.extraFields?.(values, setValue)}
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{t('item.category')}</span>
+          <select
+            value={values.categoryId}
+            onChange={(e) => setValue('categoryId', e.target.value)}
+            className="block min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 dark:border-gray-600 dark:bg-gray-900"
+          >
+            <option value="">{t('item.noCategory')}</option>
+            {props.catalog?.categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <TextField label={t('item.note')} maxLength={200} value={values.note} onChange={(e) => setValue('note', e.target.value)} />
         <div className="flex justify-between gap-2 pt-2">
           <Button

@@ -4,7 +4,7 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–3 done. Next: Phase 4.
+**Status:** Phases 0–4 done. Next: Phase 5.
 
 ## Guiding principles
 
@@ -147,17 +147,23 @@ Tests: aggregate change application (unit), REST tests incl. permissions, e2e tw
 Goal: organized lists and fast entry.
 
 Backend:
-- [ ] Domain `SpaceCatalog`: categories (name, color, order), units, item history
+- [x] Domain `SpaceCatalog`: categories (name, color, order), units, item history
       (name → last category/unit, usage count, last used)
-- [ ] `catalog.json` per space; REST for categories (CRUD, color) and units
-- [ ] Item gets optional `categoryId`; adding/checking items updates the history (usage count)
-- [ ] `GET .../catalog/suggestions?q=` for autocomplete (prefix match, ranked by usage)
-- [ ] Sensible default categories + units when a space is created
+- [x] `catalog.json` per space; REST for categories (CRUD, color) and units
+- [x] Item gets optional `categoryId`; adding/checking items updates the history (usage count)
+- [x] `GET .../catalog/suggestions?q=` for autocomplete (prefix match, ranked by usage)
+- [x] Sensible default categories + units when a space is created
 
 Frontend:
-- [ ] Category management (name, color picker, order)
-- [ ] Item: choose category / unit; list grouped by category with category colors
-- [ ] Autocomplete in the quick add field (fills category/unit from history)
+- [x] Category management (name, color picker, order)
+- [x] Item: choose category / unit; list grouped by category with category colors
+- [x] Autocomplete in the quick add field (fills category/unit from history)
+
+Decided while implementing: **checking** an item counts as a use ("bought"); adding/editing only teaches
+name → category/unit. The server fills in the category from the history when an added item has none, so
+all clients (incl. AI agents) place items alike. Suggestions: name-prefix matches first, then word-prefix
+matches, each by usage count and recency. Default categories/units are created in the creator's
+language. Category reordering uses dnd-kit (shared `SortableList`, reused for layouts in Phase 5).
 
 Tests: suggestion ranking, history updates, REST tests.
 

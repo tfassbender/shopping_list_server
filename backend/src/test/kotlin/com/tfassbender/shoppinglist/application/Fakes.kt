@@ -1,5 +1,6 @@
 package com.tfassbender.shoppinglist.application
 
+import com.tfassbender.shoppinglist.application.port.CatalogRepository
 import com.tfassbender.shoppinglist.application.port.EmailSender
 import com.tfassbender.shoppinglist.application.port.SequenceCounter
 import com.tfassbender.shoppinglist.application.port.ShoppingListRepository
@@ -10,6 +11,7 @@ import com.tfassbender.shoppinglist.application.port.UserRepository
 import com.tfassbender.shoppinglist.domain.list.ListId
 import com.tfassbender.shoppinglist.domain.list.ShoppingList
 import com.tfassbender.shoppinglist.domain.space.Space
+import com.tfassbender.shoppinglist.domain.space.SpaceCatalog
 import com.tfassbender.shoppinglist.domain.space.SpaceId
 import com.tfassbender.shoppinglist.domain.user.Email
 import com.tfassbender.shoppinglist.domain.user.Language
@@ -100,4 +102,13 @@ class InMemorySequenceCounter : SequenceCounter {
 
     override fun next(spaceId: SpaceId): Long = values.merge(spaceId, 1L, Long::plus)!!
     override fun current(spaceId: SpaceId): Long = values[spaceId] ?: 0
+}
+
+class InMemoryCatalogRepository : CatalogRepository {
+    private val catalogs = java.util.concurrent.ConcurrentHashMap<SpaceId, SpaceCatalog>()
+
+    override fun find(spaceId: SpaceId) = catalogs[spaceId] ?: SpaceCatalog(spaceId)
+    override fun save(catalog: SpaceCatalog) {
+        catalogs[catalog.spaceId] = catalog
+    }
 }

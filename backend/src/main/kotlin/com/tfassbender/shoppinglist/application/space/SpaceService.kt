@@ -10,6 +10,7 @@ import com.tfassbender.shoppinglist.domain.space.InviteId
 import com.tfassbender.shoppinglist.domain.space.Member
 import com.tfassbender.shoppinglist.domain.space.Space
 import com.tfassbender.shoppinglist.domain.space.SpaceId
+import com.tfassbender.shoppinglist.domain.user.Language
 import com.tfassbender.shoppinglist.domain.user.UserId
 import jakarta.enterprise.context.ApplicationScoped
 import java.time.Clock
@@ -31,11 +32,14 @@ class SpaceService(
     private val access: SpaceAccess,
     private val locks: SpaceLocks,
     private val clock: Clock,
+    private val catalog: CatalogService,
 ) {
 
     fun create(userId: UserId, name: String): Space {
         val space = Space.create(SpaceId(UUID.randomUUID().toString()), name, userId, clock.instant())
         spaces.save(space)
+        // Default categories and units in the creator's language.
+        catalog.createDefaults(space.id, users.findById(userId)?.settings?.language ?: Language.EN)
         return space
     }
 

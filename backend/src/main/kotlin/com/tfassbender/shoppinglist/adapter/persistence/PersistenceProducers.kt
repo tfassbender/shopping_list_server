@@ -1,5 +1,6 @@
 package com.tfassbender.shoppinglist.adapter.persistence
 
+import com.tfassbender.shoppinglist.application.port.CatalogRepository
 import com.tfassbender.shoppinglist.application.port.SequenceCounter
 import com.tfassbender.shoppinglist.application.port.ShoppingListRepository
 import com.tfassbender.shoppinglist.application.port.SpaceRepository
@@ -35,4 +36,8 @@ class PersistenceProducers(
     @Produces
     @ApplicationScoped
     fun sequenceCounter(): SequenceCounter = FileSequenceCounter(files)
+
+    @Produces
+    @ApplicationScoped
+    fun catalogRepository(): CatalogRepository = FileCatalogRepository(files)
 }

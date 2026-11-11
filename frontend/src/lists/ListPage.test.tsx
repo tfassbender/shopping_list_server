@@ -7,6 +7,13 @@ import { mockApi, sentBodies, testUser } from '../test/mockApi'
 import { loginForTest, renderWithProviders } from '../test/render'
 import { applyLocal, type ListChange } from './listChanges'
 
+const catalog = {
+  categories: [
+    { id: 'veg', name: 'Vegetables', color: '#00ff00' },
+    { id: 'dairy', name: 'Dairy', color: '#0000ff' },
+  ],
+  units: ['l', 'kg'],
+}
 const space = { id: 's1', name: 'Home', myRole: 'MEMBER', memberCount: 2, createdAt: '' }
 const item = (id: string, name: string, overrides: Partial<Item> = {}): Item => ({
   id, name, quantity: null, unit: null, note: null, categoryId: null, checked: false, createdAt: `2026-01-01T00:00:0${id}Z`, seq: 1, ...overrides,
@@ -23,6 +30,7 @@ function fakeListBackend(initial: Item[]) {
     'GET /api/users/me': testUser,
     'GET /api/spaces/s1': space,
     'GET /api/spaces/s1/lists': [],
+    'GET /api/spaces/s1/catalog': catalog,
     'GET /api/spaces/s1/lists/l1': () => list,
     'POST /api/spaces/s1/lists/l1/items': (body: unknown) => change({ type: 'addItem', item: body as Item })(),
     'POST /api/spaces/s1/lists/l1/items/1/check': change({ type: 'check', itemId: '1' }),
@@ -115,5 +123,45 @@ describe('ListPage', () => {
 
     await waitFor(() => expect(backend.current().items[0].checked).toBe(false))
     expect(screen.getByRole('checkbox', { name: 'Milk' })).toHaveAttribute('aria-checked', 'false')
+  })
+
+  it('groups items by category in category order', async () => {
+    const backend = fakeListBackend([item('1', 'Milk', { categoryId: 'dairy' }), item('2', 'Carrots', { categoryId: 'veg' }), item('3', 'Batteries')])
+    mockApi(backend.routes)
+    renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
+
+    await screen.findByRole('list', { name: 'Dairy' })
+    const names = screen.getAllByRole('list').map((section) => section.getAttribute('aria-label'))
+    expect(names).toEqual(['Vegetables', 'Dairy', 'Other'])
+    expect(within(screen.getByRole('list', { name: 'Dairy' })).getByRole('checkbox', { name: 'Milk' })).toBeInTheDocument()
+  })
+
+  it('picking an autocomplete suggestion adds the item with category and unit', async () => {
+    const backend = fakeListBackend([])
+    const spy = mockApi({
+      ...backend.routes,
+      'GET /api/spaces/s1/catalog/suggestions': (_: unknown, url: URL) =>
+        url.searchParams.get('q') === 'mi' ? [{ name: 'Milk', categoryId: 'dairy', unit: 'l', usageCount: 3 }] : [],
+    })
+    renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
+
+    await userEvent.type(await screen.findByRole('combobox'), 'mi')
+    await userEvent.click(await screen.findByRole('button', { name: /Milk/ }))
+
+    const [body] = sentBodies(spy, 'POST', '/api/spaces/s1/lists/l1/items') as Record<string, unknown>[]
+    expect(body).toMatchObject({ name: 'Milk', categoryId: 'dairy', unit: 'l' })
+    expect(await screen.findByRole('list', { name: 'Dairy' })).toBeInTheDocument()
+  })
+
+  it('editor offers the categories of the space', async () => {
+    const backend = fakeListBackend([item('1', 'Milk')])
+    const spy = mockApi(backend.routes)
+    renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit Milk' }))
+    await userEvent.selectOptions(within(screen.getByRole('dialog')).getByLabelText('Category'), 'Dairy')
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(sentBodies(spy, 'PATCH', '/api/spaces/s1/lists/l1/items/1')).toEqual([{ categoryId: 'dairy' }]))
   })
 })

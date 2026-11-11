@@ -13,6 +13,7 @@ import { RegisterPage } from './pages/auth/RegisterPage'
 import { HomePage } from './pages/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { CatalogPage } from './pages/space/CatalogPage'
 import { InvitePage } from './pages/space/InvitePage'
 import { MembersPage } from './pages/space/MembersPage'
 import { SpacePage } from './pages/space/SpacePage'
@@ -34,6 +35,7 @@ export function AppRoutes() {
         <Route path="spaces/:spaceId" element={<RequireAuth><SpacePage /></RequireAuth>} />
         <Route path="spaces/:spaceId/members" element={<RequireAuth><MembersPage /></RequireAuth>} />
         <Route path="spaces/:spaceId/lists/:listId" element={<RequireAuth><ListPage /></RequireAuth>} />
+        <Route path="spaces/:spaceId/catalog" element={<RequireAuth><CatalogPage /></RequireAuth>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

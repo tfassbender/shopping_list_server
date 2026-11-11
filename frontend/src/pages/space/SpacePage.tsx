@@ -47,6 +47,7 @@ export function SpacePage() {
 
       <nav className="flex flex-wrap gap-2">
         <SpaceLink to={`/spaces/${spaceId}/members`}>{t('space.members')}</SpaceLink>
+        <SpaceLink to={`/spaces/${spaceId}/catalog`}>{t('space.catalog')}</SpaceLink>
       </nav>
 
       {isOwner && (

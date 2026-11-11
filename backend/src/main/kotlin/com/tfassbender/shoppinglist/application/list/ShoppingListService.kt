@@ -2,6 +2,7 @@ package com.tfassbender.shoppinglist.application.list
 
 import com.tfassbender.shoppinglist.application.port.SequenceCounter
 import com.tfassbender.shoppinglist.application.port.ShoppingListRepository
+import com.tfassbender.shoppinglist.application.space.CatalogService
 import com.tfassbender.shoppinglist.application.space.SpaceAccess
 import com.tfassbender.shoppinglist.application.space.SpaceLocks
 import com.tfassbender.shoppinglist.domain.DomainException
@@ -26,6 +27,7 @@ class ShoppingListService(
     private val access: SpaceAccess,
     private val locks: SpaceLocks,
     private val clock: Clock,
+    private val catalog: CatalogService,
 ) {
 
     fun lists(userId: UserId, spaceId: SpaceId): List<ShoppingList> {
@@ -64,8 +66,10 @@ class ShoppingListService(
             access.requireMember(spaceId, userId)
             val seq = sequence.next(spaceId)
             val now = clock.instant()
-            val updated = changes.fold(load(spaceId, listId)) { list, change -> list.apply(change, seq, now) }
+            val enriched = catalog.enrich(spaceId, changes)
+            val updated = enriched.fold(load(spaceId, listId)) { list, change -> list.apply(change, seq, now) }
             lists.save(updated)
+            catalog.recordItemChanges(spaceId, updated, enriched)
             updated
         }
 
