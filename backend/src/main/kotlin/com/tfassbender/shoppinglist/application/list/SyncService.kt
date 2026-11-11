@@ -1,6 +1,7 @@
 package com.tfassbender.shoppinglist.application.list
 
 import com.tfassbender.shoppinglist.application.port.CatalogRepository
+import com.tfassbender.shoppinglist.application.port.FavoritesRepository
 import com.tfassbender.shoppinglist.application.port.LayoutRepository
 import com.tfassbender.shoppinglist.application.port.SequenceCounter
 import com.tfassbender.shoppinglist.application.port.ShoppingListRepository
@@ -12,11 +13,13 @@ import com.tfassbender.shoppinglist.application.space.SpaceLocks
 import com.tfassbender.shoppinglist.domain.DomainException
 import com.tfassbender.shoppinglist.domain.ErrorKind
 import com.tfassbender.shoppinglist.domain.list.ChangeContext
+import com.tfassbender.shoppinglist.domain.list.LayoutId
 import com.tfassbender.shoppinglist.domain.list.ListChange
 import com.tfassbender.shoppinglist.domain.list.ListId
 import com.tfassbender.shoppinglist.domain.list.MergeWarning
 import com.tfassbender.shoppinglist.domain.list.ShopLayout
 import com.tfassbender.shoppinglist.domain.list.ShoppingList
+import com.tfassbender.shoppinglist.domain.space.HistoryEntry
 import com.tfassbender.shoppinglist.domain.space.SpaceCatalog
 import com.tfassbender.shoppinglist.domain.space.SpaceId
 import com.tfassbender.shoppinglist.domain.user.UserId
@@ -57,9 +60,14 @@ data class PullResult(
     /** Changed lists with only their changed items (incl. tombstones); on full resync everything active. */
     val lists: List<ShoppingList>,
     val listIds: List<ListId>,
+    /** The complete catalog (incl. history) if categories/units changed or history entries were removed. */
     val catalog: SpaceCatalog?,
+    /** History entries added/updated since `since`; empty if [catalog] is sent (it contains them). */
+    val historyChanges: List<HistoryEntry>,
     val layouts: List<ShopLayout>?,
     val layoutIds: List<String>,
+    /** The caller's favorites per layout of this space - always sent, they are small and personal. */
+    val favorites: Map<LayoutId, Set<String>>,
 )
 
 /**
@@ -74,6 +82,7 @@ class SyncService(
     private val sequence: SequenceCounter,
     private val catalogs: CatalogRepository,
     private val layouts: LayoutRepository,
+    private val favorites: FavoritesRepository,
     private val users: UserRepository,
     private val catalog: CatalogService,
     private val access: SpaceAccess,
@@ -122,16 +131,25 @@ class SyncService(
                 .map { list -> list.copy(items = list.items.filter { it.seq > since }) }
         }
         val spaceCatalog = catalogs.find(spaceId)
+        val catalogChanged = full || spaceCatalog.seq > since
         val spaceLayouts = layouts.findBySpace(spaceId)
         return PullResult(
             seq = current,
             fullResync = full,
             lists = changed,
             listIds = all.filterNot { it.deleted }.map { it.id },
-            catalog = spaceCatalog.takeIf { full || it.seq > since },
+            catalog = spaceCatalog.takeIf { catalogChanged },
+            historyChanges = if (catalogChanged) emptyList() else spaceCatalog.historyChangedSince(since),
             layouts = spaceLayouts.takeIf { layoutList -> full || layoutList.any { it.seq > since } },
             layoutIds = spaceLayouts.map { it.id.value },
+            favorites = favoritesIn(userId, spaceLayouts),
         )
+    }
+
+    /** Favorites of layouts that still exist in the space (the user's file also holds other spaces' layouts). */
+    private fun favoritesIn(userId: UserId, spaceLayouts: List<ShopLayout>): Map<LayoutId, Set<String>> {
+        val byLayout = favorites.find(userId).byLayout
+        return spaceLayouts.mapNotNull { layout -> byLayout[layout.id]?.let { layout.id to it } }.toMap()
     }
 
     /** The lists touched by one batch, kept in memory until the batch is done. */
@@ -189,7 +207,7 @@ class SyncService(
         fun saveTouchedLists() {
             touched.values.forEach { list ->
                 store.save(list)
-                catalog.recordItemChanges(spaceId, list, appliedChanges[list.id].orEmpty())
+                catalog.recordItemChanges(spaceId, list, appliedChanges[list.id].orEmpty(), context.seq)
             }
         }
     }

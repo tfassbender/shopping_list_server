@@ -29,6 +29,8 @@ data class HistoryEntry(
     val unit: String?,
     val usageCount: Int,
     val lastUsed: Instant,
+    /** Space sequence number of the last change of this entry, so a pull can send only changed entries. */
+    val seq: Long = 0,
 )
 
 /**
@@ -40,7 +42,11 @@ data class SpaceCatalog(
     val categories: List<Category> = emptyList(),
     val units: List<String> = emptyList(),
     val history: Map<String, HistoryEntry> = emptyMap(),
-    /** Space sequence number of the last category/unit change (history updates don't count). */
+    /**
+     * Space sequence number of the last change clients must take over as a whole: categories, units, or
+     * removed/renamed history entries. Added or updated history entries carry their own [HistoryEntry.seq]
+     * instead - checking items updates them all the time, and a pull then only sends those entries.
+     */
     val seq: Long = 0,
 ) {
 
@@ -124,6 +130,19 @@ data class SpaceCatalog(
             )
             .take(limit)
     }
+
+    /**
+     * Marks the history entries that differ from [before] with [seq]. If entries were dropped (history full),
+     * clients can't tell that from changed entries, so the whole catalog counts as changed.
+     */
+    fun stampHistoryChanges(before: SpaceCatalog, seq: Long): SpaceCatalog {
+        val stamped = history.mapValues { (key, entry) -> if (before.history[key] == entry) entry else entry.copy(seq = seq) }
+        val dropped = !history.keys.containsAll(before.history.keys)
+        return copy(history = stamped, seq = if (dropped) seq else this.seq)
+    }
+
+    /** History entries added or updated after [since], alphabetically. */
+    fun historyChangedSince(since: Long): List<HistoryEntry> = historyEntries().filter { it.seq > since }
 
     /** All remembered items, alphabetically – for managing the history. */
     fun historyEntries(): List<HistoryEntry> = history.values.sortedBy { it.name.lowercase() }

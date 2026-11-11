@@ -18,10 +18,13 @@ import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.core.Response
 import org.eclipse.microprofile.openapi.annotations.Operation
+import org.eclipse.microprofile.openapi.annotations.media.Content
 import org.eclipse.microprofile.openapi.annotations.media.Schema
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
+import org.jboss.resteasy.reactive.ResponseStatus
 import java.time.Instant
 
 data class CreateLayoutRequest(
@@ -83,9 +86,11 @@ class LayoutResource(
 
     @POST
     @Operation(operationId = "createLayout", summary = "Create a layout (starts with the space's category order)")
-    fun create(@PathParam("spaceId") spaceId: String, request: CreateLayoutRequest): Response {
+    @ResponseStatus(201)
+    @APIResponse(responseCode = "201", description = "Created", content = [Content(schema = Schema(implementation = LayoutDto::class))])
+    fun create(@PathParam("spaceId") spaceId: String, request: CreateLayoutRequest): LayoutDto {
         val layout = layoutService.create(currentUser.id(), SpaceId(spaceId), request.name, request.mode, request.id?.let(::LayoutId))
-        return Response.status(Response.Status.CREATED).entity(LayoutDto.from(layout)).build()
+        return LayoutDto.from(layout)
     }
 
     @GET
@@ -103,9 +108,8 @@ class LayoutResource(
     @DELETE
     @Path("/{layoutId}")
     @Operation(operationId = "deleteLayout", summary = "Delete a layout")
-    fun delete(@PathParam("spaceId") spaceId: String, @PathParam("layoutId") layoutId: String): Response {
+    fun delete(@PathParam("spaceId") spaceId: String, @PathParam("layoutId") layoutId: String) {
         layoutService.delete(currentUser.id(), SpaceId(spaceId), LayoutId(layoutId))
-        return Response.noContent().build()
     }
 
     @PUT
@@ -147,6 +151,10 @@ class LayoutResource(
     @DELETE
     @Path("/{layoutId}/favorites")
     @Operation(operationId = "removeFavorite", summary = "Remove a personal favorite (name as query parameter)")
-    fun removeFavorite(@PathParam("spaceId") spaceId: String, @PathParam("layoutId") layoutId: String, @QueryParam("name") name: String?) =
+    fun removeFavorite(
+        @PathParam("spaceId") spaceId: String,
+        @PathParam("layoutId") layoutId: String,
+        @QueryParam("name") @Parameter(required = false, description = ITEM_NAME_DESCRIPTION) name: String?,
+    ) =
         FavoritesDto(layoutService.removeFavorite(currentUser.id(), SpaceId(spaceId), LayoutId(layoutId), name ?: "").sorted())
 }

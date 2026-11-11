@@ -13,10 +13,12 @@ import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.core.Response
 import org.eclipse.microprofile.openapi.annotations.Operation
+import org.eclipse.microprofile.openapi.annotations.media.Content
 import org.eclipse.microprofile.openapi.annotations.media.Schema
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
+import org.jboss.resteasy.reactive.ResponseStatus
 import java.time.Duration
 import java.time.Instant
 
@@ -66,16 +68,17 @@ class ApiTokenResource(
 
     @POST
     @Operation(operationId = "createApiToken", summary = "Create an API token; the raw token is returned only once")
-    fun create(request: CreateApiTokenRequest): Response {
+    @ResponseStatus(201)
+    @APIResponse(responseCode = "201", description = "Created", content = [Content(schema = Schema(implementation = CreatedApiTokenDto::class))])
+    fun create(request: CreateApiTokenRequest): CreatedApiTokenDto {
         val created = apiTokens.create(currentUser.id(), request.name, request.scope, request.expiresInDays?.let(Duration::ofDays))
-        return Response.status(Response.Status.CREATED).entity(CreatedApiTokenDto(ApiTokenDto.from(created.token), created.rawToken)).build()
+        return CreatedApiTokenDto(ApiTokenDto.from(created.token), created.rawToken)
     }
 
     @DELETE
     @Path("/{tokenId}")
     @Operation(operationId = "revokeApiToken", summary = "Revoke an API token immediately")
-    fun revoke(@PathParam("tokenId") tokenId: String): Response {
+    fun revoke(@PathParam("tokenId") tokenId: String) {
         apiTokens.revoke(currentUser.id(), ApiTokenId(tokenId))
-        return Response.noContent().build()
     }
 }

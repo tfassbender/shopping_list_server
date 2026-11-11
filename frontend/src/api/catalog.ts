@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
-import { api } from './client'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { normalizeName } from '../lists/sortForLayout'
+import { ApiError, api } from './client'
 
 export interface Category {
   id: string
@@ -12,6 +13,8 @@ export interface Catalog {
   units: string[]
   /** How often each item was bought (normalized name -> count), for "most used first". */
   usage?: Record<string, number>
+  /** The complete item history - lets the app suggest items offline (see [rankSuggestions]). */
+  history?: HistoryEntry[]
 }
 
 export interface Suggestion {
@@ -22,6 +25,7 @@ export interface Suggestion {
 }
 
 const base = (spaceId: string) => `/api/spaces/${spaceId}/catalog`
+const SUGGESTION_LIMIT = 20
 
 export const catalogApi = {
   get: (spaceId: string) => api.get<Catalog>(base(spaceId)),
@@ -32,7 +36,7 @@ export const catalogApi = {
   reorderCategories: (spaceId: string, ids: string[]) => api.put<Catalog>(`${base(spaceId)}/categories/order`, { ids }),
   setUnits: (spaceId: string, units: string[]) => api.put<Catalog>(`${base(spaceId)}/units`, { units }),
   suggestions: (spaceId: string, query: string) =>
-    api.get<Suggestion[]>(`${base(spaceId)}/suggestions?q=${encodeURIComponent(query)}&limit=20`),
+    api.get<Suggestion[]>(`${base(spaceId)}/suggestions?q=${encodeURIComponent(query)}&limit=${SUGGESTION_LIMIT}`),
   // History entries are addressed by name as query parameter (names may contain '/').
   history: (spaceId: string) => api.get<HistoryEntry[]>(`${base(spaceId)}/history`),
   renameHistory: (spaceId: string, name: string, newName: string) =>
@@ -60,11 +64,45 @@ export function useCatalog(spaceId: string) {
   return useQuery({ queryKey: catalogKeys.catalog(spaceId), queryFn: () => catalogApi.get(spaceId), staleTime: 60_000 })
 }
 
+/**
+ * Client-side copy of the server's suggestion ranking (`SpaceCatalog.suggestions`), used offline. An entry
+ * matches if its name or one of its words starts with the query (normalized); names starting with the
+ * query come first, then most used, most recently used, and by name. The test cases mirror the server's
+ * `SpaceCatalogTest`; keep both in sync.
+ */
+export function rankSuggestions(history: HistoryEntry[], query: string, limit: number): Suggestion[] {
+  const q = normalizeName(query)
+  if (q.length === 0) return []
+  const startsWithQuery = (entry: HistoryEntry) => normalizeName(entry.name).startsWith(q)
+  return history
+    .filter((entry) => startsWithQuery(entry) || normalizeName(entry.name).split(' ').some((word) => word.startsWith(q)))
+    .sort(
+      (a, b) =>
+        Number(startsWithQuery(b)) - Number(startsWithQuery(a)) ||
+        b.usageCount - a.usageCount ||
+        // Parsed, not compared as strings: the fraction digits of the timestamps vary.
+        Date.parse(b.lastUsed) - Date.parse(a.lastUsed) ||
+        compareStrings(a.name.toLowerCase(), b.name.toLowerCase()),
+    )
+    .slice(0, limit)
+}
+
+function compareStrings(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
 export function useSuggestions(spaceId: string, query: string) {
+  const queryClient = useQueryClient()
   const trimmed = query.trim()
   return useQuery({
     queryKey: catalogKeys.suggestions(spaceId, trimmed.toLowerCase()),
-    queryFn: () => catalogApi.suggestions(spaceId, trimmed),
+    queryFn: () =>
+      catalogApi.suggestions(spaceId, trimmed).catch((error: unknown) => {
+        // Offline: rank the (persisted) item history of the catalog the same way the server does.
+        const history = queryClient.getQueryData<Catalog>(catalogKeys.catalog(spaceId))?.history
+        if (error instanceof ApiError && error.status === 0 && history) return rankSuggestions(history, trimmed, SUGGESTION_LIMIT)
+        throw error
+      }),
     enabled: trimmed.length > 0,
     staleTime: 30_000,
   })

@@ -15,6 +15,7 @@ import com.tfassbender.shoppinglist.application.space.SpaceLocks
 import com.tfassbender.shoppinglist.domain.DomainException
 import com.tfassbender.shoppinglist.domain.list.ItemField
 import com.tfassbender.shoppinglist.domain.list.ItemId
+import com.tfassbender.shoppinglist.domain.list.LayoutId
 import com.tfassbender.shoppinglist.domain.list.LayoutMode
 import com.tfassbender.shoppinglist.domain.list.ListChange
 import com.tfassbender.shoppinglist.domain.list.ListId
@@ -54,8 +55,9 @@ class SyncServiceTest {
     private val store = ListStore(listRepo, syncStates, clock)
     private val catalog = CatalogService(catalogs, sequence, access, locks, clock)
     private val lists = ShoppingListService(listRepo, store, sequence, access, locks, clock, catalog)
-    private val layouts = LayoutService(layoutRepo, InMemoryFavoritesRepository(), catalogs, listRepo, users, sequence, access, locks, clock)
-    private val sync = SyncService(listRepo, store, syncStates, sequence, catalogs, layoutRepo, users, catalog, access, locks, clock)
+    private val favorites = InMemoryFavoritesRepository()
+    private val layouts = LayoutService(layoutRepo, favorites, catalogs, listRepo, users, sequence, access, locks, clock)
+    private val sync = SyncService(listRepo, store, syncStates, sequence, catalogs, layoutRepo, favorites, users, catalog, access, locks, clock)
 
     private val anna = UserId("anna")
     private val bob = UserId("bob")
@@ -265,6 +267,51 @@ class SyncServiceTest {
             assertTrue(result.fullResync)
             assertEquals(listOf("Milk"), result.lists.single().items.map { it.name })
             assertFalse(sync.pull(bob, spaceId, current()).fullResync)
+        }
+
+        @Test
+        fun `history changes from list changes are sent as delta, not as the whole catalog`() {
+            val since = current()
+            lists.apply(anna, spaceId, listId, ListChange.CheckItem(milk))
+            sync.push(bob, spaceId, since, listOf(change(ListChange.AddItem(ItemId("bread"), "Bread"))))
+
+            val result = sync.pull(bob, spaceId, since)
+
+            assertNull(result.catalog)
+            assertEquals(listOf("Bread" to 0, "Milk" to 1), result.historyChanges.map { it.name to it.usageCount })
+            assertTrue(sync.pull(bob, spaceId, current()).historyChanges.isEmpty())
+        }
+
+        @Test
+        fun `removing a history entry sends the whole catalog instead of a delta`() {
+            val since = current()
+            catalog.removeHistory(anna, spaceId, "Milk")
+            lists.apply(anna, spaceId, listId, ListChange.AddItem(ItemId("bread"), "Bread"))
+
+            val result = sync.pull(bob, spaceId, since)
+
+            assertEquals(listOf("Bread"), result.catalog!!.historyEntries().map { it.name })
+            assertTrue(result.historyChanges.isEmpty())
+        }
+
+        @Test
+        fun `the caller's favorites of this space's layouts are always included`() {
+            val aldi = layouts.create(anna, spaceId, "Aldi", LayoutMode.CATEGORIES)
+            layouts.create(anna, spaceId, "Rewe", LayoutMode.CATEGORIES)
+            layouts.addFavorite(anna, spaceId, aldi.id, "Milk")
+            favorites.save(favorites.find(anna).add(LayoutId("other-space-layout"), "Bread"))
+            val since = current()
+
+            assertEquals(mapOf(aldi.id to setOf("milk")), sync.pull(anna, spaceId, since).favorites)
+            assertTrue(sync.pull(bob, spaceId, since).favorites.isEmpty())
+        }
+
+        @Test
+        fun `changing a favorite advances the seq so other devices pull`() {
+            val aldi = layouts.create(anna, spaceId, "Aldi", LayoutMode.CATEGORIES)
+            val since = current()
+            layouts.addFavorite(anna, spaceId, aldi.id, "Milk")
+            assertTrue(current() > since)
         }
 
         @Test

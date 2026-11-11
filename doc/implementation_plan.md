@@ -319,9 +319,31 @@ Decided while implementing:
   stays in the API for now.
 - Confirmations use an in-app dialog (`ConfirmDialog`) instead of `window.confirm`.
 
+## API additions for the Android app (GitHub issues)
+
+- [x] #1 Item history for offline autocomplete: `CatalogDto.history` (complete history; the ranking of
+  `getSuggestions` is described in its OpenAPI description). History changes from adding/checking items now
+  reach the pull: each history entry carries its own seq, and the pull sends `historyChanges` (entries
+  added/updated since `since`) instead of the whole catalog - checking items changes the history all the
+  time and the history can hold 2000 entries. The complete `catalog` (incl. history) is sent when
+  categories/units changed or entries were removed/renamed (also when the history was full and dropped one).
+  The web app suggests from the cached history when offline.
+- [x] #2 Android App Links: `GET /.well-known/assetlinks.json` (public, not in OpenAPI), fingerprints from
+  configuration (`shoppinglist.android.sha256-cert-fingerprints`, empty by default); stable link paths
+  documented in `tech_stack.md` and the OpenAPI description.
+- [x] #3 Favorites in the sync pull: `favorites` (layout id -> names) is always sent complete - it is small
+  and personal, so no seq per favorite. Changing a favorite now runs under the space lock and takes a new
+  seq, so it is announced via SSE and the user's other devices pull (other members get an empty pull).
+  User settings stay on `GET /api/users/me`.
+- [x] #4 OpenAPI for generated clients: created resources return their DTO with `@ResponseStatus(201)` plus
+  an `@APIResponse` (SmallRye doesn't read `@ResponseStatus`), no-content operations return nothing (204;
+  POSTs annotated, otherwise the spec says 201), optional query parameters are `required: false`, and
+  `SessionResponse` sends `token`/`expiresAt` as explicit nulls. Checked by `OpenApiContractTest`.
+
 ## Phase 11 – Deployment
 
-- [ ] Production config: JWT key, SMTP, data dir, public base URL (invite/verification links)
+- [ ] Production config: JWT key, SMTP, data dir, public base URL (invite/verification links),
+      Android signing certificate fingerprints (App Links)
 - [ ] Packaging (single JAR incl. SPA), service setup, HTTPS, backups of the data dir
 
 ## Later

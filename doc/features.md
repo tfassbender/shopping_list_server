@@ -145,6 +145,8 @@ Decided:
 - **Works offline:** everything with lists and items (add, edit, check, delete, remove checked, create /
   rename lists). **Needs a connection:** space management (invite links, members, ownership) and API tokens.
 - Client-side storage: web IndexedDB, Android Room.
+- Autocomplete works offline too: clients receive the space's item history (catalog + sync pull) and rank
+  suggestions like the server.
 
 **Merge strategy: automatic merge, change by change** (option "C" from the discussion)
 - The client records small, fine-grained changes ("check item X", "set quantity of Y to 3", "add item Z")

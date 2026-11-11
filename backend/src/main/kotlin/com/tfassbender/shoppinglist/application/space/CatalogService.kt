@@ -80,9 +80,10 @@ class CatalogService(
 
     /**
      * Updates the item history after list changes (caller holds the space lock): added or edited items teach
-     * name → category/unit, checked items count as bought.
+     * name → category/unit, checked items count as bought. Changed entries get [seq] (the seq of the list
+     * changes), so the next pull delivers them to other clients.
      */
-    fun recordItemChanges(spaceId: SpaceId, list: ShoppingList, changes: List<ListChange>) {
+    fun recordItemChanges(spaceId: SpaceId, list: ShoppingList, changes: List<ListChange>, seq: Long) {
         val now = clock.instant()
         val before = catalogs.find(spaceId)
         val after = changes.fold(before) { catalog, change ->
@@ -92,7 +93,7 @@ class CatalogService(
                 else -> catalog
             }
         }
-        if (after != before) catalogs.save(after)
+        if (after != before) catalogs.save(after.stampHistoryChanges(before, seq))
     }
 
     private fun SpaceCatalog.learnFrom(item: Item, now: java.time.Instant) =

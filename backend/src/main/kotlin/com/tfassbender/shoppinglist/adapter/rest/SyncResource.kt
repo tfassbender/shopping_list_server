@@ -28,6 +28,7 @@ import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.media.Schema
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import java.time.Instant
 
@@ -115,11 +116,24 @@ data class PullResponse(
     val lists: List<SyncListDto>,
     @field:Schema(description = "Ids of all existing lists")
     val listIds: List<String>,
-    @field:Schema(description = "Categories and units, only if changed")
+    @field:Schema(
+        description = "The complete catalog (categories, units, usage, history), only if categories/units changed or " +
+            "history entries were removed or renamed - replace the local catalog including its history",
+    )
     val catalog: CatalogDto?,
+    @field:Schema(
+        description = "History entries added or updated since `since` (e.g. items added or checked); empty if `catalog` " +
+            "is sent. Merge into the local history by normalized name and update `usage` from their usageCount",
+    )
+    val historyChanges: List<HistoryEntryDto>,
     @field:Schema(description = "All layouts, only if one changed")
     val layouts: List<LayoutDto>?,
     val layoutIds: List<String>,
+    @field:Schema(
+        description = "The caller's personal favorites (layout id -> normalized item names, sorted), always complete; " +
+            "layouts without favorites are left out",
+    )
+    val favorites: Map<String, List<String>>,
 )
 
 /**
@@ -164,7 +178,7 @@ class SyncResource(
 
     @GET
     @Operation(operationId = "pullChanges", summary = "Everything changed since `since` (0 = full state)")
-    fun pull(@PathParam("spaceId") spaceId: String, @QueryParam("since") @DefaultValue("0") since: Long): PullResponse {
+    fun pull(@PathParam("spaceId") spaceId: String, @QueryParam("since") @DefaultValue("0") @Parameter(required = false) since: Long): PullResponse {
         val result = syncService.pull(currentUser.id(), SpaceId(spaceId), since)
         return PullResponse(
             seq = result.seq,
@@ -172,8 +186,10 @@ class SyncResource(
             lists = result.lists.map(SyncListDto::from),
             listIds = result.listIds.map { it.value },
             catalog = result.catalog?.let(CatalogDto::from),
+            historyChanges = result.historyChanges.map(HistoryEntryDto::from),
             layouts = result.layouts?.map(LayoutDto::from),
             layoutIds = result.layoutIds,
+            favorites = result.favorites.entries.associate { (layoutId, names) -> layoutId.value to names.sorted() },
         )
     }
 

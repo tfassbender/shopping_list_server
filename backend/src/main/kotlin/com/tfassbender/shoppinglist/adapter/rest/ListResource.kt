@@ -25,13 +25,14 @@ import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.core.Response
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.media.Content
 import org.eclipse.microprofile.openapi.annotations.media.Schema
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
+import org.jboss.resteasy.reactive.ResponseStatus
 import java.time.Instant
 
 data class CreateListRequest(
@@ -131,35 +132,38 @@ class ListResource(
 
     @POST
     @Operation(operationId = "createList", summary = "Create a list in a space")
-    fun create(@PathParam("spaceId") spaceId: String, request: CreateListRequest): Response {
+    @ResponseStatus(201)
+    @APIResponse(responseCode = "201", description = "Created", content = [Content(schema = Schema(implementation = ListDto::class))])
+    fun create(@PathParam("spaceId") spaceId: String, request: CreateListRequest): ListDto {
         val list = listService.create(currentUser.id(), SpaceId(spaceId), request.name, request.id?.let(::ListId))
-        return Response.status(Response.Status.CREATED).entity(ListDto.from(list)).build()
+        return ListDto.from(list)
     }
 
     @GET
     @Path("/{listId}")
     @Operation(operationId = "getList", summary = "A list with its items")
-    fun get(@PathParam("spaceId") spaceId: String, @PathParam("listId") listId: String, @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION) sort: String?) =
+    fun get(@PathParam("spaceId") spaceId: String, @PathParam("listId") listId: String, @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION, required = false) sort: String?) =
         toDto(listService.get(currentUser.id(), SpaceId(spaceId), ListId(listId)), sort)
 
     @PUT
     @Path("/{listId}/name")
     @Operation(operationId = "renameList", summary = "Rename a list")
-    fun rename(@PathParam("spaceId") spaceId: String, @PathParam("listId") listId: String, @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION) sort: String?, request: NameRequest) =
+    fun rename(@PathParam("spaceId") spaceId: String, @PathParam("listId") listId: String, @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION, required = false) sort: String?, request: NameRequest) =
         change(spaceId, listId, sort, ListChange.RenameList(request.name))
 
     @DELETE
     @Path("/{listId}")
     @Operation(operationId = "deleteList", summary = "Delete a list (owner of the space only)")
-    fun delete(@PathParam("spaceId") spaceId: String, @PathParam("listId") listId: String): Response {
+    fun delete(@PathParam("spaceId") spaceId: String, @PathParam("listId") listId: String) {
         listService.delete(currentUser.id(), SpaceId(spaceId), ListId(listId))
-        return Response.noContent().build()
     }
 
     @POST
     @Path("/{listId}/items")
     @Operation(operationId = "addItem", summary = "Add an item")
-    fun addItem(@PathParam("spaceId") spaceId: String, @PathParam("listId") listId: String, @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION) sort: String?, request: AddItemRequest): Response {
+    @ResponseStatus(201)
+    @APIResponse(responseCode = "201", description = "Created", content = [Content(schema = Schema(implementation = ListDto::class))])
+    fun addItem(@PathParam("spaceId") spaceId: String, @PathParam("listId") listId: String, @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION, required = false) sort: String?, request: AddItemRequest): ListDto {
         val change = ListChange.AddItem(
             itemId = ItemId(request.id ?: java.util.UUID.randomUUID().toString()),
             name = request.name,
@@ -168,7 +172,7 @@ class ListResource(
             note = request.note,
             categoryId = request.categoryId?.takeIf { it.isNotBlank() }?.let(::CategoryId),
         )
-        return Response.status(Response.Status.CREATED).entity(change(spaceId, listId, sort, change)).build()
+        return change(spaceId, listId, sort, change)
     }
 
     @PATCH
@@ -179,7 +183,7 @@ class ListResource(
         @PathParam("spaceId") spaceId: String,
         @PathParam("listId") listId: String,
         @PathParam("itemId") itemId: String,
-        @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION) sort: String?,
+        @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION, required = false) sort: String?,
         body: JsonNode,
     ): ListDto {
         val id = ItemId(itemId)
@@ -198,7 +202,7 @@ class ListResource(
         @PathParam("spaceId") spaceId: String,
         @PathParam("listId") listId: String,
         @PathParam("itemId") itemId: String,
-        @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION) sort: String?,
+        @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION, required = false) sort: String?,
     ) = change(spaceId, listId, sort, ListChange.CheckItem(ItemId(itemId)))
 
     @POST
@@ -208,7 +212,7 @@ class ListResource(
         @PathParam("spaceId") spaceId: String,
         @PathParam("listId") listId: String,
         @PathParam("itemId") itemId: String,
-        @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION) sort: String?,
+        @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION, required = false) sort: String?,
     ) = change(spaceId, listId, sort, ListChange.UncheckItem(ItemId(itemId)))
 
     @DELETE
@@ -218,13 +222,13 @@ class ListResource(
         @PathParam("spaceId") spaceId: String,
         @PathParam("listId") listId: String,
         @PathParam("itemId") itemId: String,
-        @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION) sort: String?,
+        @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION, required = false) sort: String?,
     ) = change(spaceId, listId, sort, ListChange.DeleteItem(ItemId(itemId)))
 
     @POST
     @Path("/{listId}/remove-checked")
     @Operation(operationId = "removeCheckedItems", summary = "Remove all checked items")
-    fun removeChecked(@PathParam("spaceId") spaceId: String, @PathParam("listId") listId: String, @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION) sort: String?) =
+    fun removeChecked(@PathParam("spaceId") spaceId: String, @PathParam("listId") listId: String, @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION, required = false) sort: String?) =
         change(spaceId, listId, sort, ListChange.RemoveChecked())
 
     private fun change(spaceId: String, listId: String, sort: String?, change: ListChange): ListDto =

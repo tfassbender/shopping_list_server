@@ -1,4 +1,4 @@
-import type { Catalog } from './catalog'
+import type { Catalog, HistoryEntry } from './catalog'
 import { api } from './client'
 import type { ShopLayout } from './layouts'
 
@@ -72,9 +72,14 @@ export interface PullResponse {
   fullResync: boolean
   lists: SyncList[]
   listIds: string[]
+  /** The complete catalog incl. history, only if categories/units changed or history entries were removed. */
   catalog: Catalog | null
+  /** History entries added/updated since `since` (empty if `catalog` is sent). Not used by the web app yet. */
+  historyChanges: HistoryEntry[]
   layouts: ShopLayout[] | null
   layoutIds: string[]
+  /** The caller's favorites (layout id -> normalized names), always complete. Not used by the web app yet. */
+  favorites: Record<string, string[]>
 }
 
 export const syncApi = {

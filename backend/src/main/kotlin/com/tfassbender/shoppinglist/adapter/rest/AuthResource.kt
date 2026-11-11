@@ -12,9 +12,12 @@ import jakarta.ws.rs.POST
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.core.Response
 import org.eclipse.microprofile.openapi.annotations.Operation
+import org.eclipse.microprofile.openapi.annotations.media.Content
+import org.eclipse.microprofile.openapi.annotations.media.Schema
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
+import org.jboss.resteasy.reactive.ResponseStatus
 
 /** Registration, login and the email-token flows. All public except `refresh`. */
 @Path("/api/auth")
@@ -38,7 +41,9 @@ class AuthResource(
         operationId = "register",
         summary = "Create an account. Returns a session unless the email must be verified first",
     )
-    fun register(request: RegisterRequest): Response {
+    @ResponseStatus(201)
+    @APIResponse(responseCode = "201", description = "Created", content = [Content(schema = Schema(implementation = SessionResponse::class))])
+    fun register(request: RegisterRequest): SessionResponse {
         val command = RegisterCommand(
             email = request.email,
             displayName = request.displayName,
@@ -46,7 +51,7 @@ class AuthResource(
             language = request.language?.let(Language::fromCode) ?: Language.EN,
         )
         val result = authService.register(command)
-        return Response.status(Response.Status.CREATED).entity(SessionResponse.from(result)).build()
+        return SessionResponse.from(result)
     }
 
     @POST
@@ -68,17 +73,19 @@ class AuthResource(
     @POST
     @Path("/resend-verification")
     @Operation(operationId = "resendVerification", summary = "Send the verification email again (always 204)")
-    fun resendVerification(request: EmailRequest): Response {
+    // Without this, the spec would claim 201 for a POST without return value; the server sends 204.
+    @APIResponse(responseCode = "204", description = "No Content")
+    fun resendVerification(request: EmailRequest) {
         authService.resendVerification(request.email)
-        return Response.noContent().build()
     }
 
     @POST
     @Path("/forgot-password")
     @Operation(operationId = "forgotPassword", summary = "Email a password reset link (always 204)")
-    fun forgotPassword(request: EmailRequest): Response {
+    // Without this, the spec would claim 201 for a POST without return value; the server sends 204.
+    @APIResponse(responseCode = "204", description = "No Content")
+    fun forgotPassword(request: EmailRequest) {
         authService.requestPasswordReset(request.email)
-        return Response.noContent().build()
     }
 
     @POST

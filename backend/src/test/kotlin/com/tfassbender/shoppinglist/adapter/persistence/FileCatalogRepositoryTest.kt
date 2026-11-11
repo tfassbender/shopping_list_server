@@ -30,6 +30,7 @@ class FileCatalogRepositoryTest {
             .reorderCategories(CatalogDefaults.create(SpaceId("s"), Language.DE).categories.map { it.id }.reversed())
             .learn("Milch", CategoryId("dairy"), "l", t0)
             .countUsage("Brot", null, null, t0)
+            .let { it.stampHistoryChanges(it.removeHistory("Brot"), 5) }
 
         repository.save(catalog)
 
