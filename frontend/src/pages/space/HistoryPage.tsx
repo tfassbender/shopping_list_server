@@ -39,7 +39,7 @@ export function HistoryPage() {
               key={entry.name}
               onClick={() => setEditing(entry)}
               title={entry.name}
-              hint={[categoryName(entry.categoryId), entry.unit, t('history.bought', { count: entry.usageCount })].filter(Boolean).join(' · ')}
+              hint={[categoryName(entry.categoryId), entry.unit, entry.usageCount > 0 && t('history.bought', { count: entry.usageCount })].filter(Boolean).join(' · ')}
               chevron
             />
           ))}

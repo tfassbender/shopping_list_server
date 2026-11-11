@@ -7,6 +7,7 @@ import { spaceKeys, spacesApi, useSpace, type CreatedInvite, type Member } from 
 import { useCurrentUser } from '../../auth/useAuth'
 import { Page, type MenuEntry } from '../../components/AppBar'
 import { ConfirmDialog, Dialog, DialogActions } from '../../components/Dialog'
+import { Icon } from '../../components/Icon'
 import { Avatar, Button, ErrorText, Hint, LoadError, Loading, Row, SectionTitle, Segmented } from '../../components/ui'
 import { t, type MessageKey } from '../../i18n/messages'
 import { syncEngine } from '../../offline/engine'
@@ -69,10 +70,11 @@ export function SpacePage() {
 
   const menu: MenuEntry[] = isOwner
     ? [
-        { label: t('space.rename'), onSelect: () => setDialog('rename') },
+        { label: t('space.rename'), icon: 'rename', onSelect: () => setDialog('rename') },
         'divider',
         {
           label: t('space.delete'),
+          icon: 'delete',
           danger: true,
           onSelect: () =>
             setConfirm({
@@ -86,6 +88,7 @@ export function SpacePage() {
     : [
         {
           label: t('members.leave'),
+          icon: 'leave',
           danger: true,
           onSelect: () =>
             setConfirm({
@@ -141,7 +144,7 @@ export function SpacePage() {
                   onClick={() => setMemberDialog(member)}
                   className="flex size-12 items-center justify-center text-muted hover:text-fg"
                 >
-                  <DotsIcon />
+                  <Icon name="more" className="text-lg" />
                 </button>
               ) : undefined
             }
@@ -204,16 +207,6 @@ export function SpacePage() {
       )}
       {confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}
     </Page>
-  )
-}
-
-function DotsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="size-5" aria-hidden="true">
-      <circle cx="5" cy="12" r="1.8" />
-      <circle cx="12" cy="12" r="1.8" />
-      <circle cx="19" cy="12" r="1.8" />
-    </svg>
   )
 }
 

@@ -7,6 +7,7 @@ import { listsApi, newId, type Item } from '../api/lists'
 import { useSpace } from '../api/spaces'
 import { iconButtonClass, Page } from '../components/AppBar'
 import { ConfirmDialog, Dialog } from '../components/Dialog'
+import { Icon } from '../components/Icon'
 import { ErrorText, Fab, Hint, Loading, SectionTitle } from '../components/ui'
 import { t } from '../i18n/messages'
 import { syncEngine, useLocalList } from '../offline/engine'
@@ -86,9 +87,7 @@ export function ListPage() {
   const shopLine = (
     <button type="button" onClick={() => setDialog('shop')} className="flex items-center gap-1 text-[0.9rem] opacity-85">
       {layout ? t('list.sortedFor', { shop: layout.name }) : t('list.unsorted')}
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" className="size-3.5" aria-hidden="true">
-        <path d="M6 9l6 6 6-6" />
-      </svg>
+      <Icon name="dropdown" className="text-xs" />
     </button>
   )
 
@@ -106,20 +105,16 @@ export function ListPage() {
           onClick={() => setMovedToEnd(new Set(checked.map((i) => i.id)))}
           className={iconButtonClass}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="size-6" aria-hidden="true">
-            <path d="M4 6h10M4 11h7" />
-            <path d="M4 17l2 2 3-4" />
-            <path d="M18 5v14M15 16l3 3 3-3" />
-          </svg>
+          <Icon name="sortChecked" className="text-[1.3rem]" />
         </button>
       }
       menu={[
-        { label: t('list.menu.rename'), onSelect: () => setDialog('rename') },
-        { label: t('list.menu.removeChecked', { count: checked.length }), onSelect: () => apply({ type: 'removeChecked' }), disabled: checked.length === 0 },
+        { label: t('list.menu.rename'), icon: 'rename', onSelect: () => setDialog('rename') },
+        { label: t('list.menu.removeChecked', { count: checked.length }), icon: 'removeChecked', onSelect: () => apply({ type: 'removeChecked' }), disabled: checked.length === 0 },
         'divider',
-        { label: t('space.catalog'), onSelect: () => navigate(`/spaces/${spaceId}/catalog`) },
-        { label: t('space.layouts'), onSelect: () => navigate(`/spaces/${spaceId}/layouts`) },
-        ...(space?.myRole === 'OWNER' ? ['divider' as const, { label: t('list.delete'), danger: true, onSelect: () => setDialog('delete') }] : []),
+        { label: t('space.catalog'), icon: 'categories', onSelect: () => navigate(`/spaces/${spaceId}/catalog`) },
+        { label: t('space.layouts'), icon: 'shops', onSelect: () => navigate(`/spaces/${spaceId}/layouts`) },
+        ...(space?.myRole === 'OWNER' ? ['divider' as const, { label: t('list.delete'), icon: 'delete' as const, danger: true, onSelect: () => setDialog('delete') }] : []),
       ]}
     >
       <ErrorText error={toggleFavorite.error ?? deleteList.error} />
@@ -205,9 +200,7 @@ function ShopDialog(props: {
         <span className="block text-sm text-muted">{hint}</span>
       </span>
       {props.selected === id && (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="size-5 text-accent" aria-hidden="true">
-          <path d="M5 12l5 5 9-10" />
-        </svg>
+        <Icon name="check" className="text-xl text-accent" />
       )}
     </button>
   )
@@ -279,11 +272,7 @@ function ItemRow(props: { item: Item; onToggle: () => void; onEdit: () => void }
         </span>
       </button>
       <button type="button" onClick={props.onEdit} aria-label={t('item.editNamed', { name: item.name })} className="flex w-12 shrink-0 items-center justify-center text-muted hover:text-fg">
-        <svg viewBox="0 0 24 24" fill="currentColor" className="size-5" aria-hidden="true">
-          <circle cx="5" cy="12" r="1.8" />
-          <circle cx="12" cy="12" r="1.8" />
-          <circle cx="19" cy="12" r="1.8" />
-        </svg>
+        <Icon name="edit" className="text-base" />
       </button>
     </li>
   )

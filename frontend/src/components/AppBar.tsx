@@ -3,9 +3,10 @@ import { Link, useLocation } from 'react-router'
 import { useSession } from '../auth/useAuth'
 import { getLanguage, setLanguage, t } from '../i18n/messages'
 import { SyncIndicator } from '../offline/SyncIndicator'
+import { Icon, type IconName } from './Icon'
 
 /** An entry of the ⋮ menu; `'divider'` draws a line between groups. */
-export type MenuEntry = { label: string; onSelect: () => void; danger?: boolean; disabled?: boolean } | 'divider'
+export type MenuEntry = { label: string; icon?: IconName; onSelect: () => void; danger?: boolean; disabled?: boolean } | 'divider'
 
 /**
  * The light blue bar at the top of every page: optional back arrow, title (with an optional line below,
@@ -20,9 +21,7 @@ export function AppBar(props: { title: string; back?: string; sub?: ReactNode; a
       <div className={`relative mx-auto flex min-h-16 max-w-2xl items-center gap-1 pr-1 ${props.back ? 'pl-1' : 'pl-4'}`}>
         {props.back && (
           <Link to={props.back} aria-label={t('common.back')} className={iconButtonClass}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="size-6" aria-hidden="true">
-              <path d="M15 5l-7 7 7 7" />
-            </svg>
+            <Icon name="back" className="text-[1.3rem]" />
           </Link>
         )}
         <div className="flex min-w-0 flex-1 flex-col self-stretch">
@@ -65,11 +64,7 @@ function Menu({ entries }: { entries: MenuEntry[] }) {
   return (
     <>
       <button type="button" aria-label={t('nav.menu')} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)} className={iconButtonClass}>
-        <svg viewBox="0 0 24 24" fill="currentColor" className="size-6" aria-hidden="true">
-          <circle cx="12" cy="5" r="2" />
-          <circle cx="12" cy="12" r="2" />
-          <circle cx="12" cy="19" r="2" />
-        </svg>
+        <Icon name="menu" className="text-[1.3rem]" />
       </button>
       {open && (
         <>
@@ -89,8 +84,10 @@ function Menu({ entries }: { entries: MenuEntry[] }) {
                     setOpen(false)
                     entry.onSelect()
                   }}
-                  className={`block w-full px-5 py-3 text-left text-lg hover:bg-raised disabled:opacity-40 disabled:hover:bg-transparent ${entry.danger ? 'text-danger' : ''}`}
+                  className={`flex w-full items-center gap-4 px-5 py-3 text-left text-lg hover:bg-raised disabled:opacity-40 disabled:hover:bg-transparent ${entry.danger ? 'text-danger' : ''}`}
                 >
+                  {/* fixed-width slot, so the texts line up even if an entry has no icon */}
+                  <span className="flex w-5 shrink-0 justify-center">{entry.icon && <Icon name={entry.icon} className={entry.danger ? '' : 'text-muted'} />}</span>
                   {entry.label}
                 </button>
               ),

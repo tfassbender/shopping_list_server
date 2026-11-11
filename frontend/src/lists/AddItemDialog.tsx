@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useSuggestions, type Catalog, type Suggestion } from '../api/catalog'
 import { Dialog, DialogActions } from '../components/Dialog'
+import { Icon } from '../components/Icon'
 import { Button, SelectField } from '../components/ui'
 import { t } from '../i18n/messages'
 import { AmountUnitFields } from './AmountUnitFields'
@@ -132,10 +133,7 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
             disabled={listening}
             className={`flex size-12 shrink-0 items-center justify-center rounded-lg border border-line text-muted ${listening ? 'animate-pulse' : ''}`}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-6" aria-hidden="true">
-              <rect x="9" y="3" width="6" height="11" rx="3" />
-              <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
-            </svg>
+            <Icon name="microphone" className="text-xl" />
           </button>
         )}
         {suggestions.length > 0 && (

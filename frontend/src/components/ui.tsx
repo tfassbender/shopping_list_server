@@ -1,6 +1,7 @@
 import { useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react'
 import { ApiError } from '../api/client'
 import { errorMessage, t } from '../i18n/messages'
+import { Icon } from './Icon'
 
 /*
  * Small shared building blocks so pages look consistent. Touch targets are at least 44px high
@@ -156,9 +157,7 @@ export function Row(props: {
 
 export function ChevronRight() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="size-5 shrink-0 text-muted" aria-hidden="true">
-      <path d="M9 5l7 7-7 7" />
-    </svg>
+    <Icon name="next" className="shrink-0 text-muted" />
   )
 }
 
@@ -226,9 +225,7 @@ export function Fab({ label, onClick, disabled }: { label: string; onClick: () =
           disabled={disabled}
           className="pointer-events-auto flex size-16 items-center justify-center rounded-full bg-brand text-brand-ink shadow-lg hover:brightness-95 disabled:opacity-50"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" className="size-7" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
+          <Icon name="add" className="text-[1.6rem]" />
         </button>
       </div>
     </div>

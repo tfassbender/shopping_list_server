@@ -22,10 +22,10 @@ export function HomePage() {
     <Page
       title={t('start.title')}
       menu={[
-        { label: t('newList.title'), onSelect: () => setDialog('list'), disabled: !spaces?.length },
-        { label: t('spaces.title'), onSelect: () => navigate('/spaces') },
+        { label: t('newList.title'), icon: 'newList', onSelect: () => setDialog('list'), disabled: !spaces?.length },
+        { label: t('spaces.title'), icon: 'spaces', onSelect: () => navigate('/spaces') },
         'divider',
-        { label: t('nav.settings'), onSelect: () => navigate('/settings') },
+        { label: t('nav.settings'), icon: 'settings', onSelect: () => navigate('/settings') },
       ]}
     >
       {isPending && <Loading />}
