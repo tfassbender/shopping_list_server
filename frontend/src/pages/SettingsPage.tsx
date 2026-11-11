@@ -5,6 +5,7 @@ import { accountApi, type User, type UserSettings } from '../api/auth'
 import { useAuthActions, useCurrentUser } from '../auth/useAuth'
 import { Button, Card, ErrorText, Loading, PageTitle, SuccessText, TextField } from '../components/ui'
 import { t, tDynamic } from '../i18n/messages'
+import { ApiTokensSection } from './settings/ApiTokensSection'
 
 export function SettingsPage() {
   const { data: user } = useCurrentUser()
@@ -15,6 +16,7 @@ export function SettingsPage() {
       <ProfileSection user={user} />
       <DisplaySection user={user} />
       <PasswordSection />
+      <ApiTokensSection />
       <SessionSection />
       <DeleteAccountSection />
     </section>

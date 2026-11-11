@@ -1,5 +1,6 @@
 package com.tfassbender.shoppinglist.adapter.security
 
+import com.tfassbender.shoppinglist.application.auth.Roles
 import com.tfassbender.shoppinglist.application.port.SessionToken
 import com.tfassbender.shoppinglist.application.port.TokenIssuer
 import com.tfassbender.shoppinglist.domain.user.User
@@ -10,7 +11,7 @@ import java.time.Clock
 import java.time.Duration
 
 /**
- * Signs HS256 session JWTs. `upn`/`sub` = user id, group `user` (for `@RolesAllowed("user")`), and the
+ * Signs HS256 session JWTs. `upn`/`sub` = user id, groups `user` + `session` (see [Roles]), and the
  * [SESSION_VERSION_CLAIM] so tokens can be invalidated server side. Verification is done by SmallRye JWT
  * from the `mp.jwt.*` config.
  */
@@ -29,7 +30,8 @@ class JwtTokenIssuer(
         val token = Jwt.issuer(issuer)
             .upn(user.id.value)
             .subject(user.id.value)
-            .groups(setOf(USER_ROLE))
+            // A JWT is a real login session: it may also manage the account and API tokens.
+            .groups(setOf(Roles.USER, Roles.SESSION))
             .claim(SESSION_VERSION_CLAIM, user.sessionVersion)
             .issuedAt(now)
             .expiresAt(expiresAt)
@@ -38,7 +40,6 @@ class JwtTokenIssuer(
     }
 
     companion object {
-        const val USER_ROLE = "user"
         const val SESSION_VERSION_CLAIM = "sv"
     }
 }

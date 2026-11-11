@@ -56,7 +56,7 @@ class AuthResource(
 
     @POST
     @Path("/refresh")
-    @RolesAllowed(USER_ROLE)
+    @RolesAllowed(SESSION_ROLE)
     @Operation(operationId = "refreshSession", summary = "Exchange a still valid session token for a fresh one")
     fun refresh() = SessionResponse.from(authService.refresh(accountService.me(currentUser.id())))
 

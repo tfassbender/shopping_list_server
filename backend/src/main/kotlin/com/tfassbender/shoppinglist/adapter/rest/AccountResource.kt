@@ -45,6 +45,7 @@ class AccountResource(
 
     @POST
     @Path("/change-password")
+    @RolesAllowed(SESSION_ROLE)
     @Operation(operationId = "changePassword", summary = "Change the password; logs out all other sessions")
     fun changePassword(request: ChangePasswordRequest) = SessionResponse.from(
         accountService.changePassword(currentUser.id(), request.currentPassword, request.newPassword),
@@ -52,10 +53,12 @@ class AccountResource(
 
     @POST
     @Path("/logout-everywhere")
+    @RolesAllowed(SESSION_ROLE)
     @Operation(operationId = "logoutEverywhere", summary = "Invalidate all sessions; returns a fresh one for this device")
     fun logoutEverywhere() = SessionResponse.from(accountService.logoutEverywhere(currentUser.id()))
 
     @DELETE
+    @RolesAllowed(SESSION_ROLE)
     @Operation(
         operationId = "deleteAccount",
         summary = "Delete the account; owned spaces pass to the longest-standing member or are deleted",

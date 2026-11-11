@@ -4,7 +4,7 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–5 done. Next: Phase 6.
+**Status:** Phases 0–6 done. Next: Phase 7.
 
 ## Guiding principles
 
@@ -197,16 +197,22 @@ Tests: sort logic (unit, incl. checked-to-end interaction), REST tests.
 Goal: users let AI agents use the API.
 
 Backend:
-- [ ] Domain `ApiToken` (name, scope `READ`/`FULL`, expiry, hash, created/last used);
+- [x] Domain `ApiToken` (name, scope `READ`/`FULL`, expiry, hash, created/last used);
       `data/users/<id>/api-tokens.json`
-- [ ] REST: create (raw token shown once), list, revoke
-- [ ] Custom Quarkus `HttpAuthenticationMechanism`/`IdentityProvider`: recognizes token prefix
+- [x] REST: create (raw token shown once), list, revoke
+- [x] Custom Quarkus `HttpAuthenticationMechanism`/`IdentityProvider`: recognizes token prefix
       (e.g. `slt_`), otherwise JWT; read-only tokens rejected on mutating endpoints
-- [ ] Token management endpoints require JWT (a token can't create tokens)
-- [ ] OpenAPI polish: operation ids, descriptions, examples, security scheme – usable by agents
+- [x] Token management endpoints require JWT (a token can't create tokens)
+- [x] OpenAPI polish: operation ids, descriptions, examples, security scheme – usable by agents
 
 Frontend:
-- [ ] Settings → API tokens: create (name, scope, expiry), copy once, list, revoke
+- [x] Settings → API tokens: create (name, scope, expiry), copy once, list, revoke
+
+Decided while implementing: raw token format `slt_<userId>_<secret>` (the user id finds the token file
+without scanning, only a SHA-256 hash is stored); expiry 1 day – 10 years or none. Roles (`Roles`):
+`user` for every caller, `session` only for JWTs – required for token management, password change,
+logout everywhere, refresh and account deletion. Read-only tokens are blocked for every non-GET request
+by a filter (safe by default for new endpoints). Last use is written at most once per hour.
 
 Tests: auth mechanism (JWT vs. token, read-only enforcement, revoked/expired), REST tests.
 

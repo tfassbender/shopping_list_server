@@ -3,6 +3,8 @@ package com.tfassbender.shoppinglist.application.port
 import com.tfassbender.shoppinglist.domain.user.Email
 import com.tfassbender.shoppinglist.domain.user.Language
 import com.tfassbender.shoppinglist.domain.user.User
+import com.tfassbender.shoppinglist.domain.user.UserApiTokens
+import com.tfassbender.shoppinglist.domain.user.UserId
 import java.time.Instant
 
 /** A signed session token and the moment it stops being accepted (clients refresh before that). */
@@ -17,4 +19,10 @@ interface TokenIssuer {
 interface EmailSender {
     fun sendVerification(to: Email, displayName: String, language: Language, rawToken: String)
     fun sendPasswordReset(to: Email, displayName: String, language: Language, rawToken: String)
+}
+
+interface ApiTokenRepository {
+    /** The user's tokens; empty if none were saved yet. */
+    fun find(userId: UserId): UserApiTokens
+    fun save(tokens: UserApiTokens)
 }
