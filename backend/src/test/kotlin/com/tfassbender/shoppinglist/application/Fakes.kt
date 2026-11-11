@@ -1,10 +1,14 @@
 package com.tfassbender.shoppinglist.application
 
 import com.tfassbender.shoppinglist.application.port.EmailSender
+import com.tfassbender.shoppinglist.application.port.SequenceCounter
+import com.tfassbender.shoppinglist.application.port.ShoppingListRepository
 import com.tfassbender.shoppinglist.application.port.SpaceRepository
 import com.tfassbender.shoppinglist.application.port.SessionToken
 import com.tfassbender.shoppinglist.application.port.TokenIssuer
 import com.tfassbender.shoppinglist.application.port.UserRepository
+import com.tfassbender.shoppinglist.domain.list.ListId
+import com.tfassbender.shoppinglist.domain.list.ShoppingList
 import com.tfassbender.shoppinglist.domain.space.Space
 import com.tfassbender.shoppinglist.domain.space.SpaceId
 import com.tfassbender.shoppinglist.domain.user.Email
@@ -78,4 +82,22 @@ class InMemorySpaceRepository : SpaceRepository {
     override fun delete(id: SpaceId) {
         spaces.remove(id)
     }
+}
+
+/** Thread-safe, so concurrency tests can use it. */
+class InMemoryListRepository : ShoppingListRepository {
+    private val lists = java.util.concurrent.ConcurrentHashMap<Pair<SpaceId, ListId>, ShoppingList>()
+
+    override fun findById(spaceId: SpaceId, listId: ListId) = lists[spaceId to listId]
+    override fun findBySpace(spaceId: SpaceId) = lists.values.filter { it.spaceId == spaceId }
+    override fun save(list: ShoppingList) {
+        lists[list.spaceId to list.id] = list
+    }
+}
+
+class InMemorySequenceCounter : SequenceCounter {
+    private val values = java.util.concurrent.ConcurrentHashMap<SpaceId, Long>()
+
+    override fun next(spaceId: SpaceId): Long = values.merge(spaceId, 1L, Long::plus)!!
+    override fun current(spaceId: SpaceId): Long = values[spaceId] ?: 0
 }

@@ -6,6 +6,7 @@ import { RequireAuth } from './auth/RequireAuth'
 import { getSession, setSession, shouldRefresh } from './auth/session'
 import { useCurrentUser, useSession } from './auth/useAuth'
 import { Layout } from './components/Layout'
+import { ListPage } from './lists/ListPage'
 import { ForgotPasswordPage, ResetPasswordPage, VerifyEmailPage } from './pages/auth/EmailTokenPages'
 import { LoginPage } from './pages/auth/LoginPage'
 import { RegisterPage } from './pages/auth/RegisterPage'
@@ -32,6 +33,7 @@ export function AppRoutes() {
         <Route path="invite/:token" element={<RequireAuth><InvitePage /></RequireAuth>} />
         <Route path="spaces/:spaceId" element={<RequireAuth><SpacePage /></RequireAuth>} />
         <Route path="spaces/:spaceId/members" element={<RequireAuth><MembersPage /></RequireAuth>} />
+        <Route path="spaces/:spaceId/lists/:listId" element={<RequireAuth><ListPage /></RequireAuth>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

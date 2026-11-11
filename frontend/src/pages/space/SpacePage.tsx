@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { listKeys, listsApi, newId, useLists } from '../../api/lists'
 import { spaceKeys, spacesApi, useSpace } from '../../api/spaces'
 import { InlineForm } from '../../components/InlineForm'
-import { Button, ErrorText, Loading, PageTitle } from '../../components/ui'
+import { Button, Card, ErrorText, Loading, PageTitle } from '../../components/ui'
 import { t } from '../../i18n/messages'
 
 /** A space: its lists plus links to members and (owner) rename/delete. */
@@ -42,7 +43,7 @@ export function SpacePage() {
       )}
       <ErrorText error={rename.error ?? remove.error} />
 
-      <SpaceLists spaceId={spaceId} isOwner={isOwner} />
+      <SpaceLists spaceId={spaceId} />
 
       <nav className="flex flex-wrap gap-2">
         <SpaceLink to={`/spaces/${spaceId}/members`}>{t('space.members')}</SpaceLink>
@@ -74,7 +75,36 @@ export function SpaceLink({ to, children }: { to: string; children: string }) {
   )
 }
 
-/** Placeholder until the lists of a space exist (Phase 3). */
-function SpaceLists(_props: { spaceId: string; isOwner: boolean }) {
-  return null
+function SpaceLists({ spaceId }: { spaceId: string }) {
+  const { data: lists, error } = useLists(spaceId)
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const create = useMutation({
+    mutationFn: (name: string) => listsApi.create(spaceId, name, newId()),
+    onSuccess: (list) => {
+      queryClient.invalidateQueries({ queryKey: listKeys.all(spaceId) })
+      navigate(`/spaces/${spaceId}/lists/${list.id}`)
+    },
+  })
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-lg font-semibold">{t('lists.title')}</h3>
+      <ErrorText error={error ?? create.error} />
+      {lists?.length === 0 && <p className="text-gray-500 dark:text-gray-400">{t('lists.empty')}</p>}
+      <ul className="space-y-2">
+        {lists?.map((list) => (
+          <li key={list.id}>
+            <Link to={`/spaces/${spaceId}/lists/${list.id}`} className="block">
+              <Card className="flex items-center justify-between hover:border-green-500">
+                <span className="text-lg font-medium">{list.name}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{t('lists.openCount', { count: list.openItems })}</span>
+              </Card>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <InlineForm label={t('lists.newName')} submitLabel={t('common.create')} clearOnSubmit disabled={create.isPending} onSubmit={(name) => create.mutate(name)} />
+    </div>
+  )
 }

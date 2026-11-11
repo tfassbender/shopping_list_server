@@ -8,6 +8,8 @@ repositories {
 
 dependencies {
     testImplementation("io.rest-assured:rest-assured:5.5.6")
+    // RestAssured serializes map request bodies with Jackson.
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.20.1")
     testImplementation("org.junit.jupiter:junit-jupiter:5.13.4")
     // Gradle 9 no longer adds the JUnit Platform launcher implicitly.
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.4")

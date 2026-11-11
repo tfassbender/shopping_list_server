@@ -4,7 +4,7 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–2 done. Next: Phase 3.
+**Status:** Phases 0–3 done. Next: Phase 4.
 
 ## Guiding principles
 
@@ -117,23 +117,28 @@ Tests: `Space` invariants (unit), permission matrix (REST tests per role), e2e i
 Goal: a usable shared shopping list. Online only, but built on the change model needed for offline sync.
 
 Backend:
-- [ ] Domain `ShoppingList` aggregate (`ListId`, `SpaceId`, name, items) and `Item`
+- [x] Domain `ShoppingList` aggregate (`ListId`, `SpaceId`, name, items) and `Item`
       (`ItemId`, name, quantity, unit, note, checked, `seq`, `deleted` tombstone)
-- [ ] **Change model:** sealed class of list/item changes (add, edit field, check, uncheck, delete,
+- [x] **Change model:** sealed class of list/item changes (add, edit field, check, uncheck, delete,
       remove checked, rename list) applied by the aggregate; client-generated UUIDs accepted
-- [ ] Per-space sequence counter; every applied change stamps the entity's `seq`
-- [ ] `FileShoppingListRepository` (`data/spaces/<id>/lists/<listId>.json`)
-- [ ] REST: lists CRUD (members create/rename, owner deletes), items add/edit/check/uncheck/delete,
+- [x] Per-space sequence counter; every applied change stamps the entity's `seq`
+- [x] `FileShoppingListRepository` (`data/spaces/<id>/lists/<listId>.json`)
+- [x] REST: lists CRUD (members create/rename, owner deletes), items add/edit/check/uncheck/delete,
       `POST .../remove-checked`; all mapped onto the change model
-- [ ] Permission checks via `Space` membership
+- [x] Permission checks via `Space` membership
 
 Frontend:
-- [ ] Lists overview per space, create/rename/delete
-- [ ] List screen (mobile-first): quick add field, check by tap, edit item (quantity, unit, note),
+- [x] Lists overview per space, create/rename/delete
+- [x] List screen (mobile-first): quick add field, check by tap, edit item (quantity, unit, note),
       delete, "remove all checked"
-- [ ] **Undo for check** (snackbar after checking)
-- [ ] "Checked items to the end" (personal setting from Phase 1)
-- [ ] Route all list mutations through one client module (`listChanges`) – becomes the offline queue in Phase 8
+- [x] **Undo for check** (snackbar after checking)
+- [x] "Checked items to the end" (personal setting from Phase 1)
+- [x] Route all list mutations through one client module (`listChanges`) – becomes the offline queue in Phase 8
+
+Decided while implementing: the sequence counter is its own file (`sequence.json`) behind the
+`SequenceCounter` port; one seq per applied request (batch). Deleted lists are tombstones too.
+Editing a tombstoned item is `404` for now – "edit wins over delete" comes with the merge rules in Phase 7.
+The web client polls an open list every 10 s until SSE (Phase 9).
 
 Tests: aggregate change application (unit), REST tests incl. permissions, e2e two users on one list.
 
