@@ -279,6 +279,8 @@ export const de: Record<MessageKey, string> = {
   'settings.aiAgents': 'KI-Agenten',
   'settings.tokensHint': 'Einen KI-Agenten deine Listen nutzen lassen',
   'settings.account': 'Konto',
+  'settings.keepScreenOn': 'Bildschirm anlassen',
+  'settings.keepScreenOnHint': 'Solange die App offen ist, auf diesem Gerät',
   'settings.mergeNotes': 'Hinweise zu zusammengeführten Änderungen zeigen',
   'settings.mergeNotesHint': 'Wenn Offline-Änderungen mehrerer Personen aufeinandertrafen',
   'settings.passwordHint': 'Mindestens 8 Zeichen. Deine anderen Geräte werden abgemeldet.',

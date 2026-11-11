@@ -280,6 +280,8 @@ export const en = {
   'settings.aiAgents': 'AI agents',
   'settings.tokensHint': 'Let an AI agent use your lists',
   'settings.account': 'Account',
+  'settings.keepScreenOn': 'Keep the screen on',
+  'settings.keepScreenOnHint': 'While the app is open, on this device',
   'settings.mergeNotes': 'Show notes about merged changes',
   'settings.mergeNotesHint': 'When offline changes of several people met',
   'settings.passwordHint': 'At least 8 characters. Your other devices will be logged out.',

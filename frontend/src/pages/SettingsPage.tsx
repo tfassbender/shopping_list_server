@@ -8,6 +8,7 @@ import { useAuthActions, useCurrentUser } from '../auth/useAuth'
 import { Page } from '../components/AppBar'
 import { ConfirmDialog, Dialog, DialogActions } from '../components/Dialog'
 import { Button, ErrorText, Loading, Row, SectionTitle, Segmented, SuccessText, Switch, TextField } from '../components/ui'
+import { isKeepScreenOnSupported, setKeepScreenOn, useKeepScreenOnSetting } from '../device/keepScreenOn'
 import { t } from '../i18n/messages'
 import { OnlineOnly } from '../offline/online'
 import { NameDialog } from './space/SpaceDialogs'
@@ -20,6 +21,7 @@ type DialogName = 'name' | 'password' | 'logoutEverywhere' | 'delete' | null
  */
 export function SettingsPage() {
   const { data: user } = useCurrentUser()
+  const keepScreenOn = useKeepScreenOnSetting()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { startSession, logout } = useAuthActions()
@@ -105,6 +107,15 @@ export function SettingsPage() {
             onChange={(show) => change({ ignoreMergeWarnings: !show })}
           />
         </label>
+        {isKeepScreenOnSupported() && (
+          <label className="flex min-h-15 items-center gap-3 border-b border-line px-2 py-2">
+            <span className="min-w-0 flex-1">
+              {t('settings.keepScreenOn')}
+              <span className="block text-sm text-muted">{t('settings.keepScreenOnHint')}</span>
+            </span>
+            <Switch label={t('settings.keepScreenOn')} checked={keepScreenOn} onChange={setKeepScreenOn} />
+          </label>
+        )}
 
         <SectionTitle>{t('settings.aiAgents')}</SectionTitle>
         <Row

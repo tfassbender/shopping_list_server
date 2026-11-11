@@ -8,6 +8,7 @@ import { RequireAuth } from './auth/RequireAuth'
 import { getSession, setSession, shouldRefresh } from './auth/session'
 import { useCurrentUser, useSession } from './auth/useAuth'
 import { Layout } from './components/Layout'
+import { KeepScreenOn } from './device/keepScreenOn'
 import { syncEngine } from './offline/engine'
 import { startLiveUpdates } from './offline/liveUpdates'
 import { applyPullToCache } from './offline/pullToCache'
@@ -183,6 +184,7 @@ export function App() {
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: CACHE_MAX_AGE_MS }}>
       <ThemeSync />
+      <KeepScreenOn />
       <SessionRefresher />
       <OfflineSync />
       <LiveUpdates />
