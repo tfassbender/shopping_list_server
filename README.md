@@ -8,7 +8,19 @@ A shopping list app with user accounts and lists shared between users.
 
 ## Status
 
-Planning phase – no code yet.
+Project setup done (Phase 0 of the [implementation plan](doc/implementation_plan.md)).
+
+## Quick start
+
+Requires JDK 21 and Node.js.
+
+```bash
+./gradlew build -PwithFrontend                          # build + test everything
+java -jar backend/build/quarkus-app/quarkus-run.jar    # http://localhost:4720
+```
+
+Development: `./gradlew :backend:quarkusDev` and `cd frontend && npm run dev` (http://localhost:5173).
+API docs: http://localhost:4720/q/swagger-ui
 
 ## Documentation
 

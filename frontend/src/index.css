@@ -1,0 +1,22 @@
+@import 'tailwindcss';
+
+/*
+ * Dark mode is controlled by a `dark` class on <html> (set by src/theme/theme.ts) instead of only the
+ * system setting, so users can override it. `dark:bg-...` classes apply whenever an ancestor has `.dark`.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  html {
+    /* Lets native controls (scrollbars, inputs) follow the theme too. */
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-white text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
+    /* Avoid the grey flash when tapping on mobile. */
+    -webkit-tap-highlight-color: transparent;
+  }
+}

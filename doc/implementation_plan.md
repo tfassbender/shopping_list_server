@@ -4,7 +4,7 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phase 0 not started.
+**Status:** Phase 0 done. Next: Phase 1.
 
 ## Guiding principles
 
@@ -40,22 +40,22 @@ after each phase. Update the checkboxes and the status as work completes.
 
 Goal: a Gradle monorepo where backend, frontend and e2e build, and the SPA is served by Quarkus.
 
-- [ ] Gradle Kotlin DSL root: `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`
+- [x] Gradle Kotlin DSL root: `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`
       (Quarkus + matching Kotlin version, JVM 21), Gradle wrapper
-- [ ] `backend`: Quarkus + Kotlin (`quarkus-rest-jackson`, `quarkus-kotlin`, `jackson-module-kotlin`,
+- [x] `backend`: Quarkus + Kotlin (`quarkus-rest-jackson`, `quarkus-kotlin`, `jackson-module-kotlin`,
       `quarkus-smallrye-openapi`), `allOpen` config, base package `com.tfassbender.shoppinglist`
-- [ ] Package skeleton `domain` / `application` / `adapter` + **ArchUnit** layering test
-- [ ] `GET /api/health` + `@QuarkusTest` smoke test
-- [ ] Error handling: exception mappers → consistent JSON error body (`code`, `message`, error id for 500s)
-- [ ] Config: port 4720, `shoppinglist.data.dir`, CORS for the Vite dev server
-- [ ] `frontend`: React + TypeScript + Vite + Tailwind, React Router, TanStack Query, Vitest;
+- [x] Package skeleton `domain` / `application` / `adapter` + **ArchUnit** layering test
+- [x] `GET /api/health` + `@QuarkusTest` smoke test
+- [x] Error handling: exception mappers → consistent JSON error body (`code`, `message`, error id for 500s)
+- [x] Config: port 4720, `shoppinglist.data.dir`, CORS for the Vite dev server
+- [x] `frontend`: React + TypeScript + Vite + Tailwind, React Router, TanStack Query, Vitest;
       Vite proxies `/api` → 4720
-- [ ] **Dark mode** foundation: Tailwind `dark:` variant, follows system setting (user override in Phase 1)
-- [ ] All UI strings in one place (simple message module) so i18n in Phase 10 is a drop-in
-- [ ] Gradle tasks: `:frontend:npmBuild`, `buildFrontend` (copy SPA into `META-INF/resources`)
-- [ ] SPA fallback routing in Quarkus (deep links like `/lists/123` return `index.html`)
-- [ ] `e2e` module (JUnit 5 + RestAssured) with one smoke test
-- [ ] `CLAUDE.md`: fill in build/run/test commands
+- [x] **Dark mode** foundation: Tailwind `dark:` variant, follows system setting (user override in Phase 1)
+- [x] All UI strings in one place (simple message module) so i18n in Phase 10 is a drop-in
+- [x] Gradle tasks: `:frontend:npmBuild`, `-PwithFrontend` packages the SPA into the backend JAR
+- [x] SPA fallback routing in Quarkus (deep links like `/lists/123` return `index.html`)
+- [x] `e2e` module (JUnit 5 + RestAssured) with one smoke test
+- [x] `CLAUDE.md`: fill in build/run/test commands
 
 ## Phase 1 – Accounts & authentication
 

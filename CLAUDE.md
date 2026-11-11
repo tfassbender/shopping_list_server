@@ -11,7 +11,7 @@ A shopping list app with user management and list sharing between users.
 - **Android app:** planned later, uses the same REST API
 
 **Status:** planning phase. Tech stack and features are settled; implementation plan in `doc/implementation_plan.md`.
-No code yet – only documentation in `doc/`.
+Phase 0 (project setup) is done.
 
 ## Documentation (`doc/`)
 
@@ -76,8 +76,23 @@ Don't hard-code undecided details – ask.
 
 ## Build, run & test commands
 
-*Not set up yet.* Fill in when the project is scaffolded (expected: `./gradlew :backend:quarkusDev`,
-`./gradlew :backend:test`, `cd frontend && npm run dev` / `npm test`).
+Gradle monorepo (`backend` / `frontend` / `e2e`), JDK 21. Run from the repo root.
+
+- **Everything (backend + frontend tests, JAR with SPA):** `./gradlew build -PwithFrontend`
+  (without `-PwithFrontend` the backend JAR contains no web app)
+- **Run the packaged app:** `java -jar backend/build/quarkus-app/quarkus-run.jar` → http://localhost:4720
+- **Backend dev (live reload, port 4720):** `./gradlew :backend:quarkusDev`
+- **Backend tests:** `./gradlew :backend:test`; one class:
+  `./gradlew :backend:test --tests "com.tfassbender.shoppinglist.adapter.rest.HealthResourceTest"`
+- **Frontend dev (Vite, port 5173, proxies `/api` → 4720):** `cd frontend && npm run dev`
+- **Frontend tests / type check / build:** `cd frontend && npm test` / `npm run check` / `npm run build`;
+  one file: `npm test -- src/App.test.tsx`
+- **E2E (REST against a running backend):** start the backend, then `./gradlew :e2e:e2eTest`
+  (`-PbaseUrl=...` for another server). Tests skip themselves if no backend is reachable.
+- **API docs:** OpenAPI at `/q/openapi`, Swagger UI at `/q/swagger-ui`.
+
+Domain and application tests run as plain JUnit 5 (no `@QuarkusTest`). `HexagonalArchitectureTest`
+(ArchUnit) enforces the layering.
 
 ## Conventions
 

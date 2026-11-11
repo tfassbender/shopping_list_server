@@ -160,7 +160,8 @@ Rules are defined in `doc/features.md` 3.5. Technical approach:
 - **i18n:** German + English (avalon stores the user's language on the account)
 - **Testing:** Vitest + React Testing Library
 - Dev: Vite dev server proxies `/api` to Quarkus; prod: the built SPA is served by Quarkus from
-  `META-INF/resources` (same as avalon's `buildFrontend` task), so one deployable JAR.
+  `META-INF/resources` (packaged into the backend JAR with `./gradlew build -PwithFrontend`), so one
+  deployable JAR. Deep links are rerouted to `index.html` (`SpaRouting`).
 
 ## Android App (later)
 
