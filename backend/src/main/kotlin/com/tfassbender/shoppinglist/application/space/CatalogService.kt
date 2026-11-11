@@ -1,6 +1,7 @@
 package com.tfassbender.shoppinglist.application.space
 
 import com.tfassbender.shoppinglist.application.port.CatalogRepository
+import com.tfassbender.shoppinglist.application.port.SequenceCounter
 import com.tfassbender.shoppinglist.domain.list.CategoryId
 import com.tfassbender.shoppinglist.domain.list.Item
 import com.tfassbender.shoppinglist.domain.list.ListChange
@@ -20,6 +21,7 @@ import java.util.UUID
 @ApplicationScoped
 class CatalogService(
     private val catalogs: CatalogRepository,
+    private val sequence: SequenceCounter,
     private val access: SpaceAccess,
     private val locks: SpaceLocks,
     private val clock: Clock,
@@ -31,7 +33,7 @@ class CatalogService(
     }
 
     fun createDefaults(spaceId: SpaceId, language: Language) = locks.withLock(spaceId) {
-        catalogs.save(CatalogDefaults.create(spaceId, language))
+        catalogs.save(CatalogDefaults.create(spaceId, language).copy(seq = sequence.next(spaceId)))
     }
 
     fun addCategory(userId: UserId, spaceId: SpaceId, name: String, color: String, id: CategoryId? = null): SpaceCatalog =
@@ -97,7 +99,7 @@ class CatalogService(
     private fun modify(userId: UserId, spaceId: SpaceId, change: (SpaceCatalog) -> SpaceCatalog): SpaceCatalog =
         locks.withLock(spaceId) {
             access.requireMember(spaceId, userId)
-            val updated = change(catalogs.find(spaceId))
+            val updated = change(catalogs.find(spaceId)).copy(seq = sequence.next(spaceId))
             catalogs.save(updated)
             updated
         }

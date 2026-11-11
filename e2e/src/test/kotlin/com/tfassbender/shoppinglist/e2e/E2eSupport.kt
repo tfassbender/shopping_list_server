@@ -20,8 +20,9 @@ object E2eSupport {
 
     private fun isBackendReachable(): Boolean = try {
         val connection = URI("$baseUrl/api/health").toURL().openConnection() as HttpURLConnection
-        connection.connectTimeout = 1000
-        connection.readTimeout = 1000
+        connection.connectTimeout = 2000
+        // Generous: a backend in dev mode may be hot-reloading on the first request.
+        connection.readTimeout = 10_000
         connection.responseCode == 200
     } catch (_: Exception) {
         false

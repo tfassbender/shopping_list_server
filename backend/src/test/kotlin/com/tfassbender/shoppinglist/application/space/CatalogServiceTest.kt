@@ -4,6 +4,8 @@ import com.tfassbender.shoppinglist.application.InMemoryCatalogRepository
 import com.tfassbender.shoppinglist.application.InMemoryListRepository
 import com.tfassbender.shoppinglist.application.InMemorySequenceCounter
 import com.tfassbender.shoppinglist.application.InMemorySpaceRepository
+import com.tfassbender.shoppinglist.application.InMemorySyncStateRepository
+import com.tfassbender.shoppinglist.application.list.ListStore
 import com.tfassbender.shoppinglist.application.MutableClock
 import com.tfassbender.shoppinglist.application.list.ShoppingListService
 import com.tfassbender.shoppinglist.domain.DomainException
@@ -28,8 +30,10 @@ class CatalogServiceTest {
     private val catalogs = InMemoryCatalogRepository()
     private val locks = SpaceLocks()
     private val access = SpaceAccess(spaces)
-    private val catalog = CatalogService(catalogs, access, locks, clock)
-    private val lists = ShoppingListService(InMemoryListRepository(), InMemorySequenceCounter(), access, locks, clock, catalog)
+    private val sequence = InMemorySequenceCounter()
+    private val catalog = CatalogService(catalogs, sequence, access, locks, clock)
+    private val listRepo = InMemoryListRepository()
+    private val lists = ShoppingListService(listRepo, ListStore(listRepo, InMemorySyncStateRepository(), clock), sequence, access, locks, clock, catalog)
 
     private val user = UserId("u")
     private val spaceId = SpaceId("s")

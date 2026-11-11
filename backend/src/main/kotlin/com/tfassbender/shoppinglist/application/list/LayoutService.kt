@@ -3,6 +3,7 @@ package com.tfassbender.shoppinglist.application.list
 import com.tfassbender.shoppinglist.application.port.CatalogRepository
 import com.tfassbender.shoppinglist.application.port.FavoritesRepository
 import com.tfassbender.shoppinglist.application.port.LayoutRepository
+import com.tfassbender.shoppinglist.application.port.SequenceCounter
 import com.tfassbender.shoppinglist.application.port.ShoppingListRepository
 import com.tfassbender.shoppinglist.application.port.UserRepository
 import com.tfassbender.shoppinglist.application.space.SpaceAccess
@@ -31,6 +32,7 @@ class LayoutService(
     private val catalogs: CatalogRepository,
     private val lists: ShoppingListRepository,
     private val users: UserRepository,
+    private val sequence: SequenceCounter,
     private val access: SpaceAccess,
     private val locks: SpaceLocks,
     private val clock: Clock,
@@ -55,7 +57,7 @@ class LayoutService(
                 throw DomainException(ErrorKind.CONFLICT, "LAYOUT_EXISTS", "Layout ${id.value} already exists")
             }
             val initialOrder = catalogs.find(spaceId).categories.map { it.id }
-            val layout = ShopLayout.create(id, spaceId, name, mode, initialOrder, clock.instant())
+            val layout = ShopLayout.create(id, spaceId, name, mode, initialOrder, clock.instant()).copy(seq = sequence.next(spaceId))
             layouts.save(layout)
             layout
         }
@@ -67,6 +69,7 @@ class LayoutService(
         access.requireMember(spaceId, userId)
         load(spaceId, layoutId)
         layouts.delete(spaceId, layoutId)
+        sequence.next(spaceId) // clients see a new seq and refresh their layouts
     }
 
     fun setCategoryOrder(userId: UserId, spaceId: SpaceId, layoutId: LayoutId, order: List<CategoryId>): ShopLayout =
@@ -132,7 +135,7 @@ class LayoutService(
     private fun modify(userId: UserId, spaceId: SpaceId, layoutId: LayoutId, change: (ShopLayout) -> ShopLayout): ShopLayout =
         locks.withLock(spaceId) {
             access.requireMember(spaceId, userId)
-            val updated = change(load(spaceId, layoutId))
+            val updated = change(load(spaceId, layoutId)).copy(seq = sequence.next(spaceId))
             layouts.save(updated)
             updated
         }

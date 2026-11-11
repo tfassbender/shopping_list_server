@@ -4,7 +4,7 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–6 done. Next: Phase 7.
+**Status:** Phases 0–7 done. Next: Phase 8.
 
 ## Guiding principles
 
@@ -220,14 +220,28 @@ Tests: auth mechanism (JWT vs. token, read-only enforcement, revoked/expired), R
 
 Goal: clients can sync batches of changes made offline.
 
-- [ ] `POST /api/spaces/{id}/changes`: batch of changes with change ids (idempotent: applied change
+- [x] `POST /api/spaces/{id}/changes`: batch of changes with change ids (idempotent: applied change
       ids remembered for a while)
-- [ ] Merge rules in the aggregate: same field → later applied wins; **edit wins over delete**
+- [x] Merge rules in the aggregate: same field → later applied wins; **edit wins over delete**
       (restores tombstoned items, also after "remove checked")
-- [ ] Merge warnings in the response (overwritten / restored, with who and what)
-- [ ] `GET /api/spaces/{id}/changes?since=<seq>`: all lists/items/catalog entries changed since `seq`,
+- [x] Merge warnings in the response (overwritten / restored, with who and what)
+- [x] `GET /api/spaces/{id}/changes?since=<seq>`: all lists/items/catalog entries changed since `seq`,
       including tombstones
-- [ ] Tombstone cleanup (e.g. after 30 days) + "full resync required" response for very old `since`
+- [x] Tombstone cleanup (e.g. after 30 days) + "full resync required" response for very old `since`
+
+Decided while implementing:
+- Items carry per-aspect **stamps** (seq + user) for existence, name, quantity, unit, note, category,
+  checked. A batch carries `baseSeq` (the client's last pull); a change conflicts if the stamp of what it
+  touches is newer than `baseSeq` and from another user. Online REST calls have no base: plain later-wins.
+- Rules: same field → later wins + `OVERWRITTEN` warning; edit/check/uncheck of a deleted item →
+  restored + `RESTORED`; delete / remove-checked of an item someone else changed concurrently → skipped
+  + `DELETE_SKIPPED`; changes to a deleted list → rejected + `LIST_DELETED`. Offline "remove checked"
+  sends the item ids the client saw checked.
+- Each change in a batch is applied or rejected on its own (`APPLIED` / `DUPLICATE` / `REJECTED`), one
+  seq per batch; change ids remembered 30 days (`spaces/<id>/sync.json`).
+- Protocol: push with `baseSeq`, then pull with `since = baseSeq` (not the push seq).
+- Tombstones are purged 30 days after deletion when the list is saved; the purge horizon forces a full
+  resync for older clients. Catalog and layouts carry a seq and are included in the pull when changed.
 
 Tests: merge rules incl. edge cases (unit), batch idempotency, e2e two clients syncing conflicting changes.
 

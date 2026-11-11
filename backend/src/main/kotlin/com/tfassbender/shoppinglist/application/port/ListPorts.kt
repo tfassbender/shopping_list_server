@@ -2,6 +2,7 @@ package com.tfassbender.shoppinglist.application.port
 
 import com.tfassbender.shoppinglist.domain.list.ListId
 import com.tfassbender.shoppinglist.domain.list.ShoppingList
+import com.tfassbender.shoppinglist.domain.list.SyncState
 import com.tfassbender.shoppinglist.domain.space.SpaceId
 
 interface ShoppingListRepository {
@@ -19,4 +20,10 @@ interface ShoppingListRepository {
 interface SequenceCounter {
     fun next(spaceId: SpaceId): Long
     fun current(spaceId: SpaceId): Long
+}
+
+interface SyncStateRepository {
+    /** The sync state of the space; an empty one if none was saved yet. */
+    fun find(spaceId: SpaceId): SyncState
+    fun save(state: SyncState)
 }

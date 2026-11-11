@@ -60,7 +60,9 @@ class ListResourceTest {
         owner.request().post("${lists()}/$listId/items/$milk/check").then().statusCode(200).body("items[0].checked", equalTo(true))
         owner.request().post("${lists()}/$listId/items/$milk/uncheck").then().statusCode(200).body("items[0].checked", equalTo(false))
         member.request().delete("${lists()}/$listId/items/$milk").then().statusCode(200).body("items", hasSize<Any>(0))
-        member.request().post("${lists()}/$listId/items/$milk/check").then().statusCode(404).body("code", equalTo("ITEM_NOT_FOUND"))
+        // edit wins over delete: checking the deleted item brings it back
+        member.request().post("${lists()}/$listId/items/$milk/check").then().statusCode(200).body("items[0].checked", equalTo(true))
+        member.request().post("${lists()}/$listId/items/unknown-item/check").then().statusCode(404).body("code", equalTo("ITEM_NOT_FOUND"))
     }
 
     @Test

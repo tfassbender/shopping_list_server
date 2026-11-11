@@ -146,3 +146,12 @@ class InMemoryApiTokenRepository : com.tfassbender.shoppinglist.application.port
         this.tokens[tokens.userId] = tokens
     }
 }
+
+class InMemorySyncStateRepository : com.tfassbender.shoppinglist.application.port.SyncStateRepository {
+    private val states = java.util.concurrent.ConcurrentHashMap<SpaceId, com.tfassbender.shoppinglist.domain.list.SyncState>()
+
+    override fun find(spaceId: SpaceId) = states[spaceId] ?: com.tfassbender.shoppinglist.domain.list.SyncState(spaceId)
+    override fun save(state: com.tfassbender.shoppinglist.domain.list.SyncState) {
+        states[state.spaceId] = state
+    }
+}

@@ -225,7 +225,7 @@ class ListResource(
     @Path("/{listId}/remove-checked")
     @Operation(operationId = "removeCheckedItems", summary = "Remove all checked items")
     fun removeChecked(@PathParam("spaceId") spaceId: String, @PathParam("listId") listId: String, @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION) sort: String?) =
-        change(spaceId, listId, sort, ListChange.RemoveChecked)
+        change(spaceId, listId, sort, ListChange.RemoveChecked())
 
     private fun change(spaceId: String, listId: String, sort: String?, change: ListChange): ListDto =
         toDto(listService.apply(currentUser.id(), SpaceId(spaceId), ListId(listId), change), sort)

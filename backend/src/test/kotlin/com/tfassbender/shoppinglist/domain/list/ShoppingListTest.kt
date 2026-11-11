@@ -136,10 +136,11 @@ class ShoppingListTest {
         }
 
         @Test
-        fun `editing unknown or deleted items is not found`() {
+        fun `editing unknown items is not found`() {
             assertEquals("ITEM_NOT_FOUND", assertThrows<DomainException> { withTwo.applyAll(EditItem(ItemId("x"), ItemField.NAME, "X")) }.code)
+            // a deleted item is not "not found": editing it restores it (merge rule "edit wins over delete")
             val deleted = withTwo.applyAll(DeleteItem(milk))
-            assertEquals("ITEM_NOT_FOUND", assertThrows<DomainException> { deleted.applyAll(CheckItem(milk)) }.code)
+            assertTrue(deleted.applyAll(CheckItem(milk)).item(milk)!!.isActive)
         }
     }
 
@@ -171,7 +172,7 @@ class ShoppingListTest {
         fun `remove checked deletes only checked active items`() {
             val third = ItemId("eggs")
             val list = withTwo.applyAll(AddItem(third, "Eggs"), CheckItem(milk), CheckItem(third))
-                .apply(RemoveChecked, seq = 42, now = t0)
+                .apply(RemoveChecked(), seq = 42, now = t0)
 
             assertEquals(listOf(bread), list.activeItems.map { it.id })
             assertEquals(42, list.item(milk)!!.seq)
@@ -182,14 +183,14 @@ class ShoppingListTest {
         @Test
         fun `remove checked doesn't touch older tombstones`() {
             val list = withTwo.applyAll(CheckItem(milk), DeleteItem(milk), CheckItem(bread))
-            val after = list.apply(RemoveChecked, seq = 100, now = t0)
+            val after = list.apply(RemoveChecked(), seq = 100, now = t0)
             assertEquals(list.item(milk)!!.seq, after.item(milk)!!.seq)
             assertEquals(100, after.item(bread)!!.seq)
         }
 
         @Test
         fun `remove checked on a list without checked items changes nothing`() {
-            assertEquals(withTwo.items, withTwo.applyAll(RemoveChecked).items)
+            assertEquals(withTwo.items, withTwo.applyAll(RemoveChecked()).items)
         }
     }
 
@@ -205,7 +206,7 @@ class ShoppingListTest {
 
         @Test
         fun `a deleted list accepts no changes`() {
-            val deleted = withTwo.markDeleted(20)
+            val deleted = withTwo.markDeleted(20, t0)
             assertTrue(deleted.deleted)
             assertEquals("LIST_NOT_FOUND", assertThrows<DomainException> { deleted.applyAll(AddItem(ItemId("x"), "X")) }.code)
         }

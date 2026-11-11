@@ -7,6 +7,7 @@ import com.tfassbender.shoppinglist.application.InMemoryListRepository
 import com.tfassbender.shoppinglist.application.InMemorySequenceCounter
 import com.tfassbender.shoppinglist.application.InMemorySpaceRepository
 import com.tfassbender.shoppinglist.application.InMemoryUserRepository
+import com.tfassbender.shoppinglist.application.InMemorySyncStateRepository
 import com.tfassbender.shoppinglist.application.MutableClock
 import com.tfassbender.shoppinglist.application.space.CatalogService
 import com.tfassbender.shoppinglist.application.space.SpaceAccess
@@ -40,9 +41,10 @@ class LayoutServiceTest {
     private val listRepo = InMemoryListRepository()
     private val locks = SpaceLocks()
     private val access = SpaceAccess(spaces)
-    private val catalog = CatalogService(catalogs, access, locks, clock)
-    private val lists = ShoppingListService(listRepo, InMemorySequenceCounter(), access, locks, clock, catalog)
-    private val service = LayoutService(InMemoryLayoutRepository(), InMemoryFavoritesRepository(), catalogs, listRepo, users, access, locks, clock)
+    private val sequence = InMemorySequenceCounter()
+    private val catalog = CatalogService(catalogs, sequence, access, locks, clock)
+    private val lists = ShoppingListService(listRepo, ListStore(listRepo, InMemorySyncStateRepository(), clock), sequence, access, locks, clock, catalog)
+    private val service = LayoutService(InMemoryLayoutRepository(), InMemoryFavoritesRepository(), catalogs, listRepo, users, sequence, access, locks, clock)
 
     private val anna = UserId("anna")
     private val bob = UserId("bob")

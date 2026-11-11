@@ -45,6 +45,7 @@ data class LayoutFile(
     val itemOrder: List<String> = emptyList(),
     val listIds: List<String> = emptyList(),
     val createdAt: Instant,
+    val seq: Long = 0,
 ) {
     fun toDomain() = ShopLayout(
         id = LayoutId(id),
@@ -55,6 +56,7 @@ data class LayoutFile(
         itemOrder = itemOrder,
         listIds = listIds.map(::ListId).toSet(),
         createdAt = createdAt,
+        seq = seq,
     )
 
     companion object {
@@ -67,6 +69,7 @@ data class LayoutFile(
             itemOrder = layout.itemOrder,
             listIds = layout.listIds.map { it.value }.sorted(),
             createdAt = layout.createdAt,
+            seq = layout.seq,
         )
     }
 }

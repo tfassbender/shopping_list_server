@@ -30,6 +30,8 @@ data class ShopLayout(
     val itemOrder: List<String>,
     val listIds: Set<ListId>,
     val createdAt: Instant,
+    /** Space sequence number of the last change (for sync). */
+    val seq: Long = 0,
 ) {
     init {
         if (name.isBlank() || name != name.trim() || name.length > MAX_NAME_LENGTH) {

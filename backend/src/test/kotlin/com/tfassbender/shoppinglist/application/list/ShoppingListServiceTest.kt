@@ -4,6 +4,7 @@ import com.tfassbender.shoppinglist.application.InMemoryCatalogRepository
 import com.tfassbender.shoppinglist.application.InMemoryListRepository
 import com.tfassbender.shoppinglist.application.InMemorySequenceCounter
 import com.tfassbender.shoppinglist.application.InMemorySpaceRepository
+import com.tfassbender.shoppinglist.application.InMemorySyncStateRepository
 import com.tfassbender.shoppinglist.application.MutableClock
 import com.tfassbender.shoppinglist.application.space.CatalogService
 import com.tfassbender.shoppinglist.application.space.SpaceAccess
@@ -33,8 +34,9 @@ class ShoppingListServiceTest {
     private val sequence = InMemorySequenceCounter()
     private val catalogs = InMemoryCatalogRepository()
     private val locks = SpaceLocks()
-    private val catalogService = CatalogService(catalogs, SpaceAccess(spaces), locks, clock)
-    private val service = ShoppingListService(lists, sequence, SpaceAccess(spaces), locks, clock, catalogService)
+    private val catalogService = CatalogService(catalogs, sequence, SpaceAccess(spaces), locks, clock)
+    private val syncStates = InMemorySyncStateRepository()
+    private val service = ShoppingListService(lists, ListStore(lists, syncStates, clock), sequence, SpaceAccess(spaces), locks, clock, catalogService)
 
     private val owner = UserId("owner")
     private val member = UserId("member")
@@ -72,7 +74,7 @@ class ShoppingListServiceTest {
         val list = service.create(owner, spaceId, "Groceries")
         assertEquals("SPACE_NOT_FOUND", assertThrows<DomainException> { service.lists(stranger, spaceId) }.code)
         assertEquals("SPACE_NOT_FOUND", assertThrows<DomainException> { service.get(stranger, spaceId, list.id) }.code)
-        assertThrows<DomainException> { service.apply(stranger, spaceId, list.id, ListChange.RemoveChecked) }
+        assertThrows<DomainException> { service.apply(stranger, spaceId, list.id, ListChange.RemoveChecked()) }
         assertThrows<DomainException> { service.create(stranger, spaceId, "X") }
     }
 

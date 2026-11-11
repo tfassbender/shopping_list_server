@@ -7,6 +7,7 @@ import com.tfassbender.shoppinglist.application.port.LayoutRepository
 import com.tfassbender.shoppinglist.application.port.SequenceCounter
 import com.tfassbender.shoppinglist.application.port.ShoppingListRepository
 import com.tfassbender.shoppinglist.application.port.SpaceRepository
+import com.tfassbender.shoppinglist.application.port.SyncStateRepository
 import com.tfassbender.shoppinglist.application.port.UserRepository
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.inject.Produces
@@ -55,4 +56,8 @@ class PersistenceProducers(
     @Produces
     @ApplicationScoped
     fun apiTokenRepository(): ApiTokenRepository = FileApiTokenRepository(files)
+
+    @Produces
+    @ApplicationScoped
+    fun syncStateRepository(): SyncStateRepository = FileSyncStateRepository(files)
 }

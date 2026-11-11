@@ -7,6 +7,7 @@ import com.tfassbender.shoppinglist.application.space.SpaceAccess
 import com.tfassbender.shoppinglist.application.space.SpaceLocks
 import com.tfassbender.shoppinglist.domain.DomainException
 import com.tfassbender.shoppinglist.domain.ErrorKind
+import com.tfassbender.shoppinglist.domain.list.ChangeContext
 import com.tfassbender.shoppinglist.domain.list.ListChange
 import com.tfassbender.shoppinglist.domain.list.ListId
 import com.tfassbender.shoppinglist.domain.list.ShoppingList
@@ -23,6 +24,7 @@ import java.util.UUID
 @ApplicationScoped
 class ShoppingListService(
     private val lists: ShoppingListRepository,
+    private val store: ListStore,
     private val sequence: SequenceCounter,
     private val access: SpaceAccess,
     private val locks: SpaceLocks,
@@ -49,26 +51,28 @@ class ShoppingListService(
                 throw DomainException(ErrorKind.CONFLICT, "LIST_EXISTS", "List ${id.value} already exists")
             }
             val list = ShoppingList.create(id, spaceId, name, sequence.next(spaceId), clock.instant())
-            lists.save(list)
+            store.save(list)
             list
         }
 
     fun delete(userId: UserId, spaceId: SpaceId, listId: ListId) {
         locks.withLock(spaceId) {
             access.requireOwner(spaceId, userId)
-            lists.save(load(spaceId, listId).markDeleted(sequence.next(spaceId)))
+            store.save(load(spaceId, listId).markDeleted(sequence.next(spaceId), clock.instant()))
         }
     }
 
-    /** Applies changes in order, atomically: if one fails, none is saved. */
+    /**
+     * Applies changes in order, atomically: if one fails, none is saved. Online calls have no base
+     * sequence, so they merge as "later wins" without warnings (offline batches go through [SyncService]).
+     */
     fun applyChanges(userId: UserId, spaceId: SpaceId, listId: ListId, changes: List<ListChange>): ShoppingList =
         locks.withLock(spaceId) {
             access.requireMember(spaceId, userId)
-            val seq = sequence.next(spaceId)
-            val now = clock.instant()
+            val context = ChangeContext(sequence.next(spaceId), clock.instant(), userId)
             val enriched = catalog.enrich(spaceId, changes)
-            val updated = enriched.fold(load(spaceId, listId)) { list, change -> list.apply(change, seq, now) }
-            lists.save(updated)
+            val updated = enriched.fold(load(spaceId, listId)) { list, change -> list.apply(change, context).list }
+            store.save(updated)
             catalog.recordItemChanges(spaceId, updated, enriched)
             updated
         }

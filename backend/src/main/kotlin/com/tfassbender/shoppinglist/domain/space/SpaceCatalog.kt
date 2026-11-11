@@ -40,6 +40,8 @@ data class SpaceCatalog(
     val categories: List<Category> = emptyList(),
     val units: List<String> = emptyList(),
     val history: Map<String, HistoryEntry> = emptyMap(),
+    /** Space sequence number of the last category/unit change (history updates don't count). */
+    val seq: Long = 0,
 ) {
 
     fun category(id: CategoryId): Category? = categories.firstOrNull { it.id == id }

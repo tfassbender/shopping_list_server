@@ -31,6 +31,7 @@ data class CatalogFile(
     val categories: List<CategoryFile> = emptyList(),
     val units: List<String> = emptyList(),
     val history: List<HistoryFile> = emptyList(),
+    val seq: Long = 0,
 ) {
     fun toDomain(spaceId: SpaceId) = SpaceCatalog(
         spaceId = spaceId,
@@ -39,6 +40,7 @@ data class CatalogFile(
         history = history.associate {
             SpaceCatalog.normalize(it.name) to HistoryEntry(it.name, it.categoryId?.let(::CategoryId), it.unit, it.usageCount, it.lastUsed)
         },
+        seq = seq,
     )
 
     companion object {
@@ -47,6 +49,7 @@ data class CatalogFile(
             units = catalog.units,
             history = catalog.history.values.sortedBy { it.name.lowercase() }
                 .map { HistoryFile(it.name, it.categoryId?.value, it.unit, it.usageCount, it.lastUsed) },
+            seq = catalog.seq,
         )
     }
 }

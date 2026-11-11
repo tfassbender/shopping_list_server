@@ -24,7 +24,7 @@ class SpaceServiceTest {
     private val clock = MutableClock()
     private val locks = SpaceLocks()
     private val catalogs = InMemoryCatalogRepository()
-    private val service = SpaceService(spaces, users, SpaceAccess(spaces), locks, clock, CatalogService(catalogs, SpaceAccess(spaces), locks, clock))
+    private val service = SpaceService(spaces, users, SpaceAccess(spaces), locks, clock, CatalogService(catalogs, com.tfassbender.shoppinglist.application.InMemorySequenceCounter(), SpaceAccess(spaces), locks, clock))
 
     private val owner = user("owner", "Olga")
     private val anna = user("anna", "Anna")

@@ -42,7 +42,7 @@ class FileShoppingListRepositoryTest {
     @Test
     fun `finds all lists of a space only`() {
         repository.save(list)
-        repository.save(ShoppingList.create(ListId("l2"), spaceId, "Hardware", 7, t0).markDeleted(8))
+        repository.save(ShoppingList.create(ListId("l2"), spaceId, "Hardware", 7, t0).markDeleted(8, t0))
         repository.save(ShoppingList.create(ListId("l3"), SpaceId("other"), "Other", 1, t0))
 
         assertEquals(setOf("l1", "l2"), repository.findBySpace(spaceId).map { it.id.value }.toSet())
@@ -56,5 +56,31 @@ class FileShoppingListRepositoryTest {
         assertEquals(1, counter.next(spaceId))
         assertEquals(2, FileSequenceCounter(files).next(spaceId))
         assertEquals(0, counter.current(SpaceId("other")))
+    }
+}
+
+class FileSyncStateRepositoryTest {
+
+    @TempDir
+    lateinit var dataDir: Path
+
+    @Test
+    fun `round-trips sync state and stamps of items`() {
+        val files = JsonFiles(dataDir)
+        val states = FileSyncStateRepository(files)
+        val state = com.tfassbender.shoppinglist.domain.list.SyncState(SpaceId("s1"), 7, mapOf("c1" to Instant.EPOCH))
+        states.save(state)
+        assertEquals(state, states.find(SpaceId("s1")))
+        assertEquals(com.tfassbender.shoppinglist.domain.list.SyncState(SpaceId("s2")), states.find(SpaceId("s2")))
+
+        val user = com.tfassbender.shoppinglist.domain.user.UserId("anna")
+        val context = com.tfassbender.shoppinglist.domain.list.ChangeContext(3, Instant.EPOCH, user, 1)
+        val list = ShoppingList.create(ListId("l1"), SpaceId("s1"), "L", 1, Instant.EPOCH)
+            .apply(ListChange.AddItem(ItemId("a"), "A"), context).list
+            .apply(ListChange.DeleteItem(ItemId("a")), context).list
+            .apply(ListChange.RenameList("New"), context).list
+        val lists = FileShoppingListRepository(files)
+        lists.save(list)
+        assertEquals(list, lists.findById(SpaceId("s1"), ListId("l1")))
     }
 }
