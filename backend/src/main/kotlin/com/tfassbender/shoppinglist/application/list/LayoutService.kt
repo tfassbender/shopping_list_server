@@ -118,18 +118,22 @@ class LayoutService(
         )
     }
 
-    // Favorites are personal (one file per user), so they don't need the space lock; the
-    // per-user race of two parallel favorite toggles is harmless.
+    /**
+     * Favorites are personal (one file per user), but the change runs under the space lock with a new seq:
+     * that announces it as a space change (SSE), so the user's other devices pull - and every pull
+     * contains the caller's favorites. Other members' pulls are simply empty.
+     */
     private fun updateFavorites(
         userId: UserId,
         spaceId: SpaceId,
         layoutId: LayoutId,
         change: (UserFavorites) -> UserFavorites,
-    ): Set<String> {
+    ): Set<String> = locks.withLock(spaceId) {
         get(userId, spaceId, layoutId)
         val updated = change(favorites.find(userId))
         favorites.save(updated)
-        return updated.favoritesOf(layoutId)
+        sequence.next(spaceId)
+        updated.favoritesOf(layoutId)
     }
 
     private fun modify(userId: UserId, spaceId: SpaceId, layoutId: LayoutId, change: (ShopLayout) -> ShopLayout): ShopLayout =

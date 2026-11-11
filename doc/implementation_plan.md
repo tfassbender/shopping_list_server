@@ -331,6 +331,10 @@ Decided while implementing:
 - [x] #2 Android App Links: `GET /.well-known/assetlinks.json` (public, not in OpenAPI), fingerprints from
   configuration (`shoppinglist.android.sha256-cert-fingerprints`, empty by default); stable link paths
   documented in `tech_stack.md` and the OpenAPI description.
+- [x] #3 Favorites in the sync pull: `favorites` (layout id -> names) is always sent complete - it is small
+  and personal, so no seq per favorite. Changing a favorite now runs under the space lock and takes a new
+  seq, so it is announced via SSE and the user's other devices pull (other members get an empty pull).
+  User settings stay on `GET /api/users/me`.
 
 ## Phase 11 – Deployment
 
