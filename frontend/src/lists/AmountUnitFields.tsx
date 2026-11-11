@@ -1,13 +1,17 @@
-import { useId } from 'react'
-import { TextField } from '../components/ui'
+import { SelectField, TextField } from '../components/ui'
 import { t } from '../i18n/messages'
 
-/** The server accepts at most 20 characters for quantity and unit each. */
+/** The server accepts at most 20 characters for the quantity. */
 const MAX_LENGTH = 20
 
+/** Digits with at most one decimal separator ("2", "0,5", "1.25") - also every intermediate state while typing. */
+const NUMBER_INPUT = /^\d*(?:[.,]\d*)?$/
+
 /**
- * Amount and unit side by side. The unit is free text; the units of the space ("Categories & units") are
- * offered as suggestions via a <datalist>, which the browser shows as a dropdown while typing.
+ * Amount and unit side by side. The amount takes only numbers (other input is ignored; `inputMode`
+ * brings up the number keyboard on phones). The unit is picked from the units configured for the space
+ * ("Categories & units"); a unit the item already has but which is not in that list stays selectable,
+ * so editing an item never drops it silently.
  */
 export function AmountUnitFields(props: {
   quantity: string
@@ -16,16 +20,26 @@ export function AmountUnitFields(props: {
   onQuantityChange: (value: string) => void
   onUnitChange: (value: string) => void
 }) {
-  const unitListId = useId()
+  const units = props.unit && !props.units.includes(props.unit) ? [props.unit, ...props.units] : props.units
   return (
     <div className="flex gap-2">
-      <TextField className="min-w-0 flex-1" label={t('item.amount')} maxLength={MAX_LENGTH} value={props.quantity} onChange={(e) => props.onQuantityChange(e.target.value)} />
-      <TextField className="min-w-0 flex-1" label={t('item.unit')} list={unitListId} autoComplete="off" maxLength={MAX_LENGTH} value={props.unit} onChange={(e) => props.onUnitChange(e.target.value)} />
-      <datalist id={unitListId}>
-        {props.units.map((unit) => (
-          <option key={unit} value={unit} />
+      <TextField
+        className="min-w-0 flex-1"
+        label={t('item.amount')}
+        inputMode="decimal"
+        autoComplete="off"
+        maxLength={MAX_LENGTH}
+        value={props.quantity}
+        onChange={(e) => NUMBER_INPUT.test(e.target.value) && props.onQuantityChange(e.target.value)}
+      />
+      <SelectField className="min-w-0 flex-1" label={t('item.unit')} value={props.unit} onChange={props.onUnitChange}>
+        <option value="">{t('item.noUnit')}</option>
+        {units.map((unit) => (
+          <option key={unit} value={unit}>
+            {unit}
+          </option>
         ))}
-      </datalist>
+      </SelectField>
     </div>
   )
 }

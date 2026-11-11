@@ -158,7 +158,7 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
         ))}
       </SelectField>
       <DialogActions>
-        <Button variant="ghost" className="mr-auto pl-0" onClick={onClose}>
+        <Button variant="ghost" className="mr-auto" onClick={onClose}>
           {t('common.cancel')}
         </Button>
         <Button type="submit" variant="secondary" disabled={!name.trim() && highlighted < 0}>

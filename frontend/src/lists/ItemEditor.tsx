@@ -59,7 +59,7 @@ export function ItemEditor(props: {
       <DialogActions>
         <Button
           variant="ghost"
-          className="mr-auto pl-0 text-danger"
+          className="mr-auto text-danger"
           onClick={() => {
             props.onDelete()
             props.onClose()

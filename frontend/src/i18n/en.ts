@@ -68,6 +68,7 @@ export const en = {
   'item.name': 'Name',
   'item.quantity': 'Quantity',
   'item.unit': 'Unit',
+  'item.noUnit': '–',
   'item.note': 'Note',
   'item.category': 'Category',
   'item.noCategory': 'No category',

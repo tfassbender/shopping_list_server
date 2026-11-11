@@ -70,6 +70,7 @@ export const de: Record<MessageKey, string> = {
   'item.name': 'Name',
   'item.quantity': 'Menge',
   'item.unit': 'Einheit',
+  'item.noUnit': '–',
   'item.note': 'Notiz',
   'item.category': 'Kategorie',
   'item.noCategory': 'Keine Kategorie',

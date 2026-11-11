@@ -41,8 +41,14 @@ describe('ListPage', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Add item' }))
     const dialog = screen.getByRole('dialog')
+    // the amount takes only numbers
+    await userEvent.type(within(dialog).getByLabelText('Amount'), '2x,a5')
+    expect(within(dialog).getByLabelText('Amount')).toHaveValue('2,5')
+    await userEvent.clear(within(dialog).getByLabelText('Amount'))
     await userEvent.type(within(dialog).getByLabelText('Amount'), '2')
-    await userEvent.type(within(dialog).getByLabelText('Unit'), 'l')
+    // the unit is picked from the units of the space
+    expect(within(within(dialog).getByLabelText('Unit')).getAllByRole('option').map((o) => o.textContent)).toEqual(['–', 'l', 'kg'])
+    await userEvent.selectOptions(within(dialog).getByLabelText('Unit'), 'l')
     await userEvent.type(within(dialog).getByLabelText('Name'), 'Milk')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add another' }))
 
@@ -126,7 +132,7 @@ describe('ListPage', () => {
     const dialog = screen.getByRole('dialog')
     await userEvent.clear(within(dialog).getByLabelText('Amount'))
     await userEvent.type(within(dialog).getByLabelText('Amount'), '3')
-    await userEvent.type(within(dialog).getByLabelText('Unit'), 'l')
+    await userEvent.selectOptions(within(dialog).getByLabelText('Unit'), 'l')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
 
     expect(await screen.findByText('3 l')).toBeInTheDocument()
@@ -195,6 +201,14 @@ describe('ListPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Milk/ }))
 
     await waitFor(() => expect(server.received('ADD_ITEM')[0]).toMatchObject({ name: 'Milk', quantity: '2', unit: 'l' }))
+  })
+
+  it('editor keeps a unit that is not in the list of the space', async () => {
+    setup([item('1', 'Rice', { quantity: '1', unit: 'Packung' })])
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit Rice' }))
+
+    expect(within(screen.getByRole('dialog')).getByLabelText('Unit')).toHaveValue('Packung')
   })
 
   it('editor offers the categories of the space', async () => {
