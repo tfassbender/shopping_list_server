@@ -54,6 +54,14 @@ class CatalogService(
     fun suggestions(userId: UserId, spaceId: SpaceId, query: String, limit: Int): List<HistoryEntry> =
         get(userId, spaceId).suggestions(query, limit.coerceIn(1, 50))
 
+    fun history(userId: UserId, spaceId: SpaceId): List<HistoryEntry> = get(userId, spaceId).historyEntries()
+
+    fun renameHistory(userId: UserId, spaceId: SpaceId, name: String, newName: String): List<HistoryEntry> =
+        modify(userId, spaceId) { it.renameHistory(name, newName) }.historyEntries()
+
+    fun removeHistory(userId: UserId, spaceId: SpaceId, name: String): List<HistoryEntry> =
+        modify(userId, spaceId) { it.removeHistory(name) }.historyEntries()
+
     /**
      * Fills in what the history knows for new items without a category, so items are placed automatically
      * – for every client, including AI agents. Caller holds the space lock.

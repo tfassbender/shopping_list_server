@@ -32,12 +32,28 @@ export const catalogApi = {
   reorderCategories: (spaceId: string, ids: string[]) => api.put<Catalog>(`${base(spaceId)}/categories/order`, { ids }),
   setUnits: (spaceId: string, units: string[]) => api.put<Catalog>(`${base(spaceId)}/units`, { units }),
   suggestions: (spaceId: string, query: string) =>
-    api.get<Suggestion[]>(`${base(spaceId)}/suggestions?q=${encodeURIComponent(query)}&limit=6`),
+    api.get<Suggestion[]>(`${base(spaceId)}/suggestions?q=${encodeURIComponent(query)}&limit=20`),
+  // History entries are addressed by name as query parameter (names may contain '/').
+  history: (spaceId: string) => api.get<HistoryEntry[]>(`${base(spaceId)}/history`),
+  renameHistory: (spaceId: string, name: string, newName: string) =>
+    api.put<HistoryEntry[]>(`${base(spaceId)}/history?name=${encodeURIComponent(name)}`, { name: newName }),
+  removeHistory: (spaceId: string, name: string) => api.delete<HistoryEntry[]>(`${base(spaceId)}/history?name=${encodeURIComponent(name)}`),
+}
+
+/** An item used before in the space: the source of the suggestions. */
+export interface HistoryEntry extends Suggestion {
+  lastUsed: string
 }
 
 export const catalogKeys = {
   catalog: (spaceId: string) => ['spaces', spaceId, 'catalog'] as const,
   suggestions: (spaceId: string, query: string) => ['spaces', spaceId, 'suggestions', query] as const,
+  allSuggestions: (spaceId: string) => ['spaces', spaceId, 'suggestions'] as const,
+  history: (spaceId: string) => ['spaces', spaceId, 'history'] as const,
+}
+
+export function useHistory(spaceId: string) {
+  return useQuery({ queryKey: catalogKeys.history(spaceId), queryFn: () => catalogApi.history(spaceId) })
 }
 
 export function useCatalog(spaceId: string) {

@@ -18,6 +18,7 @@ import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
+import java.time.Instant
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.media.Schema
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
@@ -55,6 +56,17 @@ data class SuggestionDto(val name: String, val categoryId: String?, val unit: St
         fun from(entry: HistoryEntry) = SuggestionDto(entry.name, entry.categoryId?.value, entry.unit, entry.usageCount)
     }
 }
+
+data class HistoryEntryDto(val name: String, val categoryId: String?, val unit: String?, val usageCount: Int, val lastUsed: Instant) {
+    companion object {
+        fun from(entry: HistoryEntry) = HistoryEntryDto(entry.name, entry.categoryId?.value, entry.unit, entry.usageCount, entry.lastUsed)
+    }
+}
+
+data class RenameHistoryRequest(
+    @field:Schema(description = "The new name; if it is already remembered, both entries are merged")
+    val name: String = "",
+)
 
 /** Categories (ordered, colored), units and the item history of a space. Every member may edit them. */
 @Path("/api/spaces/{spaceId}/catalog")
@@ -117,4 +129,24 @@ class CatalogResource(
         @QueryParam("limit") @DefaultValue("8") limit: Int,
     ): List<SuggestionDto> =
         catalogService.suggestions(currentUser.id(), SpaceId(spaceId), query ?: "", limit).map(SuggestionDto::from)
+
+    // The history is addressed by item name (case-insensitive) as query parameter: names may contain '/'.
+
+    @GET
+    @Path("/history")
+    @Operation(operationId = "getItemHistory", summary = "All items used before in this space (source of the suggestions), alphabetically")
+    fun history(@PathParam("spaceId") spaceId: String): List<HistoryEntryDto> =
+        catalogService.history(currentUser.id(), SpaceId(spaceId)).map(HistoryEntryDto::from)
+
+    @PUT
+    @Path("/history")
+    @Operation(operationId = "renameHistoryItem", summary = "Rename an item of the history (merged if the new name exists); returns the history")
+    fun renameHistory(@PathParam("spaceId") spaceId: String, @QueryParam("name") name: String?, request: RenameHistoryRequest): List<HistoryEntryDto> =
+        catalogService.renameHistory(currentUser.id(), SpaceId(spaceId), name ?: "", request.name).map(HistoryEntryDto::from)
+
+    @DELETE
+    @Path("/history")
+    @Operation(operationId = "removeHistoryItem", summary = "Forget an item of the history (no longer suggested); returns the history")
+    fun removeHistory(@PathParam("spaceId") spaceId: String, @QueryParam("name") name: String?): List<HistoryEntryDto> =
+        catalogService.removeHistory(currentUser.id(), SpaceId(spaceId), name ?: "").map(HistoryEntryDto::from)
 }

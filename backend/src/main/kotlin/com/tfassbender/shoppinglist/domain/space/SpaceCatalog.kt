@@ -125,6 +125,45 @@ data class SpaceCatalog(
             .take(limit)
     }
 
+    /** All remembered items, alphabetically – for managing the history. */
+    fun historyEntries(): List<HistoryEntry> = history.values.sortedBy { it.name.lowercase() }
+
+    /** Forgets an item: it is no longer suggested and no longer placed automatically. */
+    fun removeHistory(name: String): SpaceCatalog {
+        val key = requireHistoryKey(name)
+        return copy(history = history - key)
+    }
+
+    /**
+     * Renames a remembered item (e.g. a typo). If the new name is already known, both entries are merged:
+     * the counts are added and the category/unit of the more recently used one is kept.
+     */
+    fun renameHistory(name: String, newName: String): SpaceCatalog {
+        val key = requireHistoryKey(name)
+        val trimmed = newName.trim()
+        validateText(trimmed, MAX_HISTORY_NAME_LENGTH, "INVALID_NAME")
+        val renamed = history.getValue(key).copy(name = trimmed)
+        val newKey = normalize(trimmed)
+        val existing = history[newKey]?.takeIf { newKey != key }
+        val merged = if (existing == null) renamed else merge(renamed, existing)
+        return copy(history = history - key + (newKey to merged))
+    }
+
+    private fun merge(renamed: HistoryEntry, existing: HistoryEntry): HistoryEntry {
+        val newer = if (renamed.lastUsed >= existing.lastUsed) renamed else existing
+        val older = if (newer === renamed) existing else renamed
+        return HistoryEntry(
+            name = renamed.name,
+            categoryId = newer.categoryId ?: older.categoryId,
+            unit = newer.unit ?: older.unit,
+            usageCount = renamed.usageCount + existing.usageCount,
+            lastUsed = newer.lastUsed,
+        )
+    }
+
+    private fun requireHistoryKey(name: String): String = normalize(name).takeIf { it in history }
+        ?: throw DomainException(ErrorKind.NOT_FOUND, "HISTORY_ENTRY_NOT_FOUND", "No remembered item '$name'")
+
     private fun updateHistory(name: String, now: Instant, update: (HistoryEntry?) -> HistoryEntry): SpaceCatalog {
         val key = normalize(name)
         if (key.isEmpty()) return this
@@ -145,6 +184,8 @@ data class SpaceCatalog(
         const val MAX_UNITS = 50
         const val MAX_UNIT_LENGTH = 20
         const val MAX_HISTORY = 2000
+        /** Same limit as item names in lists. */
+        const val MAX_HISTORY_NAME_LENGTH = 100
 
         fun normalize(name: String): String = name.trim().lowercase().replace(Regex("\\s+"), " ")
     }

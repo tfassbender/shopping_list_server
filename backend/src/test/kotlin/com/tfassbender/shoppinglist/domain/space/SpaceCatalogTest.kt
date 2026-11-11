@@ -94,6 +94,65 @@ class SpaceCatalogTest {
     }
 
     @Nested
+    inner class ManageHistory {
+        private val history = catalog
+            .learn("Milk", dairy.id, "l", t0).countUsage("Milk", dairy.id, "l", t0)
+            .learn("Bread", bakery.id, null, t0)
+
+        @Test
+        fun `entries are listed alphabetically`() {
+            assertEquals(listOf("Bread", "Milk"), history.historyEntries().map { it.name })
+        }
+
+        @Test
+        fun `remove forgets the item, case-insensitively`() {
+            val result = history.removeHistory(" MILK ")
+            assertNull(result.historyFor("Milk"))
+            assertNull(result.suggestedCategory("Milk"))
+            assertEquals(listOf("Bread"), result.historyEntries().map { it.name })
+        }
+
+        @Test
+        fun `rename keeps category, unit and count`() {
+            val result = history.renameHistory("milk", " Oat milk ")
+            assertNull(result.historyFor("Milk"))
+            val entry = result.historyFor("oat milk")!!
+            assertEquals("Oat milk", entry.name)
+            assertEquals(dairy.id, entry.categoryId)
+            assertEquals("l", entry.unit)
+            assertEquals(1, entry.usageCount)
+        }
+
+        @Test
+        fun `rename can fix the spelling of the same name`() {
+            val result = history.renameHistory("milk", "MILK")
+            assertEquals(listOf("Bread", "MILK"), result.historyEntries().map { it.name })
+            assertEquals(1, result.historyFor("milk")!!.usageCount)
+        }
+
+        @Test
+        fun `rename onto a known name merges both entries`() {
+            val withTypo = history.learn("Mlik", null, "ml", t0.plusSeconds(60)).countUsage("Mlik", null, "ml", t0.plusSeconds(60))
+            val result = withTypo.renameHistory("Mlik", "milk")
+
+            assertEquals(listOf("Bread", "milk"), result.historyEntries().map { it.name })
+            val merged = result.historyFor("Milk")!!
+            assertEquals(2, merged.usageCount)
+            assertEquals("ml", merged.unit) // the typo entry was used more recently
+            assertEquals(dairy.id, merged.categoryId) // it had no category, so the other one's is kept
+            assertEquals(t0.plusSeconds(60), merged.lastUsed)
+        }
+
+        @Test
+        fun `validation`() {
+            assertEquals("HISTORY_ENTRY_NOT_FOUND", assertThrows<DomainException> { history.removeHistory("Cheese") }.code)
+            assertEquals("HISTORY_ENTRY_NOT_FOUND", assertThrows<DomainException> { history.renameHistory("Cheese", "Brie") }.code)
+            assertEquals("INVALID_NAME", assertThrows<DomainException> { history.renameHistory("Milk", "  ") }.code)
+            assertEquals("INVALID_NAME", assertThrows<DomainException> { history.renameHistory("Milk", "x".repeat(101)) }.code)
+        }
+    }
+
+    @Nested
     inner class Suggestions {
         private val history = catalog
             .countUsage("Milk", dairy.id, "l", t0)

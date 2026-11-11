@@ -71,6 +71,30 @@ class CatalogResourceTest {
     }
 
     @Test
+    fun `the item history can be listed, renamed and cleaned up`() {
+        val listId: String = user.request().body(mapOf("name" to "Einkauf")).post("/api/spaces/$spaceId/lists").then().extract().path("id")
+        val items = "/api/spaces/$spaceId/lists/$listId/items"
+        user.request().body(mapOf("name" to "Mlich", "id" to "m1", "categoryId" to "dairy")).post(items).then().statusCode(201)
+        user.request().body(mapOf("name" to "Brot/Brötchen", "id" to "b1")).post(items).then().statusCode(201)
+
+        user.request().get("${catalog()}/history").then().statusCode(200)
+            .body("name", contains("Brot/Brötchen", "Mlich"))
+            .body("[1].categoryId", equalTo("dairy"))
+
+        user.request().queryParam("name", "mlich").body(mapOf("name" to "Milch")).put("${catalog()}/history")
+            .then().statusCode(200).body("name", contains("Brot/Brötchen", "Milch"))
+        user.request().queryParam("q", "mi").get("${catalog()}/suggestions").then().body("[0].name", equalTo("Milch"))
+
+        // names with a slash work because they are passed as query parameter
+        user.request().queryParam("name", "Brot/Brötchen").delete("${catalog()}/history")
+            .then().statusCode(200).body("name", contains("Milch"))
+        user.request().queryParam("name", "Brot/Brötchen").delete("${catalog()}/history")
+            .then().statusCode(404).body("code", equalTo("HISTORY_ENTRY_NOT_FOUND"))
+        user.request().queryParam("name", "Milch").body(mapOf("name" to " ")).put("${catalog()}/history")
+            .then().statusCode(400).body("code", equalTo("INVALID_NAME"))
+    }
+
+    @Test
     fun `strangers can't read the catalog`() {
         TestUsers.register().request().get(catalog()).then().statusCode(404)
     }

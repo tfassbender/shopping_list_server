@@ -40,7 +40,9 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
   const nameInput = useRef<HTMLInputElement>(null)
   const query = useDebounced(name, 150)
   const { data } = useSuggestions(spaceId, query)
-  const suggestions = name.trim() ? (data ?? []).slice(0, 5) : []
+  // The dropdown shows while the name field (or the dropdown itself) has the focus.
+  const [nameFocused, setNameFocused] = useState(true)
+  const suggestions = name.trim() && nameFocused ? (data ?? []) : []
 
   function add(item: NewItem) {
     onAdd(item)
@@ -89,7 +91,16 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
   return (
     <Dialog title={t('addItem.title')} onClose={onClose} onSubmit={addCurrent}>
       <AmountUnitFields quantity={quantity} unit={unit} units={catalog?.units ?? []} onQuantityChange={setQuantity} onUnitChange={setUnit} />
-      <div className="flex items-end gap-2">
+      {/*
+        * The suggestions are a dropdown laid over the fields below (absolute position), so the dialog keeps
+        * its height; it scrolls when there are more than fit. Its height ends above the dialog buttons, so a
+        * tap on "Done" never hits a suggestion by accident.
+        */}
+      <div
+        className="relative flex items-end gap-2"
+        onFocus={() => setNameFocused(true)}
+        onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setNameFocused(false)}
+      >
         <div className="block min-w-0 flex-1">
           <label htmlFor="add-item-name" className="mb-1 block text-sm text-muted">
             {t('item.name')}
@@ -127,28 +138,30 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
             </svg>
           </button>
         )}
+        {suggestions.length > 0 && (
+          <ul id="add-item-suggestions" role="listbox" aria-label={t('addItem.suggestions')} className="absolute inset-x-0 top-full z-10 mt-1 max-h-[6.25rem] overflow-y-auto rounded-lg border border-line bg-surface shadow-lg">
+            {suggestions.map((suggestion, index) => {
+              const category = catalog?.categories.find((c) => c.id === suggestion.categoryId)
+              return (
+                <li key={suggestion.name} role="option" aria-selected={index === highlighted}>
+                  <button
+                    type="button"
+                    // keeps the focus in the name field (otherwise the dropdown would close before the click)
+                    onPointerDown={(e) => e.preventDefault()}
+                    onClick={() => addSuggestion(suggestion)}
+                    className={`flex min-h-[2.6rem] w-full items-center gap-2 border-b border-line px-3 text-left last:border-b-0 hover:bg-raised ${index === highlighted ? 'bg-raised' : ''}`}
+                  >
+                    <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: category?.color ?? 'transparent' }} />
+                    <span className="flex-1">{suggestion.name}</span>
+                    {category && <span className="text-sm text-muted">{category.name}</span>}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </div>
       {voiceFailed && <p className="text-sm text-danger">{t('voice.error')}</p>}
-      {suggestions.length > 0 && (
-        <ul id="add-item-suggestions" role="listbox" aria-label={t('addItem.suggestions')} className="overflow-hidden rounded-lg border border-line">
-          {suggestions.map((suggestion, index) => {
-            const category = catalog?.categories.find((c) => c.id === suggestion.categoryId)
-            return (
-              <li key={suggestion.name} role="option" aria-selected={index === highlighted}>
-                <button
-                  type="button"
-                  onClick={() => addSuggestion(suggestion)}
-                  className={`flex min-h-12 w-full items-center gap-2 border-b border-line px-3 text-left last:border-b-0 hover:bg-raised ${index === highlighted ? 'bg-raised' : ''}`}
-                >
-                  <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: category?.color ?? 'transparent' }} />
-                  <span className="flex-1">{suggestion.name}</span>
-                  {category && <span className="text-sm text-muted">{category.name}</span>}
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      )}
       <SelectField label={t('item.category')} value={categoryId} onChange={setCategoryId}>
         <option value="">{t('item.categoryAuto')}</option>
         {catalog?.categories.map((c) => (

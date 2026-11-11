@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { useCatalog } from '../../api/catalog'
+import { useCatalog, useHistory } from '../../api/catalog'
 import { useLayouts } from '../../api/layouts'
 import { spaceKeys, spacesApi, useSpace, type CreatedInvite, type Member } from '../../api/spaces'
 import { useCurrentUser } from '../../auth/useAuth'
@@ -28,6 +28,7 @@ export function SpacePage() {
   const members = useQuery({ queryKey: spaceKeys.members(spaceId), queryFn: () => spacesApi.members(spaceId) })
   const { data: catalog } = useCatalog(spaceId)
   const { data: layouts } = useLayouts(spaceId)
+  const { data: history } = useHistory(spaceId)
   const [dialog, setDialog] = useState<'rename' | 'invite' | null>(null)
   const [memberDialog, setMemberDialog] = useState<Member | null>(null)
   const [confirm, setConfirm] = useState<Confirm | null>(null)
@@ -159,6 +160,12 @@ export function SpacePage() {
           onClick={() => navigate(`/spaces/${spaceId}/catalog`)}
           title={t('space.catalog')}
           hint={t('space.categoryCount', { count: catalog?.categories.length ?? 0 })}
+          chevron
+        />
+        <Row
+          onClick={() => navigate(`/spaces/${spaceId}/history`)}
+          title={t('history.title')}
+          hint={t('history.count', { count: history?.length ?? 0 })}
           chevron
         />
         <Row
