@@ -4,7 +4,7 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phase 0 done. Next: Phase 1.
+**Status:** Phases 0–1 done. Next: Phase 2.
 
 ## Guiding principles
 
@@ -62,21 +62,24 @@ Goal: a Gradle monorepo where backend, frontend and e2e build, and the SPA is se
 Goal: users can register, log in and manage their account. Modelled on `../avalons_final_stand`.
 
 Backend:
-- [ ] `AtomicJsonFile` (temp file + atomic move), id path-segment guard, `schemaVersion` in files
-- [ ] Domain `User` (`UserId`, `Email`, display name, password hash, verification/reset token hashes,
+- [x] `AtomicJsonFile` (temp file + atomic move), id path-segment guard, `schemaVersion` in files
+- [x] Domain `User` (`UserId`, `Email`, display name, password hash, verification/reset token hashes,
       settings: language, theme, "checked items to the end", "ignore merge warnings")
-- [ ] Ports `UserRepository`, `TokenIssuer`, `EmailSender`, `Clock`; `FileUserRepository`
-- [ ] `AuthService`: register, login, me, verify email, resend verification, forgot/reset password,
+- [x] Ports `UserRepository`, `TokenIssuer`, `EmailSender`, `Clock`; `FileUserRepository`
+- [x] `AuthService`: register, login, me, verify email, resend verification, forgot/reset password,
       change password; BCrypt; no account enumeration
-- [ ] JWT issuing (HS256, dev key committed, prod key via config), `@RolesAllowed("user")`
-- [ ] `email-disabled` switch (dev/test/e2e), Quarkus Mailer adapter, mock mailer in dev/test
-- [ ] `PUT /api/users/me/settings`
-- [ ] Session lifetime for mobile: decide JWT expiry vs. refresh token (small spike, then implement)
+- [x] JWT issuing (HS256, dev key committed, prod key via config), `@RolesAllowed("user")`
+- [x] `email-disabled` switch (dev/test/e2e), Quarkus Mailer adapter, mock mailer in dev/test
+- [x] `PUT /api/users/me/settings`
+- [x] Session lifetime for mobile – **decided: sliding JWT.** Token valid 30 days, clients exchange it via
+      `POST /api/auth/refresh` (web: when older than a day). A `sv` (session version) claim, checked per
+      request by `SessionValidationAugmentor`, invalidates all tokens on password change/reset and
+      `POST /api/users/me/logout-everywhere`. No refresh-token storage needed.
 
 Frontend:
-- [ ] Pages: login, register, verify email, forgot/reset password
-- [ ] Auth state (token storage, auto logout on 401), protected routes
-- [ ] Account/settings page: display name, change password, theme (system/light/dark), logout
+- [x] Pages: login, register, verify email, forgot/reset password
+- [x] Auth state (token storage, auto logout on 401), protected routes
+- [x] Account/settings page: display name, change password, theme (system/light/dark), logout
 
 Tests: service unit tests, `AuthResource` REST tests, e2e register → login → me.
 

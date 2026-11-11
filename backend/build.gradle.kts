@@ -16,6 +16,10 @@ dependencies {
     implementation("io.quarkus:quarkus-kotlin")
     implementation("io.quarkus:quarkus-arc")
     implementation("io.quarkus:quarkus-smallrye-openapi")
+    implementation("io.quarkus:quarkus-smallrye-jwt")
+    implementation("io.quarkus:quarkus-smallrye-jwt-build")
+    implementation("io.quarkus:quarkus-mailer")
+    implementation("at.favre.lib:bcrypt:0.10.2")
     // Kotlin data classes (de)serialize without no-arg constructors; Quarkus auto-registers the module.
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
@@ -31,6 +35,7 @@ dependencies {
 allOpen {
     annotation("jakarta.ws.rs.Path")
     annotation("jakarta.enterprise.context.ApplicationScoped")
+    annotation("jakarta.enterprise.context.RequestScoped")
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
 
