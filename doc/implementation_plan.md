@@ -335,6 +335,10 @@ Decided while implementing:
   and personal, so no seq per favorite. Changing a favorite now runs under the space lock and takes a new
   seq, so it is announced via SSE and the user's other devices pull (other members get an empty pull).
   User settings stay on `GET /api/users/me`.
+- [x] #4 OpenAPI for generated clients: created resources return their DTO with `@ResponseStatus(201)` plus
+  an `@APIResponse` (SmallRye doesn't read `@ResponseStatus`), no-content operations return nothing (204;
+  POSTs annotated, otherwise the spec says 201), optional query parameters are `required: false`, and
+  `SessionResponse` sends `token`/`expiresAt` as explicit nulls. Checked by `OpenApiContractTest`.
 
 ## Phase 11 – Deployment
 

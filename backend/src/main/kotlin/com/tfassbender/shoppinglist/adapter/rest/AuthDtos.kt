@@ -1,6 +1,5 @@
 package com.tfassbender.shoppinglist.adapter.rest
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import com.tfassbender.shoppinglist.application.auth.AuthResult
 import com.tfassbender.shoppinglist.domain.user.Language
 import com.tfassbender.shoppinglist.domain.user.ThemePreference
@@ -59,8 +58,7 @@ data class UserDto(
     }
 }
 
-/** A session: `token` is null after registration while the email still needs to be verified. */
-@JsonInclude(JsonInclude.Include.NON_NULL)
+/** A session: `token` and `expiresAt` are null after registration while the email still needs to be verified. */
 data class SessionResponse(
     val user: UserDto,
     val token: String?,

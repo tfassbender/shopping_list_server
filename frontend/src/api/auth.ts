@@ -20,8 +20,9 @@ export interface User {
 
 export interface SessionResponse {
   user: User
-  token?: string
-  expiresAt?: string
+  /** null while the email still needs to be verified. */
+  token: string | null
+  expiresAt: string | null
   verificationRequired: boolean
 }
 

@@ -17,11 +17,14 @@ import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.core.Response
 import java.time.Instant
 import org.eclipse.microprofile.openapi.annotations.Operation
+import org.eclipse.microprofile.openapi.annotations.media.Content
 import org.eclipse.microprofile.openapi.annotations.media.Schema
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
+import org.jboss.resteasy.reactive.ResponseStatus
 
 data class CategoryRequest(
     val name: String = "",
@@ -66,6 +69,9 @@ data class HistoryEntryDto(val name: String, val categoryId: String?, val unit: 
     }
 }
 
+/** Item names are passed as query parameter (they may contain '/'); without one nothing matches. */
+const val ITEM_NAME_DESCRIPTION = "The item name (case-insensitive)"
+
 data class RenameHistoryRequest(
     @field:Schema(description = "The new name; if it is already remembered, both entries are merged")
     val name: String = "",
@@ -89,11 +95,13 @@ class CatalogResource(
     @POST
     @Path("/categories")
     @Operation(operationId = "addCategory", summary = "Add a category at the end")
-    fun addCategory(@PathParam("spaceId") spaceId: String, request: CategoryRequest): Response {
+    @ResponseStatus(201)
+    @APIResponse(responseCode = "201", description = "Created", content = [Content(schema = Schema(implementation = CatalogDto::class))])
+    fun addCategory(@PathParam("spaceId") spaceId: String, request: CategoryRequest): CatalogDto {
         val catalog = catalogService.addCategory(
             currentUser.id(), SpaceId(spaceId), request.name, request.color, request.id?.let(::CategoryId),
         )
-        return Response.status(Response.Status.CREATED).entity(CatalogDto.from(catalog)).build()
+        return CatalogDto.from(catalog)
     }
 
     @PUT
@@ -132,8 +140,8 @@ class CatalogResource(
     )
     fun suggestions(
         @PathParam("spaceId") spaceId: String,
-        @QueryParam("q") query: String?,
-        @QueryParam("limit") @DefaultValue("8") limit: Int,
+        @QueryParam("q") @Parameter(required = false) query: String?,
+        @QueryParam("limit") @DefaultValue("8") @Parameter(required = false) limit: Int,
     ): List<SuggestionDto> =
         catalogService.suggestions(currentUser.id(), SpaceId(spaceId), query ?: "", limit).map(SuggestionDto::from)
 
@@ -148,12 +156,19 @@ class CatalogResource(
     @PUT
     @Path("/history")
     @Operation(operationId = "renameHistoryItem", summary = "Rename an item of the history (merged if the new name exists); returns the history")
-    fun renameHistory(@PathParam("spaceId") spaceId: String, @QueryParam("name") name: String?, request: RenameHistoryRequest): List<HistoryEntryDto> =
+    fun renameHistory(
+        @PathParam("spaceId") spaceId: String,
+        @QueryParam("name") @Parameter(required = false, description = ITEM_NAME_DESCRIPTION) name: String?,
+        request: RenameHistoryRequest,
+    ): List<HistoryEntryDto> =
         catalogService.renameHistory(currentUser.id(), SpaceId(spaceId), name ?: "", request.name).map(HistoryEntryDto::from)
 
     @DELETE
     @Path("/history")
     @Operation(operationId = "removeHistoryItem", summary = "Forget an item of the history (no longer suggested); returns the history")
-    fun removeHistory(@PathParam("spaceId") spaceId: String, @QueryParam("name") name: String?): List<HistoryEntryDto> =
+    fun removeHistory(
+        @PathParam("spaceId") spaceId: String,
+        @QueryParam("name") @Parameter(required = false, description = ITEM_NAME_DESCRIPTION) name: String?,
+    ): List<HistoryEntryDto> =
         catalogService.removeHistory(currentUser.id(), SpaceId(spaceId), name ?: "").map(HistoryEntryDto::from)
 }

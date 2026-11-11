@@ -28,6 +28,7 @@ import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.media.Schema
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import java.time.Instant
 
@@ -177,7 +178,7 @@ class SyncResource(
 
     @GET
     @Operation(operationId = "pullChanges", summary = "Everything changed since `since` (0 = full state)")
-    fun pull(@PathParam("spaceId") spaceId: String, @QueryParam("since") @DefaultValue("0") since: Long): PullResponse {
+    fun pull(@PathParam("spaceId") spaceId: String, @QueryParam("since") @DefaultValue("0") @Parameter(required = false) since: Long): PullResponse {
         val result = syncService.pull(currentUser.id(), SpaceId(spaceId), since)
         return PullResponse(
             seq = result.seq,

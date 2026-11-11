@@ -19,10 +19,13 @@ import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.core.Response
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.eclipse.microprofile.openapi.annotations.Operation
+import org.eclipse.microprofile.openapi.annotations.media.Content
+import org.eclipse.microprofile.openapi.annotations.media.Schema
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
+import org.jboss.resteasy.reactive.ResponseStatus
 import java.time.Duration
 import java.time.Instant
 
@@ -73,10 +76,12 @@ class SpaceResource(
 
     @POST
     @Operation(operationId = "createSpace", summary = "Create a space; the creator becomes its owner")
-    fun create(request: NameRequest): Response {
+    @ResponseStatus(201)
+    @APIResponse(responseCode = "201", description = "Created", content = [Content(schema = Schema(implementation = SpaceDto::class))])
+    fun create(request: NameRequest): SpaceDto {
         val me = currentUser.id()
         val space = spaceService.create(me, request.name)
-        return Response.status(Response.Status.CREATED).entity(SpaceDto.from(space, me)).build()
+        return SpaceDto.from(space, me)
     }
 
     @GET
@@ -98,9 +103,8 @@ class SpaceResource(
     @DELETE
     @Path("/{spaceId}")
     @Operation(operationId = "deleteSpace", summary = "Delete a space with all its lists (owner only)")
-    fun delete(@PathParam("spaceId") spaceId: String): Response {
+    fun delete(@PathParam("spaceId") spaceId: String) {
         spaceService.delete(currentUser.id(), SpaceId(spaceId))
-        return Response.noContent().build()
     }
 
     @GET
@@ -112,17 +116,17 @@ class SpaceResource(
     @DELETE
     @Path("/{spaceId}/members/{userId}")
     @Operation(operationId = "removeMember", summary = "Remove a member (owner only)")
-    fun removeMember(@PathParam("spaceId") spaceId: String, @PathParam("userId") userId: String): Response {
+    fun removeMember(@PathParam("spaceId") spaceId: String, @PathParam("userId") userId: String) {
         spaceService.removeMember(currentUser.id(), SpaceId(spaceId), UserId(userId))
-        return Response.noContent().build()
     }
 
     @POST
     @Path("/{spaceId}/leave")
     @Operation(operationId = "leaveSpace", summary = "Leave a space (the owner must hand over ownership first)")
-    fun leave(@PathParam("spaceId") spaceId: String): Response {
+    // Without this, the spec would claim 201 for a POST without return value; the server sends 204.
+    @APIResponse(responseCode = "204", description = "No Content")
+    fun leave(@PathParam("spaceId") spaceId: String) {
         spaceService.leave(currentUser.id(), SpaceId(spaceId))
-        return Response.noContent().build()
     }
 
     @POST
@@ -145,18 +149,19 @@ class SpaceResource(
         operationId = "createInvite",
         summary = "Create a single-use invite link (owner only). Default validity 24 h, allowed 1 h to 30 days",
     )
-    fun createInvite(@PathParam("spaceId") spaceId: String, request: CreateInviteRequest?): Response {
+    @ResponseStatus(201)
+    @APIResponse(responseCode = "201", description = "Created", content = [Content(schema = Schema(implementation = CreatedInviteDto::class))])
+    fun createInvite(@PathParam("spaceId") spaceId: String, request: CreateInviteRequest?): CreatedInviteDto {
         val validFor = Duration.ofHours(request?.expiresInHours ?: 24)
         val created = spaceService.createInvite(currentUser.id(), SpaceId(spaceId), validFor)
-        return Response.status(Response.Status.CREATED).entity(toDto(created)).build()
+        return toDto(created)
     }
 
     @DELETE
     @Path("/{spaceId}/invites/{inviteId}")
     @Operation(operationId = "revokeInvite", summary = "Revoke an unused invite (owner only)")
-    fun revokeInvite(@PathParam("spaceId") spaceId: String, @PathParam("inviteId") inviteId: String): Response {
+    fun revokeInvite(@PathParam("spaceId") spaceId: String, @PathParam("inviteId") inviteId: String) {
         spaceService.revokeInvite(currentUser.id(), SpaceId(spaceId), InviteId(inviteId))
-        return Response.noContent().build()
     }
 
     private fun toDto(created: CreatedInvite) =
