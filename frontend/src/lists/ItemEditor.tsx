@@ -4,7 +4,7 @@ import type { EditableField, Item } from '../api/lists'
 import { Dialog, DialogActions } from '../components/Dialog'
 import { Button, SelectField, Switch, TextField } from '../components/ui'
 import { t } from '../i18n/messages'
-import { formatAmount, parseAmount } from './amount'
+import { AmountUnitFields } from './AmountUnitFields'
 
 /**
  * Details of one item (opened with ⋯). Only changed fields are sent, so concurrent edits of other fields
@@ -22,12 +22,13 @@ export function ItemEditor(props: {
 }) {
   const { item } = props
   const [name, setName] = useState(item.name)
-  const [amount, setAmount] = useState(formatAmount(item))
+  const [quantity, setQuantity] = useState(item.quantity ?? '')
+  const [unit, setUnit] = useState(item.unit ?? '')
   const [categoryId, setCategoryId] = useState(item.categoryId ?? '')
   const [note, setNote] = useState(item.note ?? '')
 
   function save() {
-    const values: Record<EditableField, string> = { name, note, categoryId, ...toText(parseAmount(amount)) }
+    const values: Record<EditableField, string> = { name, note, categoryId, quantity, unit }
     const changed: Partial<Record<EditableField, string | null>> = {}
     for (const field of Object.keys(values) as EditableField[]) {
       if (values[field].trim() !== (item[field] ?? '')) changed[field] = values[field].trim() || null
@@ -38,18 +39,16 @@ export function ItemEditor(props: {
 
   return (
     <Dialog title={item.name} onClose={props.onClose} onSubmit={save}>
+      <AmountUnitFields quantity={quantity} unit={unit} units={props.catalog?.units ?? []} onQuantityChange={setQuantity} onUnitChange={setUnit} />
       <TextField label={t('item.name')} required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
-      <div className="flex flex-wrap gap-2">
-        <TextField className="min-w-36 flex-1" label={t('item.amount')} maxLength={41} value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <SelectField className="min-w-36 flex-1" label={t('item.category')} value={categoryId} onChange={setCategoryId}>
-          <option value="">{t('item.noCategory')}</option>
-          {props.catalog?.categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </SelectField>
-      </div>
+      <SelectField label={t('item.category')} value={categoryId} onChange={setCategoryId}>
+        <option value="">{t('item.noCategory')}</option>
+        {props.catalog?.categories.map((category) => (
+          <option key={category.id} value={category.id}>
+            {category.name}
+          </option>
+        ))}
+      </SelectField>
       <TextField label={t('item.note')} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
       {props.shopName && props.onToggleFavorite && (
         <label className="flex min-h-12 items-center justify-between gap-3">
@@ -75,8 +74,4 @@ export function ItemEditor(props: {
       </DialogActions>
     </Dialog>
   )
-}
-
-function toText(amount: { quantity: string | null; unit: string | null }) {
-  return { quantity: amount.quantity ?? '', unit: amount.unit ?? '' }
 }

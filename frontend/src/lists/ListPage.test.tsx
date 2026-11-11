@@ -41,12 +41,15 @@ describe('ListPage', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Add item' }))
     const dialog = screen.getByRole('dialog')
+    await userEvent.type(within(dialog).getByLabelText('Amount'), '2')
+    await userEvent.type(within(dialog).getByLabelText('Unit'), 'l')
     await userEvent.type(within(dialog).getByLabelText('Name'), 'Milk')
-    await userEvent.type(within(dialog).getByLabelText('Amount'), '2 l')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Add another' }))
 
     // the dialog stays open, empty, for the next item; Enter does the same
     expect(within(dialog).getByLabelText('Name')).toHaveValue('')
+    expect(within(dialog).getByLabelText('Amount')).toHaveValue('')
+    expect(within(dialog).getByLabelText('Unit')).toHaveValue('')
     await userEvent.type(within(dialog).getByLabelText('Name'), 'Bread{Enter}')
     expect(within(dialog).getByLabelText('Name')).toHaveValue('')
 
@@ -122,7 +125,8 @@ describe('ListPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Edit Milk' }))
     const dialog = screen.getByRole('dialog')
     await userEvent.clear(within(dialog).getByLabelText('Amount'))
-    await userEvent.type(within(dialog).getByLabelText('Amount'), '3 l')
+    await userEvent.type(within(dialog).getByLabelText('Amount'), '3')
+    await userEvent.type(within(dialog).getByLabelText('Unit'), 'l')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
 
     expect(await screen.findByText('3 l')).toBeInTheDocument()
@@ -178,6 +182,19 @@ describe('ListPage', () => {
 
     expect(await screen.findByRole('list', { name: 'Dairy' })).toBeInTheDocument()
     await waitFor(() => expect(server.received('ADD_ITEM')[0]).toMatchObject({ name: 'Milk', categoryId: 'dairy', unit: 'l' }))
+  })
+
+  it('a suggestion keeps the amount entered before it', async () => {
+    const { server } = setup([], {
+      'GET /api/spaces/s1/catalog/suggestions': [{ name: 'Milk', categoryId: 'dairy', unit: 'l', usageCount: 3 }],
+    })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Add item' }))
+    await userEvent.type(screen.getByLabelText('Amount'), '2')
+    await userEvent.type(screen.getByRole('combobox', { name: 'Name' }), 'mi')
+    await userEvent.click(await screen.findByRole('button', { name: /Milk/ }))
+
+    await waitFor(() => expect(server.received('ADD_ITEM')[0]).toMatchObject({ name: 'Milk', quantity: '2', unit: 'l' }))
   })
 
   it('editor offers the categories of the space', async () => {

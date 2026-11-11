@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useSuggestions, type Catalog, type Suggestion } from '../api/catalog'
 import { Dialog, DialogActions } from '../components/Dialog'
-import { Button, SelectField, TextField } from '../components/ui'
+import { Button, SelectField } from '../components/ui'
 import { t } from '../i18n/messages'
-import { parseAmount } from './amount'
+import { AmountUnitFields } from './AmountUnitFields'
 import { isVoiceInputSupported, listenOnce } from './voiceInput'
 
 export interface NewItem {
@@ -31,7 +31,8 @@ function useDebounced(value: string, ms: number) {
  */
 export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: string; catalog?: Catalog; onAdd: (item: NewItem) => void; onClose: () => void }) {
   const [name, setName] = useState('')
-  const [amount, setAmount] = useState('')
+  const [quantity, setQuantity] = useState('')
+  const [unit, setUnit] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [highlighted, setHighlighted] = useState(-1)
   const [listening, setListening] = useState(false)
@@ -44,7 +45,8 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
   function add(item: NewItem) {
     onAdd(item)
     setName('')
-    setAmount('')
+    setQuantity('')
+    setUnit('')
     setCategoryId('')
     setHighlighted(-1)
     nameInput.current?.focus()
@@ -53,8 +55,13 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
   /** Adds what is entered (or the highlighted suggestion); nothing if the name is empty. */
   function addCurrent() {
     const chosen = suggestions[highlighted]
-    if (chosen) add(fromSuggestion(chosen))
-    else if (name.trim()) add({ name: name.trim(), ...parseAmount(amount), categoryId: categoryId || null })
+    if (chosen) addSuggestion(chosen)
+    else if (name.trim()) add({ name: name.trim(), quantity: quantity.trim() || null, unit: unit.trim() || null, categoryId: categoryId || null })
+  }
+
+  /** A suggestion brings its last category and unit; an amount or unit typed before is kept. */
+  function addSuggestion(suggestion: Suggestion) {
+    add({ name: suggestion.name, categoryId: suggestion.categoryId, quantity: quantity.trim() || null, unit: unit.trim() || suggestion.unit })
   }
 
   function done() {
@@ -81,6 +88,7 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
 
   return (
     <Dialog title={t('addItem.title')} onClose={onClose} onSubmit={addCurrent}>
+      <AmountUnitFields quantity={quantity} unit={unit} units={catalog?.units ?? []} onQuantityChange={setQuantity} onUnitChange={setUnit} />
       <div className="flex items-end gap-2">
         <div className="block min-w-0 flex-1">
           <label htmlFor="add-item-name" className="mb-1 block text-sm text-muted">
@@ -129,7 +137,7 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
               <li key={suggestion.name} role="option" aria-selected={index === highlighted}>
                 <button
                   type="button"
-                  onClick={() => add(fromSuggestion(suggestion))}
+                  onClick={() => addSuggestion(suggestion)}
                   className={`flex min-h-12 w-full items-center gap-2 border-b border-line px-3 text-left last:border-b-0 hover:bg-raised ${index === highlighted ? 'bg-raised' : ''}`}
                 >
                   <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: category?.color ?? 'transparent' }} />
@@ -141,17 +149,14 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
           })}
         </ul>
       )}
-      <div className="flex flex-wrap gap-2">
-        <TextField className="min-w-36 flex-1" label={t('item.amount')} maxLength={41} value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <SelectField className="min-w-36 flex-1" label={t('item.category')} value={categoryId} onChange={setCategoryId}>
-          <option value="">{t('item.categoryAuto')}</option>
-          {catalog?.categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </SelectField>
-      </div>
+      <SelectField label={t('item.category')} value={categoryId} onChange={setCategoryId}>
+        <option value="">{t('item.categoryAuto')}</option>
+        {catalog?.categories.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </SelectField>
       <DialogActions>
         <Button variant="ghost" className="mr-auto pl-0" onClick={onClose}>
           {t('common.cancel')}
@@ -163,8 +168,4 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
       </DialogActions>
     </Dialog>
   )
-}
-
-function fromSuggestion(s: Suggestion): NewItem {
-  return { name: s.name, categoryId: s.categoryId, unit: s.unit }
 }
