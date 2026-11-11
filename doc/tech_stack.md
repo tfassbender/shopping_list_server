@@ -27,10 +27,10 @@ REST so the React web frontend and a later Android app are interchangeable clien
   - `javaParameters = true`, JVM target 21
 - **Base package:** `com.tfassbender.shoppinglist`
 - **Architecture:** see [Architecture](#architecture-hexagonal--light-ddd) below.
-- **API:** versioned under `/api/...`, JSON only, stateless (JWT in `Authorization: Bearer` header) –
-  works identically for browser and Android.
-- **API documentation:** `quarkus-smallrye-openapi` (OpenAPI spec + Swagger UI) – useful as the contract
-  for the Android client.
+- **API:** versioned under `/api/...`, JSON only, stateless (`Authorization: Bearer` header) –
+  works identically for browser, Android and AI agents.
+- **API documentation:** `quarkus-smallrye-openapi` (OpenAPI spec + Swagger UI) – the contract for the
+  Android client and for AI agents. Keep operation ids, descriptions and schemas meaningful.
 
 ## User Management (adopted from Avalon's Final Stand)
 
@@ -47,9 +47,13 @@ Reuse the design of `avalons_final_stand/backend/.../application/auth` and `adap
 - `email-disabled` switch per profile: dev/test skip email verification, no SMTP needed
 
 Additions needed for this project:
-- Find users for sharing (by email or display name)
+- **Spaces** with owner/member roles and **single-use invite links** (configurable expiry, default 1 day,
+  revocable, only token hash stored) – see `doc/features.md` 3.1
+- **Personal API tokens** for AI agents: random opaque tokens (only hash stored), name + expiry,
+  scope `read` or `full`, revocable. No MCP server – agents use the REST API. Accepted as `Bearer` token next to the JWT – needs a custom Quarkus
+  `HttpAuthenticationMechanism`/`IdentityProvider` that recognizes the token prefix (e.g. `slt_...`).
 - Possibly refresh tokens / longer-lived sessions for the mobile app (avalon uses 24 h tokens)
-- Account deletion (GDPR)
+- Account deletion (GDPR): owned spaces pass to the longest-standing member
 
 ## Architecture (hexagonal + light DDD)
 
@@ -60,12 +64,14 @@ bounded-context modules.
 ```
 com.tfassbender.shoppinglist
 ├── domain/          pure Kotlin, no Quarkus/Jackson/Jakarta imports
-│   ├── list/        ShoppingList (aggregate root), Item, Category, ListMember, ids
-│   └── user/        User (aggregate root), UserId, Email
+│   ├── space/       Space (members, roles, invites), SpaceCatalog (categories, units, item history)
+│   ├── list/        ShoppingList (items), ShopLayout
+│   └── user/        User, ApiToken, UserFavorites
 ├── application/     use-case services + ports
-│   ├── port/        ShoppingListRepository, UserRepository, TokenIssuer, EmailSender, Clock
-│   ├── list/        ShoppingListService (create, add item, check, share, ...)
-│   └── auth/        AuthService (register, login, verify, reset, ...)
+│   ├── port/        repositories, TokenIssuer, EmailSender, Clock
+│   ├── space/       SpaceService (create, invite, join, remove member, transfer ownership, ...)
+│   ├── list/        ShoppingListService (add item, check, sort, ...)
+│   └── auth/        AuthService (register, login, verify, reset, API tokens, ...)
 └── adapter/
     ├── rest/        JAX-RS resources + DTOs + exception mappers   (driving)
     ├── persistence/ File JSON repositories + JSON mapping         (driven)
@@ -76,10 +82,14 @@ com.tfassbender.shoppinglist
 Rules:
 - Dependencies point inward: `adapter → application → domain`. The domain knows nothing about the outside.
 - **Aggregates:**
-  - `ShoppingList` owns its items, categories and members. All changes go through methods on the
-    aggregate that enforce invariants (e.g. only members may edit, only the owner may delete/remove
-    members, the owner can't be removed).
-  - `User` is a separate aggregate. Lists reference users **by `UserId` only**, never by object.
+  - `Space` – the unit of sharing. Owns members (user id, role, joined-at) and invites. Enforces
+    membership rules (exactly one owner, owner can't leave without handing over, single-use invites).
+  - `SpaceCatalog` – categories (with colors), units, item history of a space.
+  - `ShoppingList` – items of one list; references its `SpaceId`.
+  - `ShopLayout` – sort order for one shop, part of the space, usable by several lists.
+  - `User`, `ApiToken`, `UserFavorites` – personal, never shared.
+  - Aggregates reference each other **by id only**. Permission checks ("is this user a member/owner of
+    the space that contains this list?") happen in the application services using the `Space`.
 - **Value objects:** typed ids as Kotlin `@JvmInline value class` (`ListId`, `ItemId`, `UserId`), `Email`
   (normalized lowercase), `ItemName` etc. only where validation is needed.
 - Domain objects are immutable `data class`es; mutations return a copy that the service saves.
@@ -97,24 +107,48 @@ later (e.g. for PostgreSQL) only means writing new adapters for the repository p
 - Layout under a configurable data dir (`shoppinglist.data.dir`, default `data`, gitignored):
   ```
   data/
-  ├── users/<userId>.json
-  └── lists/<listId>.json      list incl. items, categories, members
+  ├── users/<userId>/
+  │   ├── user.json
+  │   ├── favorites.json
+  │   └── api-tokens.json
+  └── spaces/<spaceId>/
+      ├── space.json            members, roles, invites
+      ├── catalog.json          categories, units, item history
+      ├── lists/<listId>.json   items
+      └── layouts/<layoutId>.json
   ```
 - **Atomic writes:** write to a temp file, then atomic move (avalon's `AtomicJsonFile` pattern) – a crash
   never leaves a half-written file.
-- **Concurrency:** one in-process `ReentrantLock` per list id around load-modify-save (single instance
-  deployment). Plus a `version` field on the list for optimistic checks from clients if needed.
+- **Concurrency:** one in-process `ReentrantLock` per space id around load-modify-save (single instance
+  deployment; simple and sufficient since a space's data is small). Plus a `version` field on the list for optimistic checks from clients if needed.
 - Lookups other than by id (e.g. "lists where I'm a member", user by email) scan the directory. Fine at
   this scale; an in-memory index is the obvious later optimization.
 - Path-segment guard on ids so a crafted id can't escape the data dir.
 - Persistence DTOs carry a `schemaVersion` so the file format can evolve.
 
-## Live Sync (open decision)
+## Offline Sync
 
-Shared lists should update on other devices without manual refresh:
+Rules are defined in `doc/features.md` 3.5. Technical approach:
 
-- **Polling** (simplest, start here) → **SSE** (`quarkus-rest` supports it) or **WebSockets Next** later.
-- Items carry a `version` / `updatedAt` for conflict detection.
+- **Change API:** clients send batches of fine-grained changes (`POST /api/spaces/{id}/changes`), each with a
+  client-generated change id (idempotency) and client-generated entity ids (UUIDs).
+- **Merge in the domain:** applying a change is domain logic (`ShoppingList` aggregate), so web, Android
+  and AI agents get identical behaviour. "Later wins" = order in which the server applies the changes.
+- **Pull:** a per-space sequence counter; every item/list stores the sequence of its last change, deleted
+  items are kept as tombstones for a while. `GET /api/spaces/{id}/changes?since=<seq>` returns everything
+  newer – no separate change log file needed.
+- **Merge warnings** are returned in the sync response (what was overwritten / restored); the client
+  stores them for the warning icon.
+- The plain REST endpoints (e.g. `POST .../items`) stay available for online clients and AI agents and go
+  through the same domain logic.
+
+## Live Updates
+
+- **SSE, notify-then-refetch:** `GET /api/spaces/{id}/events` (or one stream per user for all their spaces)
+  sends a lightweight "space changed (seq)" notification; the client then pulls via the sync endpoint.
+- Supported by `quarkus-rest` out of the box; SSE can't send an `Authorization` header from the browser's
+  `EventSource`, so use `fetch`-based SSE or a short-lived stream token.
+- Android: may use a different mechanism (e.g. FCM push in the background) – decided later.
 
 ## Web Frontend
 

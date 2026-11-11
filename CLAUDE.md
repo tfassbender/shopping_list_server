@@ -10,14 +10,15 @@ A shopping list app with user management and list sharing between users.
 - **Web frontend:** React + TypeScript (Vite), mobile-first
 - **Android app:** planned later, uses the same REST API
 
-**Status:** planning phase. No code yet – only documentation in `doc/`.
+**Status:** planning phase. Tech stack and features are settled; next step is the implementation plan.
+No code yet – only documentation in `doc/`.
 
 ## Documentation (`doc/`)
 
 - `doc/tech_stack.md` – **authoritative** tech stack and architecture decisions (hexagonal layering,
   light DDD, file-based JSON persistence). Read before writing backend code.
-- `doc/features.md` – feature collection incl. analysis of the reference app *Einfacher Einkaufszettel*
-  (Jan Kassner). Priorities marked `?` are **not decided** – don't implement them without asking.
+- `doc/features.md` – **authoritative** feature list with priorities and detailed rules (spaces,
+  permissions, sorting, offline sync, API tokens). Based partly on the reference app *Einfacher Einkaufszettel*.
 - `doc/implementation_plan.md` – *not created yet*; comes after the feature list is prioritized.
   Once it exists, update its checkboxes/status as work completes.
 
@@ -30,29 +31,36 @@ Workflow: tech stack → feature analysis → implementation plan → implementa
 - **Architecture: hexagonal (ports & adapters) with light DDD.** Small app – don't overdo it:
   - Layers `domain` → `application` → `adapter`; dependencies point inward only.
   - `domain` is pure Kotlin: no Quarkus, Jakarta or Jackson imports.
-  - Aggregates: `ShoppingList` (owns items, categories, members) and `User`. Cross-aggregate references
-    by id only. Invariants are enforced inside the aggregate.
+  - **The space is the unit of sharing**: lists, shop layouts, categories, units and item history belong
+    to a space; only favorites and API tokens are personal. Roles: owner + member.
+  - Aggregates (see `doc/tech_stack.md`): `Space`, `SpaceCatalog`, `ShoppingList`, `ShopLayout`, `User`,
+    `ApiToken`, `UserFavorites`. Cross-aggregate references by id only. Invariants inside the aggregate,
+    permission checks in application services.
   - Typed ids as `@JvmInline value class`; immutable `data class`es, mutations via `copy`.
   - Repository/driven ports in `application.port`; REST DTOs and persistence DTOs live in their adapters
     – domain objects are never serialized directly.
   - **Not used:** domain events, CQRS, event sourcing, generic base classes "for later". Call out
     over-engineering.
   - Enforce layering with ArchUnit tests.
-- **Persistence: file-based JSON, no database.** One file per aggregate (`data/users/<id>.json`,
-  `data/lists/<id>.json`), atomic writes (temp file + move), a `ReentrantLock` per list for
+- **Persistence: file-based JSON, no database.** One file per aggregate under `data/users/<id>/` and
+  `data/spaces/<id>/`, atomic writes (temp file + move), a `ReentrantLock` per space for
   load-modify-save. Must stay exchangeable – only the persistence adapter knows about files.
 - **User management modelled on `../avalons_final_stand`** (email login, BCrypt, HS256 JWT, email
   verification & password reset with hashed tokens, `email-disabled` switch for dev/test).
 - **Base package:** `com.tfassbender.shoppinglist`.
 - **Monorepo:** Gradle Kotlin DSL with `backend` / `frontend` / `e2e` modules. Built SPA is served by
   Quarkus (single deployable JAR).
+- **Offline-first for lists and items:** fine-grained change sync, later change wins per field, edit wins
+  over delete, merge warnings via icon + dialog (see `doc/features.md` 3.5). Client-generated UUIDs,
+  idempotent change ids.
+- **Live updates (web): SSE, notify-then-refetch** via the sync endpoint.
+- **AI agents use the same REST API**, documented via OpenAPI; users authenticate them with personal
+  API tokens (read-only or full access). No MCP server.
 - **Backend port:** 4720 (avalon uses 4719).
 
 ## Open decisions
 
-- Live sync for shared lists: start with polling, later SSE or WebSockets.
-- Sharing mechanism: search user by email vs. invite link.
-- Everything marked `?` in `doc/features.md`.
+- Live updates in the Android app (SSE or e.g. FCM push).
 
 Don't hard-code undecided details – ask.
 
