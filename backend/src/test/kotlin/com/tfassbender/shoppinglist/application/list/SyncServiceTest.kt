@@ -173,6 +173,27 @@ class SyncServiceTest {
         }
 
         @Test
+        fun `a warning about a user whose account is gone has no name`() {
+            val base = current()
+            lists.apply(anna, spaceId, listId, ListChange.EditItem(milk, ItemField.QUANTITY, "3"))
+            users.delete(anna)
+            val result = sync.push(bob, spaceId, base, listOf(change(ListChange.EditItem(milk, ItemField.QUANTITY, "2"))))
+
+            assertNull(result.warnings.single().byName)
+        }
+
+        @Test
+        fun `rejected changes are remembered too, so a resend doesn't retry them`() {
+            // Otherwise a stale change would be re-evaluated on every resend and might apply later by accident.
+            val stale = change(ListChange.CheckItem(ItemId("later")), "stale")
+            assertEquals(ChangeStatus.REJECTED, sync.push(bob, spaceId, current(), listOf(stale)).results.single().status)
+            lists.apply(anna, spaceId, listId, ListChange.AddItem(ItemId("later"), "Later"))
+
+            assertEquals(ChangeStatus.DUPLICATE, sync.push(bob, spaceId, current(), listOf(stale)).results.single().status)
+            assertFalse(lists.get(anna, spaceId, listId).item(ItemId("later"))!!.checked)
+        }
+
+        @Test
         fun `offline additions get their category from the item history`() {
             lists.apply(anna, spaceId, listId, ListChange.EditItem(milk, ItemField.CATEGORY, "dairy"))
             sync.push(bob, spaceId, current(), listOf(change(ListChange.AddItem(ItemId("milk2"), "milk"))))

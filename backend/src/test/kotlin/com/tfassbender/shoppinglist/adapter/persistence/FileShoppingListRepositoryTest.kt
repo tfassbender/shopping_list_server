@@ -50,6 +50,30 @@ class FileShoppingListRepositoryTest {
     }
 
     @Test
+    fun `a space without lists has none`() {
+        assertTrue(repository.findBySpace(SpaceId("empty")).isEmpty())
+        assertNull(repository.findById(SpaceId("empty"), ListId("l1")))
+    }
+
+    @Test
+    fun `older list files without merge stamps load with defaults`() {
+        val dir = dataDir.resolve("spaces/s1/lists")
+        java.nio.file.Files.createDirectories(dir)
+        java.nio.file.Files.writeString(
+            dir.resolve("old.json"),
+            """{"id":"old","spaceId":"s1","name":"Old","createdAt":"2026-01-01T10:00:00Z","seq":3,
+               "items":[{"id":"i1","name":"Milk","createdAt":"2026-01-01T10:00:00Z","seq":3}]}""",
+        )
+
+        val loaded = repository.findById(spaceId, ListId("old"))!!
+        val item = loaded.item(ItemId("i1"))!!
+        assertTrue(item.isActive)
+        assertTrue(item.stamps.isEmpty())
+        assertNull(loaded.nameStamp)
+        assertNull(loaded.deletedAt)
+    }
+
+    @Test
     fun `sequence counter starts at zero and increments persistently`() {
         val counter = FileSequenceCounter(files)
         assertEquals(0, counter.current(spaceId))

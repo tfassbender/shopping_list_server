@@ -32,6 +32,15 @@ class ShopLayoutTest {
     }
 
     @Test
+    fun `item order entries are limited in number and length`() {
+        val tooMany = (0..ShopLayout.MAX_ITEM_ENTRIES).map { "Item $it" }
+        assertEquals("INVALID_ORDER", assertThrows<DomainException> { layout.withItemOrder(tooMany) }.code)
+        val tooLong = "x".repeat(ShoppingList.MAX_ITEM_NAME_LENGTH + 1)
+        assertEquals("INVALID_ORDER", assertThrows<DomainException> { layout.withItemOrder(listOf(tooLong)) }.code)
+        assertEquals(ShopLayout.MAX_ITEM_ENTRIES, layout.withItemOrder(tooMany.drop(1)).itemOrder.size)
+    }
+
+    @Test
     fun `connect and disconnect lists`() {
         val connected = layout.connect(ListId("l1")).connect(ListId("l2")).connect(ListId("l1"))
         assertEquals(setOf(ListId("l1"), ListId("l2")), connected.listIds)

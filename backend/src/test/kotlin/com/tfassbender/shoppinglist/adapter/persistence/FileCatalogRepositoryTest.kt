@@ -36,4 +36,22 @@ class FileCatalogRepositoryTest {
 
         assertEquals(catalog, repository.find(SpaceId("s")))
     }
+
+    @Test
+    fun `older files without seqs load, history is looked up case-insensitively`() {
+        val dir = dataDir.resolve("spaces/s")
+        java.nio.file.Files.createDirectories(dir)
+        java.nio.file.Files.writeString(
+            dir.resolve("catalog.json"),
+            """{"categories":[{"id":"dairy","name":"Dairy","color":"#90caf9"}],
+               "history":[{"name":"Whole  Milk","categoryId":"dairy","unit":null,"usageCount":2,"lastUsed":"2026-01-01T10:00:00Z"}]}""",
+        )
+
+        val catalog = repository.find(SpaceId("s"))
+
+        assertEquals(0, catalog.seq)
+        assertEquals(emptyList(), catalog.units)
+        assertEquals(0, catalog.historyFor("whole milk")!!.seq)
+        assertEquals(CategoryId("dairy"), catalog.suggestedCategory("WHOLE MILK"))
+    }
 }

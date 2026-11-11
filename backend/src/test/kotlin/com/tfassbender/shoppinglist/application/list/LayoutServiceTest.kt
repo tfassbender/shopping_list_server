@@ -149,6 +149,61 @@ class LayoutServiceTest {
     }
 
     @Test
+    fun `layouts are listed by name, ignoring case`() {
+        service.create(anna, spaceId, "rewe", LayoutMode.CATEGORIES)
+        service.create(anna, spaceId, "Aldi", LayoutMode.CATEGORIES)
+        service.create(bob, spaceId, "Lidl", LayoutMode.ITEMS)
+
+        assertEquals(listOf("Aldi", "Lidl", "rewe"), service.layouts(bob, spaceId).map { it.name })
+    }
+
+    @Test
+    fun `a client-generated layout id can't be used twice`() {
+        val id = com.tfassbender.shoppinglist.domain.list.LayoutId("offline-layout")
+        service.create(anna, spaceId, "Aldi", LayoutMode.CATEGORIES, id)
+        assertEquals("LAYOUT_EXISTS", assertThrows<DomainException> { service.create(bob, spaceId, "Rewe", LayoutMode.ITEMS, id) }.code)
+        assertEquals("Aldi", service.get(anna, spaceId, id).name)
+    }
+
+    @Test
+    fun `update renames and switches the mode without losing the orders`() {
+        val layout = service.create(anna, spaceId, "Aldi", LayoutMode.CATEGORIES)
+        service.setItemOrder(anna, spaceId, layout.id, listOf("Milk", "Bread"))
+
+        val updated = service.update(bob, spaceId, layout.id, " Aldi Süd ", LayoutMode.ITEMS)
+
+        assertEquals("Aldi Süd", updated.name)
+        assertEquals(LayoutMode.ITEMS, updated.mode)
+        assertEquals(listOf("Milk", "Bread"), updated.itemOrder)
+        assertEquals(layout.categoryOrder, updated.categoryOrder)
+    }
+
+    @Test
+    fun `every layout change and deletion advances the space seq`() {
+        val layout = service.create(anna, spaceId, "Aldi", LayoutMode.CATEGORIES)
+        val afterCreate = sequence.current(spaceId)
+        assertEquals(afterCreate, layout.seq)
+
+        assertEquals(afterCreate + 1, service.setItemOrder(anna, spaceId, layout.id, listOf("Milk")).seq)
+        service.delete(anna, spaceId, layout.id)
+        assertEquals(afterCreate + 2, sequence.current(spaceId))
+    }
+
+    @Test
+    fun `a deleted list can't be connected`() {
+        val layout = service.create(anna, spaceId, "Aldi", LayoutMode.CATEGORIES)
+        lists.delete(anna, spaceId, listId)
+        assertEquals("LIST_NOT_FOUND", assertThrows<DomainException> { service.connectList(anna, spaceId, layout.id, listId) }.code)
+    }
+
+    @Test
+    fun `favorites need an existing layout`() {
+        val missing = com.tfassbender.shoppinglist.domain.list.LayoutId("missing")
+        assertEquals("LAYOUT_NOT_FOUND", assertThrows<DomainException> { service.addFavorite(anna, spaceId, missing, "Milk") }.code)
+        assertEquals("LAYOUT_NOT_FOUND", assertThrows<DomainException> { service.favorites(anna, spaceId, missing) }.code)
+    }
+
+    @Test
     fun `strangers and unknown layouts`() {
         val layout = service.create(anna, spaceId, "Aldi", LayoutMode.CATEGORIES)
         assertEquals("SPACE_NOT_FOUND", assertThrows<DomainException> { service.get(UserId("x"), spaceId, layout.id) }.code)
