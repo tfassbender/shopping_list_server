@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import { AppRoutes } from '../../App'
@@ -42,6 +42,26 @@ describe('CatalogPage', () => {
 
     await waitFor(() => expect(screen.getAllByLabelText('Category name')).toHaveLength(3))
     expect(sentBodies(spy, 'POST', '/api/spaces/s1/catalog/categories')).toEqual([{ name: 'Snacks', color: '#78909c' }])
+  })
+
+  it('picks colors from the palette and keeps a color that is not in it', async () => {
+    const spy = setup()
+    renderWithProviders(<AppRoutes />, '/spaces/s1/catalog')
+
+    // Dairy has #0000ff (not in the palette): offered first and selected
+    await userEvent.click(await screen.findByRole('button', { name: 'Color of Dairy' }))
+    const radios = within(screen.getByRole('dialog')).getAllByRole('radio')
+    expect(radios[0]).toHaveAccessibleName('#0000ff')
+    expect(radios[0]).toHaveAttribute('aria-checked', 'true')
+    await userEvent.keyboard('{Escape}')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Color of the new category' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('radio', { name: '#4db6ac' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('New category'), 'Snacks')
+    await userEvent.click(screen.getAllByRole('button', { name: 'Create' })[0])
+
+    await waitFor(() => expect(sentBodies(spy, 'POST', '/api/spaces/s1/catalog/categories')).toEqual([{ name: 'Snacks', color: '#4db6ac' }]))
   })
 
   it('renames on blur and deletes after confirmation', async () => {

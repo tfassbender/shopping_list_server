@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { useParams } from 'react-router'
 import { catalogApi, catalogKeys, useCatalog, type Catalog, type Category } from '../../api/catalog'
+import { ColorPicker } from '../../components/ColorPicker'
 import { InlineForm } from '../../components/InlineForm'
 import { SortableList } from '../../components/SortableList'
 import { Page } from '../../components/AppBar'
@@ -66,21 +67,11 @@ export function CatalogPage() {
   )
 }
 
-/**
- * The color swatch is a native `<input type="color">`: the browser opens its own color picker, which
- * works well on phones too and needs no library.
- */
 function CategoryRow({ category, onSave, onDelete }: { category: Category; onSave: (name: string, color: string) => void; onDelete: () => void }) {
   const [name, setName] = useState(category.name)
   return (
     <div className="flex items-center gap-2 py-1 pr-2">
-      <input
-        type="color"
-        aria-label={t('catalog.color', { name: category.name })}
-        value={category.color}
-        onChange={(e) => onSave(category.name, e.target.value)}
-        className="size-9 shrink-0 cursor-pointer rounded border-0 bg-transparent"
-      />
+      <ColorPicker label={t('catalog.color', { name: category.name })} value={category.color} onChange={(color) => onSave(category.name, color)} />
       <input
         aria-label={t('catalog.categoryName')}
         value={name}
@@ -109,7 +100,7 @@ function NewCategoryForm({ onAdd }: { onAdd: (name: string, color: string) => vo
   }
   return (
     <form onSubmit={submit} className="flex items-center gap-2">
-      <input type="color" aria-label={t('catalog.newColor')} value={color} onChange={(e) => setColor(e.target.value)} className="size-11 shrink-0 cursor-pointer rounded border-0 bg-transparent" />
+      <ColorPicker label={t('catalog.newColor')} value={color} onChange={setColor} size="size-11" />
       <input
         aria-label={t('catalog.newCategory')}
         placeholder={t('catalog.newCategory')}

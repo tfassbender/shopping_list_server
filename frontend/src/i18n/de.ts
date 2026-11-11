@@ -82,6 +82,7 @@ export const de: Record<MessageKey, string> = {
   'catalog.categoriesHint': 'Ziehen, um die Standard-Reihenfolge zu ändern. Artikel werden nach Kategorie gruppiert.',
   'catalog.categoryName': 'Name der Kategorie',
   'catalog.color': 'Farbe von {name}',
+  'color.title': 'Farbe wählen',
   'catalog.newColor': 'Farbe der neuen Kategorie',
   'catalog.newCategory': 'Neue Kategorie',
   'catalog.deleteCategory': '{name} löschen',

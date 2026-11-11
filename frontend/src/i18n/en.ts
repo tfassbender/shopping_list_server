@@ -80,6 +80,7 @@ export const en = {
   'catalog.categoriesHint': 'Drag to change the default order. Items are grouped by category.',
   'catalog.categoryName': 'Category name',
   'catalog.color': 'Color of {name}',
+  'color.title': 'Choose a color',
   'catalog.newColor': 'Color of the new category',
   'catalog.newCategory': 'New category',
   'catalog.deleteCategory': 'Delete {name}',
