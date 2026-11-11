@@ -10,7 +10,7 @@ A shopping list app with user management and list sharing between users.
 - **Web frontend:** React + TypeScript (Vite), mobile-first
 - **Android app:** planned later, uses the same REST API
 
-**Status:** planning phase. Tech stack and features are settled; next step is the implementation plan.
+**Status:** planning phase. Tech stack and features are settled; implementation plan in `doc/implementation_plan.md`.
 No code yet – only documentation in `doc/`.
 
 ## Documentation (`doc/`)
@@ -19,8 +19,9 @@ No code yet – only documentation in `doc/`.
   light DDD, file-based JSON persistence). Read before writing backend code.
 - `doc/features.md` – **authoritative** feature list with priorities and detailed rules (spaces,
   permissions, sorting, offline sync, API tokens). Based partly on the reference app *Einfacher Einkaufszettel*.
-- `doc/implementation_plan.md` – *not created yet*; comes after the feature list is prioritized.
-  Once it exists, update its checkboxes/status as work completes.
+- `doc/implementation_plan.md` – phased roadmap (setup → auth → spaces → lists → catalog → layouts →
+  API tokens → offline sync → SSE → i18n → deployment).
+  Update its checkboxes/status as work completes.
 
 Workflow: tech stack → feature analysis → implementation plan → implementation. Don't jump ahead.
 

@@ -14,3 +14,4 @@ Planning phase – no code yet.
 
 - [Tech stack & architecture](doc/tech_stack.md)
 - [Features](doc/features.md)
+- [Implementation plan](doc/implementation_plan.md)
