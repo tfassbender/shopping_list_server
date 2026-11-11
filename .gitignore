@@ -1,0 +1,25 @@
+# Gradle / Kotlin
+.gradle/
+.kotlin/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+out/
+
+# Frontend
+node_modules/
+dist/
+
+# Runtime data (file-based JSON storage)
+data/
+
+# Local config / secrets
+.env
+*.local.properties
+
+# OS
+.DS_Store
+Thumbs.db
