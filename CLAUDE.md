@@ -20,6 +20,7 @@ shop layouts, API tokens, offline sync, live updates, i18n/PWA) plus the UI rewo
   light DDD, file-based JSON persistence). Read before writing backend code.
 - `doc/features.md` – **authoritative** feature list with priorities and detailed rules (spaces,
   permissions, sorting, offline sync, API tokens). Based partly on the reference app *Einfacher Einkaufszettel*.
+- `doc/data_model.md` – Mermaid diagrams of the domain model (aggregates, id references, sync fields).
 - `doc/implementation_plan.md` – phased roadmap (setup → auth → spaces → lists → catalog → layouts →
   API tokens → offline sync → SSE → i18n → deployment).
   Update its checkboxes/status as work completes.
@@ -35,8 +36,8 @@ Workflow: tech stack → feature analysis → implementation plan → implementa
   - `domain` is pure Kotlin: no Quarkus, Jakarta or Jackson imports.
   - **The space is the unit of sharing**: lists, shop layouts, categories, units and item history belong
     to a space; only favorites and API tokens are personal. Roles: owner + member.
-  - Aggregates (see `doc/tech_stack.md`): `Space`, `SpaceCatalog`, `ShoppingList`, `ShopLayout`, `User`,
-    `ApiToken`, `UserFavorites`. Cross-aggregate references by id only. Invariants inside the aggregate,
+  - Aggregates (diagrams in `doc/data_model.md`): `Space`, `SpaceCatalog`, `ShoppingList`, `ShopLayout`,
+    `SyncState`, `User`, `UserApiTokens`, `UserFavorites`. Cross-aggregate references by id only. Invariants inside the aggregate,
     permission checks in application services.
   - Typed ids as `@JvmInline value class`; immutable `data class`es, mutations via `copy`.
   - Repository/driven ports in `application.port`; REST DTOs and persistence DTOs live in their adapters
