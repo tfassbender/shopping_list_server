@@ -2,7 +2,7 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { QueryClient, useQueryClient } from '@tanstack/react-query'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router'
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router'
 import { authApi, toThemePreference } from './api/auth'
 import { RequireAuth } from './auth/RequireAuth'
 import { getSession, setSession, shouldRefresh } from './auth/session'
@@ -21,8 +21,9 @@ import { SettingsPage } from './pages/SettingsPage'
 import { CatalogPage } from './pages/space/CatalogPage'
 import { InvitePage } from './pages/space/InvitePage'
 import { LayoutEditorPage, LayoutsPage } from './pages/space/LayoutPages'
-import { MembersPage } from './pages/space/MembersPage'
 import { SpacePage } from './pages/space/SpacePage'
+import { SpacesPage } from './pages/space/SpacesPage'
+import { ApiTokensPage } from './pages/settings/ApiTokensPage'
 import { setLanguage, useLanguage } from './i18n/messages'
 import { applyTheme } from './theme/theme'
 
@@ -47,9 +48,12 @@ export function AppRoutes() {
         <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route index element={<RequireAuth><HomePage /></RequireAuth>} />
         <Route path="settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+        <Route path="settings/api-tokens" element={<RequireAuth><ApiTokensPage /></RequireAuth>} />
+        <Route path="spaces" element={<RequireAuth><SpacesPage /></RequireAuth>} />
         <Route path="invite/:token" element={<RequireAuth><InvitePage /></RequireAuth>} />
         <Route path="spaces/:spaceId" element={<RequireAuth><SpacePage /></RequireAuth>} />
-        <Route path="spaces/:spaceId/members" element={<RequireAuth><MembersPage /></RequireAuth>} />
+        {/* Old address of the members page (e.g. in bookmarks): members are on the space page now. */}
+        <Route path="spaces/:spaceId/members" element={<RedirectToSpace />} />
         <Route path="spaces/:spaceId/lists/:listId" element={<RequireAuth><ListPage /></RequireAuth>} />
         <Route path="spaces/:spaceId/catalog" element={<RequireAuth><CatalogPage /></RequireAuth>} />
         <Route path="spaces/:spaceId/layouts" element={<RequireAuth><LayoutsPage /></RequireAuth>} />
@@ -58,6 +62,11 @@ export function AppRoutes() {
       </Route>
     </Routes>
   )
+}
+
+function RedirectToSpace() {
+  const { spaceId } = useParams()
+  return <Navigate to={`/spaces/${spaceId}`} replace />
 }
 
 /** Applies the user's theme preference (or the system setting when logged out). */

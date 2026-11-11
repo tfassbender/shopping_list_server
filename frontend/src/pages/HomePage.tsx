@@ -1,47 +1,94 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router'
-import { spaceKeys, spacesApi, useSpaces } from '../api/spaces'
-import { HealthIndicator } from '../components/HealthIndicator'
-import { InlineForm } from '../components/InlineForm'
-import { Card, ErrorText, LoadError, Loading, PageTitle } from '../components/ui'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router'
+import { useSpaces, type Space } from '../api/spaces'
+import { Page } from '../components/AppBar'
+import { Button, Hint, LoadError, Loading, SectionTitle } from '../components/ui'
 import { t } from '../i18n/messages'
-import { OnlineOnly } from '../offline/online'
+import { getLastList } from '../lists/lastList'
+import { useSpaceLists } from '../offline/engine'
+import { NewListDialog, NewSpaceDialog } from './space/SpaceDialogs'
 
-/** Start page: the user's spaces. A space holds lists and is shared with its members. */
+/**
+ * Start page: all lists of all spaces - opening a list is one tap. Everything rarely needed (new list,
+ * spaces, settings) is in the ⋮ menu.
+ */
 export function HomePage() {
   const { data: spaces, isPending, error, refetch } = useSpaces()
-  const queryClient = useQueryClient()
-  const create = useMutation({
-    mutationFn: spacesApi.create,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: spaceKeys.all }),
-  })
+  const navigate = useNavigate()
+  const [dialog, setDialog] = useState<'list' | 'space' | null>(null)
+  const lastList = getLastList()
 
   return (
-    <section className="space-y-4">
-      <PageTitle>{t('spaces.title')}</PageTitle>
+    <Page
+      title={t('start.title')}
+      menu={[
+        { label: t('newList.title'), onSelect: () => setDialog('list'), disabled: !spaces?.length },
+        { label: t('spaces.title'), onSelect: () => navigate('/spaces') },
+        'divider',
+        { label: t('nav.settings'), onSelect: () => navigate('/settings') },
+      ]}
+    >
       {isPending && <Loading />}
       {error && !spaces && <LoadError error={error} onRetry={() => void refetch()} />}
-      {spaces?.length === 0 && <p className="text-gray-600 dark:text-gray-400">{t('spaces.empty')}</p>}
-      <ul className="space-y-2">
-        {spaces?.map((space) => (
-          <li key={space.id}>
-            <Link to={`/spaces/${space.id}`} className="block">
-              <Card className="flex items-center justify-between hover:border-green-500">
-                <span className="text-lg font-medium">{space.name}</span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {t('spaces.memberCount', { count: space.memberCount })}
-                  {space.myRole === 'OWNER' ? ` · ${t('spaces.role.OWNER')}` : ''}
-                </span>
-              </Card>
-            </Link>
-          </li>
-        ))}
-      </ul>
-      <OnlineOnly>
-        <InlineForm label={t('spaces.newName')} submitLabel={t('common.create')} clearOnSubmit disabled={create.isPending} onSubmit={(name) => create.mutate(name)} />
-      </OnlineOnly>
-      <ErrorText error={create.error} />
-      <HealthIndicator />
+      {spaces?.length === 0 && (
+        <div className="space-y-4 py-8 text-center">
+          <p className="text-muted">{t('start.noSpaces')}</p>
+          <Button onClick={() => setDialog('space')}>{t('start.createSpace')}</Button>
+        </div>
+      )}
+      {spaces?.map((space) => (
+        <SpaceLists key={space.id} space={space} showName={spaces.length > 1} lastListId={lastList?.listId} onNewList={() => setDialog('list')} />
+      ))}
+      {dialog === 'list' && spaces && (
+        <NewListDialog
+          spaces={spaces}
+          defaultSpaceId={spaces.some((s) => s.id === lastList?.spaceId) ? lastList?.spaceId : undefined}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog === 'space' && <NewSpaceDialog onClose={() => setDialog(null)} />}
+    </Page>
+  )
+}
+
+/** The lists of one space (from the offline store, so this works without connection). */
+function SpaceLists(props: { space: Space; showName: boolean; lastListId?: string; onNewList: () => void }) {
+  const lists = useSpaceLists(props.space.id)
+  return (
+    <section aria-label={props.space.name}>
+      {props.showName ? <SectionTitle>{props.space.name}</SectionTitle> : <div className="h-3" />}
+      {lists === undefined && <Loading />}
+      {lists?.length === 0 && (
+        <Hint>
+          {t('start.noLists')}{' '}
+          <button type="button" onClick={props.onNewList} className="font-semibold text-accent underline">
+            {t('newList.title')}
+          </button>
+        </Hint>
+      )}
+      {lists?.map((list) => {
+        const open = list.items.filter((i) => !i.checked)
+        const preview = open.length ? open.slice(0, 4).map((i) => i.name).join(', ') + (open.length > 4 ? ' …' : '') : t('start.allDone')
+        return (
+          <Link
+            key={list.id}
+            to={`/spaces/${props.space.id}/lists/${list.id}`}
+            className="flex items-center gap-3 border-b border-line px-2 py-3.5 hover:bg-raised"
+          >
+            <span className="min-w-0 flex-1">
+              <span className="text-xl font-semibold">{list.name}</span>
+              {list.id === props.lastListId && <span className="text-sm font-semibold text-accent"> · {t('start.lastUsed')}</span>}
+              <span className="block truncate text-muted">{preview}</span>
+            </span>
+            <span
+              aria-label={t('lists.openCount', { count: open.length })}
+              className={`flex h-8 min-w-8 items-center justify-center rounded-full bg-raised px-2.5 tabular-nums ${open.length ? 'font-semibold' : 'text-muted'}`}
+            >
+              {open.length || '✓'}
+            </span>
+          </Link>
+        )
+      })}
     </section>
   )
 }

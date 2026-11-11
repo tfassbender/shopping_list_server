@@ -11,7 +11,8 @@ A shopping list app with user management and list sharing between users.
 - **Android app:** planned later, uses the same REST API
 
 **Status:** Phases 0–10 of `doc/implementation_plan.md` are implemented (accounts, spaces, lists, catalog,
-shop layouts, API tokens, offline sync, live updates, i18n/PWA). Next: UI improvements, then deployment.
+shop layouts, API tokens, offline sync, live updates, i18n/PWA) plus the UI rework from
+`doc/mockups/lists-mockup.html`. Next: deployment.
 
 ## Documentation (`doc/`)
 

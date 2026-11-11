@@ -4,7 +4,7 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–10 done. Next: UI improvements, then Phase 11 (deployment).
+**Status:** Phases 0–10 and the UI rework are done. Next: Phase 11 (deployment).
 
 ## Guiding principles
 
@@ -302,6 +302,22 @@ Decided while implementing:
 - Voice input: microphone button only where the browser has the Web Speech API; the recognized text goes
   into the quick-add field and is confirmed with Enter.
 - Polish: load errors with retry, empty-state hints, Escape closes dialogs (`aria-modal`).
+
+## UI rework (after Phase 10)
+
+- [x] Clickable mockup `doc/mockups/lists-mockup.html` agreed with the user
+- [x] Web app reworked to the mockup: light blue header bar with ⋮ menu for rare actions, start page shows
+  all lists of all spaces, bigger base font (17px), design tokens in `index.css`
+- [x] List view: no checkboxes (tap toggles, checked = grey + struck through), checked items stay in place;
+  a header button moves them to the end on demand; + button opens the add dialog (stays open for several
+  items); shop choice via the line under the title; item details via ⋯ (favorite switch per shop)
+- [x] Pages "Spaces & sharing" (`/spaces`), space page with members/invites/catalog/shops (members page
+  merged into it), settings as rows, API tokens on their own page (`/settings/api-tokens`)
+
+Decided while implementing:
+- The user setting `checkedItemsToEnd` is no longer used by the web app (the sort button replaced it); it
+  stays in the API for now.
+- Confirmations use an in-app dialog (`ConfirmDialog`) instead of `window.confirm`.
 
 ## Phase 11 – Deployment
 

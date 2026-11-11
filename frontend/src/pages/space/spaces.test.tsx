@@ -1,6 +1,5 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { vi } from 'vitest'
 import { AppRoutes } from '../../App'
 import { mockApi, sentBodies, testUser } from '../../test/mockApi'
 import { loginForTest, renderWithProviders } from '../../test/render'
@@ -24,14 +23,18 @@ describe('spaces', () => {
         created.push(newSpace)
         return { status: 201, body: newSpace }
       },
+      'GET /api/spaces/s2': () => created[0],
+      'GET /api/spaces/s2/members': [],
     })
-    renderWithProviders(<AppRoutes />, '/')
+    renderWithProviders(<AppRoutes />, '/spaces')
 
     expect(await screen.findByText('Home')).toBeInTheDocument()
-    await userEvent.type(screen.getByLabelText('Name of a new space'), 'Office')
-    await userEvent.click(screen.getByRole('button', { name: 'Create' }))
+    await userEvent.click(screen.getByRole('button', { name: 'New space' }))
+    await userEvent.type(within(screen.getByRole('dialog')).getByLabelText('Name'), 'Office')
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Create' }))
 
-    expect(await screen.findByText('Office')).toBeInTheDocument()
+    // the new space opens right away
+    expect(await screen.findByRole('heading', { name: 'Office' })).toBeInTheDocument()
     expect(sentBodies(spy, 'POST', '/api/spaces')).toEqual([{ name: 'Office' }])
   })
 
@@ -48,8 +51,9 @@ describe('spaces', () => {
     expect(await screen.findByText('Olga invites you to the space "Family". Join?')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Join' }))
 
-    expect(await screen.findByRole('heading', { name: 'Family' })).toBeInTheDocument()
-    expect(spy.mock.calls.some(([url, init]) => String(url).endsWith('/accept') && init?.method === 'POST')).toBe(true)
+    await waitFor(() => expect(spy.mock.calls.some(([url, init]) => String(url).endsWith('/accept') && init?.method === 'POST')).toBe(true))
+    // back on the start page with the lists of all spaces
+    expect(await screen.findByRole('heading', { name: 'Lists' })).toBeInTheDocument()
   })
 
   it('shows an error for a used invite', async () => {
@@ -62,7 +66,6 @@ describe('spaces', () => {
   })
 
   it('owner sees member management and creates an invite link', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     const spy = mockApi({
       'GET /api/users/me': testUser,
       'GET /api/spaces/s1': space,
@@ -74,15 +77,19 @@ describe('spaces', () => {
       },
       'DELETE /api/spaces/s1/members/u2': { status: 204 },
     })
-    renderWithProviders(<AppRoutes />, '/spaces/s1/members')
+    renderWithProviders(<AppRoutes />, '/spaces/s1/members') // old address, redirects to the space
 
-    expect(await screen.findByText('Anna (you)')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Create invite link' }))
+    expect(await screen.findByText('(you)')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Invite someone' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Create invite link' }))
     expect(await screen.findByDisplayValue('http://x/invite/t')).toBeInTheDocument()
     expect(sentBodies(spy, 'POST', '/api/spaces/s1/invites')).toEqual([{ expiresInHours: 24 }])
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }))
 
-    await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
-    expect(spy.mock.calls.some(([url, init]) => String(url).endsWith('/members/u2') && init?.method === 'DELETE')).toBe(true)
+    await userEvent.click(screen.getByRole('button', { name: 'Options for Bob' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Remove/ }))
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove' }))
+    await waitFor(() => expect(spy.mock.calls.some(([url, init]) => String(url).endsWith('/members/u2') && init?.method === 'DELETE')).toBe(true))
   })
 
   it('member sees no owner controls but can leave', async () => {
@@ -91,11 +98,14 @@ describe('spaces', () => {
       'GET /api/spaces/s1': { ...space, myRole: 'MEMBER' },
       'GET /api/spaces/s1/members': members,
     })
-    renderWithProviders(<AppRoutes />, '/spaces/s1/members')
+    renderWithProviders(<AppRoutes />, '/spaces/s1')
 
-    expect(await screen.findByText('Bob (you)')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Create invite link' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Remove' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Leave space' })).toBeInTheDocument()
+    expect(await screen.findByText('(you)')).toBeInTheDocument()
+    expect(screen.getByText('Only the owner can invite people.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Invite someone' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Options for/ })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Menu' }))
+    expect(screen.getByRole('menuitem', { name: 'Leave space' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Delete space' })).not.toBeInTheDocument()
   })
 })

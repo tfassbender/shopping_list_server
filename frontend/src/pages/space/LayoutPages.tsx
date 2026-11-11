@@ -1,23 +1,25 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { useCatalog, type Category } from '../../api/catalog'
 import { layoutKeys, layoutsApi, useLayouts, type LayoutMode, type ShopLayout } from '../../api/layouts'
 import { listsApi, useLists } from '../../api/lists'
 import { InlineForm } from '../../components/InlineForm'
 import { SortableList } from '../../components/SortableList'
-import { Button, Card, ErrorText, Loading, PageTitle } from '../../components/ui'
+import { Page } from '../../components/AppBar'
+import { Button, ErrorText, Fab, Hint, Loading, Row, SectionTitle, Switch } from '../../components/ui'
 import { t, tDynamic } from '../../i18n/messages'
-import { OnlineOnly } from '../../offline/online'
-import { Checkbox } from '../SettingsPage'
-import { BackLink } from './MembersPage'
+import { OnlineOnly, useOnline } from '../../offline/online'
+import { NameDialog } from './SpaceDialogs'
 
-/** Overview of the shop layouts of a space. */
+/** Overview of the shop layouts of a space; + creates one. */
 export function LayoutsPage() {
   const { spaceId = '' } = useParams()
   const { data: layouts, error } = useLayouts(spaceId)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const online = useOnline()
+  const [creating, setCreating] = useState(false)
   const create = useMutation({
     mutationFn: (name: string) => layoutsApi.create(spaceId, name, 'CATEGORIES'),
     onSuccess: (layout) => {
@@ -27,27 +29,32 @@ export function LayoutsPage() {
   })
 
   return (
-    <section className="space-y-4">
-      <PageTitle action={<BackLink to={`/spaces/${spaceId}`} />}>{t('layouts.title')}</PageTitle>
-      <p className="text-sm text-gray-600 dark:text-gray-400">{t('layouts.explanation')}</p>
-      <ErrorText error={error ?? create.error} />
-      {layouts?.length === 0 && <p className="text-gray-500 dark:text-gray-400">{t('layouts.emptyHint')}</p>}
-      <ul className="space-y-2">
-        {layouts?.map((layout) => (
-          <li key={layout.id}>
-            <Link to={`/spaces/${spaceId}/layouts/${layout.id}`} className="block">
-              <Card className="flex items-center justify-between hover:border-green-500">
-                <span className="text-lg font-medium">{layout.name}</span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{tDynamic(`layouts.mode.${layout.mode}`)}</span>
-              </Card>
-            </Link>
-          </li>
-        ))}
-      </ul>
-      <OnlineOnly>
-        <InlineForm label={t('layouts.newName')} submitLabel={t('common.create')} clearOnSubmit disabled={create.isPending} onSubmit={(name) => create.mutate(name)} />
-      </OnlineOnly>
-    </section>
+    <Page title={t('layouts.title')} back={`/spaces/${spaceId}`}>
+      <Hint>{t('layouts.explanation')}</Hint>
+      <ErrorText error={error} />
+      {layouts?.length === 0 && <p className="py-6 text-center text-muted">{t('layouts.emptyHint')}</p>}
+      {layouts?.map((layout) => (
+        <Row
+          key={layout.id}
+          onClick={() => navigate(`/spaces/${spaceId}/layouts/${layout.id}`)}
+          title={<span className="text-lg font-semibold">{layout.name}</span>}
+          hint={tDynamic(`layouts.mode.${layout.mode}`)}
+          chevron
+        />
+      ))}
+      <Fab label={t('layouts.new')} onClick={() => setCreating(true)} disabled={!online} />
+      {creating && (
+        <NameDialog
+          title={t('layouts.new')}
+          placeholder={t('layouts.namePlaceholder')}
+          submitLabel={t('common.create')}
+          pending={create.isPending}
+          error={create.error}
+          onSubmit={(name) => create.mutate(name)}
+          onClose={() => setCreating(false)}
+        />
+      )}
+    </Page>
   )
 }
 
@@ -103,8 +110,7 @@ export function LayoutEditorPage() {
   }
 
   return (
-    <section className="space-y-6">
-      <PageTitle action={<BackLink to={`/spaces/${spaceId}/layouts`} />}>{layout.name}</PageTitle>
+    <Page title={layout.name} back={`/spaces/${spaceId}/layouts`}>
       <ErrorText error={update.error ?? remove.error} />
       <OnlineOnly>
       <div className="space-y-6">
@@ -120,10 +126,10 @@ export function LayoutEditorPage() {
         <legend className="mb-1 text-sm font-medium">{t('layouts.sortBy')}</legend>
         {(['CATEGORIES', 'ITEMS'] as const).map((mode) => (
           <label key={mode} className="flex min-h-11 items-center gap-3">
-            <input type="radio" name="mode" className="size-5 accent-green-600" checked={layout.mode === mode} onChange={() => setMode(mode)} />
+            <input type="radio" name="mode" className="size-5 accent-accent" checked={layout.mode === mode} onChange={() => setMode(mode)} />
             <span>
               {tDynamic(`layouts.mode.${mode}`)}
-              <span className="block text-xs text-gray-500 dark:text-gray-400">{tDynamic(`layouts.modeHint.${mode}`)}</span>
+              <span className="block text-xs text-muted">{tDynamic(`layouts.modeHint.${mode}`)}</span>
             </span>
           </label>
         ))}
@@ -131,7 +137,7 @@ export function LayoutEditorPage() {
 
       {layout.mode === 'CATEGORIES' ? (
         <div className="space-y-2">
-          <p className="text-sm text-gray-600 dark:text-gray-400">{t('layouts.dragHint')}</p>
+          <p className="text-sm text-muted">{t('layouts.dragHint')}</p>
           <SortableList
             items={categoriesInLayoutOrder(layout, catalog.categories)}
             getId={(c) => c.id}
@@ -156,7 +162,7 @@ export function LayoutEditorPage() {
       </Button>
       </div>
       </OnlineOnly>
-    </section>
+    </Page>
   )
 }
 
@@ -183,7 +189,7 @@ function ItemOrderEditor({ spaceId, layout, onChange }: { spaceId: string; layou
 
   return (
     <div className="space-y-2">
-      <p className="text-sm text-gray-600 dark:text-gray-400">{t('layouts.itemsHint')}</p>
+      <p className="text-sm text-muted">{t('layouts.itemsHint')}</p>
       {layout.itemOrder.length > 0 && (
         <SortableList
           items={layout.itemOrder}
@@ -196,7 +202,7 @@ function ItemOrderEditor({ spaceId, layout, onChange }: { spaceId: string; layou
               <button
                 aria-label={t('layouts.removeEntry', { name })}
                 onClick={() => onChange(layout.itemOrder.filter((n) => n !== name))}
-                className="flex size-10 items-center justify-center text-gray-500 hover:text-red-600"
+                className="flex size-10 items-center justify-center text-muted hover:text-red-600"
               >
                 ✕
               </button>
@@ -231,18 +237,16 @@ function ConnectedLists({ spaceId, layout, onChange }: { spaceId: string; layout
   })
   if (!lists || lists.length === 0) return null
   return (
-    <Card className="space-y-1">
-      <h3 className="text-lg font-semibold">{t('layouts.connectedLists')}</h3>
-      <p className="text-sm text-gray-600 dark:text-gray-400">{t('layouts.connectedHint')}</p>
+    <section>
+      <SectionTitle>{t('layouts.connectedLists')}</SectionTitle>
+      <p className="text-sm text-muted">{t('layouts.connectedHint')}</p>
       {lists.map((list) => (
-        <Checkbox
-          key={list.id}
-          label={list.name}
-          checked={layout.listIds.includes(list.id)}
-          onChange={(connect) => toggle.mutate({ listId: list.id, connect })}
-        />
+        <label key={list.id} className="flex min-h-14 items-center gap-3 border-b border-line px-2">
+          <span className="flex-1">{list.name}</span>
+          <Switch label={list.name} checked={layout.listIds.includes(list.id)} onChange={(connect) => toggle.mutate({ listId: list.id, connect })} />
+        </label>
       ))}
       <ErrorText error={toggle.error} />
-    </Card>
+    </section>
   )
 }

@@ -1,127 +1,182 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
+import { apiTokensApi } from '../api/apiTokens'
 import { accountApi, type User, type UserSettings } from '../api/auth'
+import { useHealth } from '../api/health'
 import { useAuthActions, useCurrentUser } from '../auth/useAuth'
-import { Button, Card, ErrorText, Loading, PageTitle, SuccessText, TextField } from '../components/ui'
-import { t, tDynamic } from '../i18n/messages'
+import { Page } from '../components/AppBar'
+import { ConfirmDialog, Dialog, DialogActions } from '../components/Dialog'
+import { Button, ErrorText, Loading, Row, SectionTitle, Segmented, SuccessText, Switch, TextField } from '../components/ui'
+import { t } from '../i18n/messages'
 import { OnlineOnly } from '../offline/online'
-import { ApiTokensSection } from './settings/ApiTokensSection'
+import { NameDialog } from './space/SpaceDialogs'
 
+type DialogName = 'name' | 'password' | 'logoutEverywhere' | 'delete' | null
+
+/**
+ * Settings in plain sections: profile, display, AI agents, account. Display choices apply at once;
+ * everything else opens a dialog. Needs a connection (settings are stored on the server).
+ */
 export function SettingsPage() {
   const { data: user } = useCurrentUser()
-  if (!user) return <Loading />
-  return (
-    <section className="space-y-4">
-      <PageTitle>{t('settings.title')}</PageTitle>
-      <OnlineOnly>
-      <div className="space-y-4">
-      <ProfileSection user={user} />
-      <DisplaySection user={user} />
-      <PasswordSection />
-      <ApiTokensSection />
-      <SessionSection />
-      <DeleteAccountSection />
-      </div>
-      </OnlineOnly>
-    </section>
-  )
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <Card>
-      <h3 className="mb-3 text-lg font-semibold">{title}</h3>
-      <div className="space-y-3">{children}</div>
-    </Card>
-  )
-}
-
-function useUpdateUser<T>(call: (arg: T) => Promise<User>) {
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
-  return useMutation({ mutationFn: call, onSuccess: (user) => queryClient.setQueryData(['me'], user) })
-}
+  const { startSession, logout } = useAuthActions()
+  const health = useHealth()
+  const tokens = useQuery({ queryKey: ['apiTokens'], queryFn: apiTokensApi.list })
+  const [dialog, setDialog] = useState<DialogName>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
-function ProfileSection({ user }: { user: User }) {
-  const [displayName, setDisplayName] = useState(user.displayName)
-  const rename = useUpdateUser(accountApi.updateDisplayName)
+  const setUser = (updated: User) => queryClient.setQueryData(['me'], updated)
+  const updateSettings = useMutation({ mutationFn: accountApi.updateSettings, onSuccess: setUser })
+  const rename = useMutation({
+    mutationFn: accountApi.updateDisplayName,
+    onSuccess: (updated) => {
+      setUser(updated)
+      setDialog(null)
+    },
+  })
+  const logoutEverywhere = useMutation({
+    mutationFn: accountApi.logoutEverywhere,
+    onSuccess: (response) => {
+      startSession(response)
+      setNotice(t('settings.loggedOutEverywhere'))
+    },
+  })
+  const deleteAccount = useMutation({
+    mutationFn: accountApi.deleteAccount,
+    onSuccess: () => {
+      logout()
+      navigate('/register')
+    },
+  })
 
-  function submit(event: FormEvent) {
-    event.preventDefault()
-    rename.mutate(displayName)
+  if (!user) {
+    return (
+      <Page title={t('settings.title')} back="/">
+        <Loading />
+      </Page>
+    )
   }
+  const change = (patch: Partial<UserSettings>) => updateSettings.mutate({ ...user.settings, ...patch })
 
   return (
-    <Section title={t('settings.profile')}>
-      <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
-      <form onSubmit={submit} className="space-y-3">
-        <TextField label={t('auth.displayName')} required maxLength={40} value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
-        <ErrorText error={rename.error} />
-        {rename.isSuccess && <SuccessText>{t('common.saved')}</SuccessText>}
-        <Button type="submit" disabled={rename.isPending}>
-          {t('common.save')}
-        </Button>
-      </form>
-    </Section>
+    <Page title={t('settings.title')} back="/">
+      <OnlineOnly>
+        <ErrorText error={updateSettings.error ?? logoutEverywhere.error ?? deleteAccount.error} />
+        {notice && <SuccessText>{notice}</SuccessText>}
+
+        <SectionTitle>{t('settings.profile')}</SectionTitle>
+        <Row onClick={() => setDialog('name')} title={t('auth.displayName')} hint={t('auth.displayNameHint')} end={<span className="text-muted">{user.displayName}</span>} chevron />
+        <Row title={t('auth.email')} end={<span className="min-w-0 truncate text-muted">{user.email}</span>} />
+
+        <SectionTitle>{t('settings.appearance')}</SectionTitle>
+        <div className="space-y-2 border-b border-line px-2 py-3">
+          <span className="block">{t('settings.language')}</span>
+          <Segmented
+            label={t('settings.language')}
+            options={[
+              { value: 'de', label: t('settings.language.de') },
+              { value: 'en', label: t('settings.language.en') },
+            ]}
+            value={user.settings.language}
+            onChange={(language) => change({ language })}
+          />
+        </div>
+        <div className="space-y-2 border-b border-line px-2 py-3">
+          <span className="block">{t('settings.theme')}</span>
+          <Segmented
+            label={t('settings.theme')}
+            options={(['SYSTEM', 'LIGHT', 'DARK'] as const).map((value) => ({ value, label: t(`settings.theme.${value}`) }))}
+            value={user.settings.theme}
+            onChange={(theme) => change({ theme })}
+          />
+        </div>
+        <label className="flex min-h-15 items-center gap-3 border-b border-line px-2 py-2">
+          <span className="min-w-0 flex-1">
+            {t('settings.mergeNotes')}
+            <span className="block text-sm text-muted">{t('settings.mergeNotesHint')}</span>
+          </span>
+          {/* Stored as "ignore merge warnings" - the switch shows the positive form. */}
+          <Switch
+            label={t('settings.mergeNotes')}
+            checked={!user.settings.ignoreMergeWarnings}
+            onChange={(show) => change({ ignoreMergeWarnings: !show })}
+          />
+        </label>
+
+        <SectionTitle>{t('settings.aiAgents')}</SectionTitle>
+        <Row
+          onClick={() => navigate('/settings/api-tokens')}
+          title={t('tokens.title')}
+          hint={t('settings.tokensHint')}
+          end={<span className="text-muted">{tokens.data?.length ?? ''}</span>}
+          chevron
+        />
+
+        <SectionTitle>{t('settings.account')}</SectionTitle>
+        <Row onClick={() => setDialog('password')} title={t('settings.password')} chevron />
+        <Row onClick={() => setDialog('logoutEverywhere')} title={t('settings.logoutEverywhere')} />
+        <Row
+          onClick={() => {
+            logout()
+            navigate('/login')
+          }}
+          title={t('nav.logout')}
+        />
+        <Row onClick={() => setDialog('delete')} title={t('settings.deleteAccount')} danger />
+        <p className="px-2 pt-6 text-sm text-muted">
+          {t('appName')} {health.data ? t('settings.version', { version: health.data.version }) : ''}
+        </p>
+      </OnlineOnly>
+
+      {dialog === 'name' && (
+        <NameDialog
+          title={t('auth.displayName')}
+          label={t('auth.displayName')}
+          initialValue={user.displayName}
+          maxLength={40}
+          submitLabel={t('common.save')}
+          pending={rename.isPending}
+          error={rename.error}
+          onSubmit={(name) => rename.mutate(name)}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog === 'password' && (
+        <PasswordDialog
+          onDone={() => {
+            setDialog(null)
+            setNotice(t('settings.passwordChanged'))
+          }}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog === 'logoutEverywhere' && (
+        <ConfirmDialog
+          title={t('settings.logoutEverywhereTitle')}
+          text={t('settings.logoutEverywhereConfirm')}
+          confirmLabel={t('settings.logoutEverywhereButton')}
+          onConfirm={() => logoutEverywhere.mutate()}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog === 'delete' && (
+        <ConfirmDialog
+          title={t('settings.deleteAccountTitle')}
+          text={t('settings.deleteAccountConfirm')}
+          confirmLabel={t('settings.deleteAccount')}
+          onConfirm={() => deleteAccount.mutate()}
+          onClose={() => setDialog(null)}
+        />
+      )}
+    </Page>
   )
 }
 
-/** Display settings are saved immediately on change (no save button). */
-function DisplaySection({ user }: { user: User }) {
-  const update = useUpdateUser(accountApi.updateSettings)
-  const settings = user.settings
-  const change = (patch: Partial<UserSettings>) => update.mutate({ ...settings, ...patch })
-
-  return (
-    <Section title={t('settings.appearance')}>
-      <SelectField
-        label={t('settings.theme')}
-        value={settings.theme}
-        options={['SYSTEM', 'LIGHT', 'DARK'].map((v) => [v, tDynamic(`settings.theme.${v}`)])}
-        onChange={(theme) => change({ theme: theme as UserSettings['theme'] })}
-      />
-      <SelectField
-        label={t('settings.language')}
-        value={settings.language}
-        options={['en', 'de'].map((v) => [v, tDynamic(`settings.language.${v}`)])}
-        onChange={(language) => change({ language: language as UserSettings['language'] })}
-      />
-      <Checkbox label={t('settings.checkedItemsToEnd')} checked={settings.checkedItemsToEnd} onChange={(v) => change({ checkedItemsToEnd: v })} />
-      <Checkbox label={t('settings.ignoreMergeWarnings')} checked={settings.ignoreMergeWarnings} onChange={(v) => change({ ignoreMergeWarnings: v })} />
-      <ErrorText error={update.error} />
-    </Section>
-  )
-}
-
-function SelectField(props: { label: string; value: string; options: string[][]; onChange: (value: string) => void }) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{props.label}</span>
-      <select
-        value={props.value}
-        onChange={(e) => props.onChange(e.target.value)}
-        className="block min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 dark:border-gray-600 dark:bg-gray-900"
-      >
-        {props.options.map(([value, label]) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </select>
-    </label>
-  )
-}
-
-export function Checkbox(props: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
-  return (
-    <label className="flex min-h-11 items-center gap-3">
-      <input type="checkbox" className="size-5 accent-green-600" checked={props.checked} onChange={(e) => props.onChange(e.target.checked)} />
-      <span>{props.label}</span>
-    </label>
-  )
-}
-
-function PasswordSection() {
+/** Change password; the answer is a new session (all other devices are logged out). */
+function PasswordDialog({ onDone, onClose }: { onDone: () => void; onClose: () => void }) {
   const { startSession } = useAuthActions()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
@@ -129,79 +184,23 @@ function PasswordSection() {
     mutationFn: () => accountApi.changePassword(current, next),
     onSuccess: (response) => {
       startSession(response)
-      setCurrent('')
-      setNext('')
+      onDone()
     },
   })
-
-  function submit(event: FormEvent) {
-    event.preventDefault()
-    change.mutate()
-  }
-
   return (
-    <Section title={t('settings.password')}>
-      <form onSubmit={submit} className="space-y-3">
-        <TextField label={t('auth.currentPassword')} type="password" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
-        <TextField label={t('auth.newPassword')} type="password" autoComplete="new-password" required minLength={8} value={next} onChange={(e) => setNext(e.target.value)} />
-        <ErrorText error={change.error} />
-        {change.isSuccess && <SuccessText>{t('settings.passwordChanged')}</SuccessText>}
+    <Dialog title={t('settings.password')} onClose={onClose} onSubmit={() => change.mutate()}>
+      <TextField label={t('auth.currentPassword')} type="password" autoComplete="current-password" required autoFocus value={current} onChange={(e) => setCurrent(e.target.value)} />
+      <TextField label={t('auth.newPassword')} type="password" autoComplete="new-password" required minLength={8} value={next} onChange={(e) => setNext(e.target.value)} />
+      <p className="text-sm text-muted">{t('settings.passwordHint')}</p>
+      <ErrorText error={change.error} />
+      <DialogActions>
+        <Button variant="ghost" onClick={onClose}>
+          {t('common.cancel')}
+        </Button>
         <Button type="submit" disabled={change.isPending}>
-          {t('settings.password')}
+          {t('settings.passwordChange')}
         </Button>
-      </form>
-    </Section>
-  )
-}
-
-function SessionSection() {
-  const { startSession, logout } = useAuthActions()
-  const navigate = useNavigate()
-  const everywhere = useMutation({ mutationFn: accountApi.logoutEverywhere, onSuccess: startSession })
-  return (
-    <Section title={t('settings.sessions')}>
-      <ErrorText error={everywhere.error} />
-      {everywhere.isSuccess && <SuccessText>{t('settings.loggedOutEverywhere')}</SuccessText>}
-      <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" onClick={() => everywhere.mutate()} disabled={everywhere.isPending}>
-          {t('settings.logoutEverywhere')}
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            logout()
-            navigate('/login')
-          }}
-        >
-          {t('nav.logout')}
-        </Button>
-      </div>
-    </Section>
-  )
-}
-
-function DeleteAccountSection() {
-  const { logout } = useAuthActions()
-  const navigate = useNavigate()
-  const remove = useMutation({
-    mutationFn: accountApi.deleteAccount,
-    onSuccess: () => {
-      logout()
-      navigate('/register')
-    },
-  })
-  return (
-    <Section title={t('settings.dangerZone')}>
-      <ErrorText error={remove.error} />
-      <Button
-        variant="danger"
-        disabled={remove.isPending}
-        onClick={() => {
-          if (window.confirm(t('settings.deleteAccountConfirm'))) remove.mutate()
-        }}
-      >
-        {t('settings.deleteAccount')}
-      </Button>
-    </Section>
+      </DialogActions>
+    </Dialog>
   )
 }

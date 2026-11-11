@@ -1,6 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { vi } from 'vitest'
 import { AppRoutes } from '../App'
 import type { Item } from '../api/lists'
 import { fakeSyncServer } from '../test/fakeSyncServer'
@@ -37,41 +36,68 @@ function setup(items: Item[], extraRoutes: Record<string, unknown> = {}) {
 describe('ListPage', () => {
   beforeEach(() => loginForTest())
 
-  it('adds an item via the quick add field', async () => {
+  it('adds several items in a row via the + dialog', async () => {
     const { server } = setup([])
 
-    await userEvent.type(await screen.findByLabelText('Add item...'), 'Milk{Enter}')
+    await userEvent.click(await screen.findByRole('button', { name: 'Add item' }))
+    const dialog = screen.getByRole('dialog')
+    await userEvent.type(within(dialog).getByLabelText('Name'), 'Milk')
+    await userEvent.type(within(dialog).getByLabelText('Amount'), '2 l')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add' }))
 
-    expect(await screen.findByRole('checkbox', { name: 'Milk' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Add item...')).toHaveValue('')
-    await waitFor(() => expect(server.received('ADD_ITEM')).toHaveLength(1))
-    const [added] = server.received('ADD_ITEM') as { itemId: string; name: string }[]
-    expect(added.name).toBe('Milk')
+    // the dialog stays open, empty, for the next item
+    expect(within(dialog).getByLabelText('Name')).toHaveValue('')
+    await userEvent.type(within(dialog).getByLabelText('Name'), 'Bread{Enter}')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getAllByRole('checkbox').map((el) => el.getAttribute('aria-label'))).toEqual(['Milk', 'Bread'])
+    await waitFor(() => expect(server.received('ADD_ITEM')).toHaveLength(2))
+    const [added] = server.received('ADD_ITEM') as { itemId: string; name: string; quantity: string; unit: string }[]
+    expect(added).toMatchObject({ name: 'Milk', quantity: '2', unit: 'l' })
     expect(added.itemId).toMatch(/^[0-9a-f-]{36}$/) // client-generated UUID
   })
 
-  it('checks an item by tapping and offers undo', async () => {
+  it('checks an item by tapping; it stays in place until the sort button moves it', async () => {
     const { server } = setup([item('1', 'Milk'), item('2', 'Bread')])
+    const order = () => screen.getAllByRole('checkbox').map((el) => el.getAttribute('aria-label'))
 
     await userEvent.click(await screen.findByRole('checkbox', { name: 'Milk' }))
     expect(screen.getByRole('checkbox', { name: 'Milk' })).toHaveAttribute('aria-checked', 'true')
-    // checked items move to the end (setting is on for the test user)
-    expect(screen.getAllByRole('checkbox').map((el) => el.getAttribute('aria-label'))).toEqual(['Bread', 'Milk'])
+    expect(order()).toEqual(['Milk', 'Bread'])
 
-    await userEvent.click(within(screen.getByText('"Milk" checked').parentElement!).getByRole('button', { name: 'Undo' }))
-    expect(screen.getByRole('checkbox', { name: 'Milk' })).toHaveAttribute('aria-checked', 'false')
+    await userEvent.click(screen.getByRole('button', { name: 'Move checked items to the end' }))
+    expect(order()).toEqual(['Bread', 'Milk'])
+    expect(screen.getByRole('list', { name: 'Checked' })).toBeInTheDocument()
+
+    // unchecking returns the item to its place
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Milk' }))
+    expect(order()).toEqual(['Milk', 'Bread'])
     await waitFor(() => expect(server.list('l1').items[0].checked).toBe(false))
   })
 
-  it('removes the checked items after confirmation', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+  it('removes the checked items via the menu', async () => {
     const { server } = setup([item('1', 'Milk', { checked: true }), item('2', 'Bread')])
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Remove checked (1)' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Menu' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Remove 1 checked' }))
 
     expect(screen.queryByRole('checkbox', { name: 'Milk' })).not.toBeInTheDocument()
     await waitFor(() => expect(server.received('REMOVE_CHECKED')).toEqual([expect.objectContaining({ itemIds: ['1'] })]))
     expect(server.list('l1').items.map((i) => i.name)).toEqual(['Bread'])
+  })
+
+  it('renames the list via the menu', async () => {
+    const { server } = setup([])
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Menu' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Rename list' }))
+    const name = within(screen.getByRole('dialog')).getByRole('textbox')
+    await userEvent.clear(name)
+    await userEvent.type(name, 'Weekend{Enter}')
+
+    expect(await screen.findByRole('heading', { name: 'Weekend' })).toBeInTheDocument()
+    await waitFor(() => expect(server.list('l1').name).toBe('Weekend'))
   })
 
   it('edit sends one change per changed field', async () => {
@@ -79,9 +105,8 @@ describe('ListPage', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Edit Milk' }))
     const dialog = screen.getByRole('dialog')
-    await userEvent.clear(within(dialog).getByLabelText('Quantity'))
-    await userEvent.type(within(dialog).getByLabelText('Quantity'), '3')
-    await userEvent.type(within(dialog).getByLabelText('Unit'), 'l')
+    await userEvent.clear(within(dialog).getByLabelText('Amount'))
+    await userEvent.type(within(dialog).getByLabelText('Amount'), '3 l')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
 
     expect(await screen.findByText('3 l')).toBeInTheDocument()
@@ -98,7 +123,9 @@ describe('ListPage', () => {
     await screen.findByRole('checkbox', { name: 'Milk' })
     server.offline = true
 
-    await userEvent.type(screen.getByLabelText('Add item...'), 'Bread{Enter}')
+    await userEvent.click(screen.getByRole('button', { name: 'Add item' }))
+    await userEvent.type(screen.getByLabelText('Name'), 'Bread{Enter}')
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }))
     await userEvent.click(screen.getByRole('checkbox', { name: 'Milk' }))
 
     expect(screen.getByRole('checkbox', { name: 'Bread' })).toBeInTheDocument()
@@ -128,8 +155,10 @@ describe('ListPage', () => {
         url.searchParams.get('q') === 'mi' ? [{ name: 'Milk', categoryId: 'dairy', unit: 'l', usageCount: 3 }] : [],
     })
 
-    await userEvent.type(await screen.findByRole('combobox'), 'mi')
+    await userEvent.click(await screen.findByRole('button', { name: 'Add item' }))
+    await userEvent.type(screen.getByRole('combobox', { name: 'Name' }), 'mi')
     await userEvent.click(await screen.findByRole('button', { name: /Milk/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }))
 
     expect(await screen.findByRole('list', { name: 'Dairy' })).toBeInTheDocument()
     await waitFor(() => expect(server.received('ADD_ITEM')[0]).toMatchObject({ name: 'Milk', categoryId: 'dairy', unit: 'l' }))

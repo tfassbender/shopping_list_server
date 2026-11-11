@@ -43,7 +43,7 @@ export function SortableList<T>(props: {
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        <ul className="divide-y divide-gray-200 overflow-hidden rounded-xl border border-gray-200 dark:divide-gray-800 dark:border-gray-800">
+        <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line">
           {props.items.map((item) => (
             <SortableRow key={props.getId(item)} id={props.getId(item)} label={props.getLabel(item)}>
               {props.renderItem(item)}
@@ -60,12 +60,12 @@ function SortableRow({ id, label, children }: { id: string; label: string; child
   // While dragging, dnd-kit moves the row with a CSS transform; zIndex keeps it above its neighbours.
   const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 10 : undefined }
   return (
-    <li ref={setNodeRef} style={style} className={`relative flex items-center bg-white dark:bg-gray-900 ${isDragging ? 'shadow-lg' : ''}`}>
+    <li ref={setNodeRef} style={style} className={`relative flex items-center bg-surface  ${isDragging ? 'shadow-lg' : ''}`}>
       <button
         {...attributes}
         {...listeners}
         aria-label={t('sortable.handle', { name: label })}
-        className="flex min-h-12 w-11 shrink-0 cursor-grab touch-none items-center justify-center text-gray-400"
+        className="flex min-h-12 w-11 shrink-0 cursor-grab touch-none items-center justify-center text-muted"
       >
         ⠿
       </button>

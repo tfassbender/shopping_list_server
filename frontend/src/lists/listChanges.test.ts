@@ -85,14 +85,10 @@ describe('applyOp (optimistic local view)', () => {
 describe('sortItems', () => {
   const items = [item('ccc', { checked: true }), item('a'), item('bb')]
 
-  it('sorts by creation time', () => {
-    expect(sortItems(items, false).map((i) => i.id)).toEqual(['a', 'bb', 'ccc'])
-  })
-
-  it('moves checked items to the end when enabled', () => {
+  it('sorts by creation time and leaves checked items in place', () => {
+    expect(sortItems(items).map((i) => i.id)).toEqual(['a', 'bb', 'ccc'])
     const mixed = [item('a', { checked: true }), item('bb'), item('ccc')]
-    expect(sortItems(mixed, true).map((i) => i.id)).toEqual(['bb', 'ccc', 'a'])
-    expect(sortItems(mixed, false).map((i) => i.id)).toEqual(['a', 'bb', 'ccc'])
+    expect(sortItems(mixed).map((i) => i.id)).toEqual(['a', 'bb', 'ccc'])
   })
 
   it('formats amounts', () => {
@@ -114,18 +110,22 @@ describe('groupItems', () => {
     item('dddd', { categoryId: 'deleted-category' }),
     item('eeeee', { categoryId: 'veg' }),
   ]
-  const summary = (checkedToEnd: boolean) =>
-    groupItems(items, categories, checkedToEnd).map((s) => `${s.key}:${s.items.map((i) => i.id).join(',')}`)
+  const summary = (movedToEnd: ReadonlySet<string>) =>
+    groupItems(items, categories, movedToEnd).map((s) => `${s.key}:${s.items.map((i) => i.id).join(',')}`)
 
-  it('groups in category order, unknown categories in "other", checked last', () => {
-    expect(summary(true)).toEqual(['veg:eeeee', 'dairy:a', '__other:ccc,dddd', '__checked:bb'])
+  it('groups in category order, unknown categories in "other", moved checked items last', () => {
+    expect(summary(new Set(['bb']))).toEqual(['veg:eeeee', 'dairy:a', '__other:ccc,dddd', '__checked:bb'])
   })
 
-  it('keeps checked items in their category when the setting is off', () => {
-    expect(summary(false)).toEqual(['veg:bb,eeeee', 'dairy:a', '__other:ccc,dddd'])
+  it('keeps checked items in their category until they are moved', () => {
+    expect(summary(new Set())).toEqual(['veg:bb,eeeee', 'dairy:a', '__other:ccc,dddd'])
+  })
+
+  it('does not move an item that was unchecked again', () => {
+    expect(summary(new Set(['a']))).toEqual(['veg:bb,eeeee', 'dairy:a', '__other:ccc,dddd'])
   })
 
   it('omits empty sections', () => {
-    expect(groupItems([], categories, true)).toEqual([])
+    expect(groupItems([], categories)).toEqual([])
   })
 })

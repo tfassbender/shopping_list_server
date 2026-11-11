@@ -32,7 +32,7 @@ export function OnlineOnly({ children }: { children: ReactNode }) {
   return (
     <>
       {!online && (
-        <p role="note" className="mb-3 rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+        <p role="note" className="mt-4 mb-1 rounded-lg bg-raised px-3 py-2 text-sm text-muted">
           {t('offline.needsConnection')}
         </p>
       )}

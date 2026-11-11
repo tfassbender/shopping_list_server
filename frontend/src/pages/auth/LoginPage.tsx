@@ -4,7 +4,8 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { authApi } from '../../api/auth'
 import { safeRedirect } from '../../auth/RequireAuth'
 import { useAuthActions, useSession } from '../../auth/useAuth'
-import { Button, ErrorText, PageTitle, TextField } from '../../components/ui'
+import { Page } from '../../components/AppBar'
+import { Button, ErrorText, TextField } from '../../components/ui'
 import { t } from '../../i18n/messages'
 
 export function LoginPage() {
@@ -34,8 +35,8 @@ export function LoginPage() {
 
   const registerLink = `/register${redirect !== '/' ? `?redirect=${encodeURIComponent(redirect)}` : ''}`
   return (
-    <section className="mx-auto max-w-sm">
-      <PageTitle>{t('auth.login.title')}</PageTitle>
+    <Page title={t('auth.login.title')}>
+      <div className="mx-auto max-w-sm space-y-4 py-6">
       <form onSubmit={submit} className="space-y-4">
         <TextField label={t('auth.email')} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
         <TextField
@@ -52,13 +53,14 @@ export function LoginPage() {
         </Button>
       </form>
       <div className="mt-6 flex flex-col gap-3 text-center text-sm">
-        <Link to={registerLink} className="text-green-700 underline dark:text-green-400">
+        <Link to={registerLink} className="text-accent underline">
           {t('auth.login.noAccount')}
         </Link>
-        <Link to="/forgot-password" className="text-gray-600 underline dark:text-gray-400">
+        <Link to="/forgot-password" className="text-muted underline">
           {t('auth.login.forgot')}
         </Link>
       </div>
-    </section>
+    </div>
+    </Page>
   )
 }

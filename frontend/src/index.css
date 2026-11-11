@@ -6,16 +6,63 @@
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * The app's colors as CSS variables - light values, then dark values. `@theme inline` turns them into
+ * Tailwind colors (`bg-brand`, `text-muted`, `border-line`, ...), so components need no `dark:` variants:
+ * the variables switch with the theme. Light blue is the brand color; on it, text is dark navy
+ * (white on light blue would be hard to read).
+ */
+:root {
+  --app-brand: #8ccff5;
+  --app-brand-ink: #0b2a42;
+  --app-accent: #0a6aa6; /* blue for small text and switches on white */
+  --app-surface: #ffffff;
+  --app-raised: #f1f6fa; /* hover, input fills */
+  --app-line: #dde7ee;
+  --app-fg: #13212b;
+  --app-muted: #5f7180;
+  --app-danger: #dc2626;
+}
+html.dark {
+  --app-brand: #6dbbe8;
+  --app-brand-ink: #0b2a42;
+  --app-accent: #8fd0f7;
+  --app-surface: #0f171e;
+  --app-raised: #18232d;
+  --app-line: #24323e;
+  --app-fg: #e6eef4;
+  --app-muted: #93a6b5;
+  --app-danger: #f87171;
+}
+
+@theme inline {
+  --color-brand: var(--app-brand);
+  --color-brand-ink: var(--app-brand-ink);
+  --color-accent: var(--app-accent);
+  --color-surface: var(--app-surface);
+  --color-raised: var(--app-raised);
+  --color-line: var(--app-line);
+  --color-fg: var(--app-fg);
+  --color-muted: var(--app-muted);
+  --color-danger: var(--app-danger);
+}
+
 @layer base {
   html {
     /* Lets native controls (scrollbars, inputs) follow the theme too. */
     color-scheme: light;
+    /*
+     * Larger type for use in a shop: all Tailwind sizes are in rem, so this one value scales text and
+     * spacing of the whole app (text-base = 17px, text-lg ≈ 19px).
+     */
+    font-size: 17px;
   }
   html.dark {
     color-scheme: dark;
   }
   body {
-    @apply bg-white text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
+    @apply bg-surface text-fg antialiased;
+    line-height: 1.35;
     /* Avoid the grey flash when tapping on mobile. */
     -webkit-tap-highlight-color: transparent;
   }

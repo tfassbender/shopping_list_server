@@ -34,7 +34,7 @@ export function InlineForm(props: {
         value={value}
         maxLength={props.maxLength ?? 60}
         onChange={(e) => setValue(e.target.value)}
-        className="min-h-11 min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 text-base focus:border-green-600 focus:ring-2 focus:ring-green-600/30 focus:outline-none dark:border-gray-600 dark:bg-gray-900"
+        className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-base focus:border-accent focus:ring-2 focus:ring-accent/30 focus:outline-none"
       />
       <Button type="submit" disabled={props.disabled || !value.trim()}>
         {props.submitLabel}

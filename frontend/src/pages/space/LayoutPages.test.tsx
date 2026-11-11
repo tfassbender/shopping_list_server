@@ -36,12 +36,12 @@ describe('layout helpers', () => {
       item('3', 'Cheese', { categoryId: 'dairy', checked: true }),
       item('4', 'Batteries'),
     ]
-    const summary = groupSorted(sorted, categories, 'CATEGORIES', true).map((s) => `${s.kind}:${s.items.map((i) => i.name).join(',')}`)
+    const summary = groupSorted(sorted, categories, 'CATEGORIES', new Set(['3'])).map((s) => `${s.kind}:${s.items.map((i) => i.name).join(',')}`)
     expect(summary).toEqual(['category:Bread', 'category:Milk', 'other:Batteries', 'checked:Cheese'])
   })
 
   it('uses one header-less section in item mode', () => {
-    const sections = groupSorted([item('1', 'Bread', { categoryId: 'bakery' }), item('2', 'Milk')], categories, 'ITEMS', false)
+    const sections = groupSorted([item('1', 'Bread', { categoryId: 'bakery' }), item('2', 'Milk')], categories, 'ITEMS')
     expect(sections.map((s) => [s.kind, s.items.length])).toEqual([['items', 2]])
   })
 })
@@ -73,14 +73,23 @@ describe('shop selection on the list screen', () => {
     await screen.findByRole('checkbox', { name: 'Milk' })
     expect(screen.queryByRole('button', { name: 'Favorite Milk' })).not.toBeInTheDocument()
 
-    await userEvent.selectOptions(screen.getByLabelText('Shop'), 'Aldi')
+    await userEvent.click(screen.getByRole('button', { name: /Order of adding/ }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Aldi/ }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
     await waitFor(() => expect(screen.getAllByRole('list').map((l) => l.getAttribute('aria-label'))).toEqual(['Bakery', 'Dairy']))
     expect(localStorage.getItem('shoppinglist.listLayout')).toBe('{"l1":"aldi"}')
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Favorite Milk' })).toHaveAttribute('aria-pressed', 'true'))
+    expect(screen.getByRole('button', { name: /Sorted for Aldi/ })).toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Favorite Bread' }))
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Favorite Bread' })).toHaveAttribute('aria-pressed', 'true'))
+    // favorites are toggled in the item details
+    await userEvent.click(screen.getByRole('button', { name: 'Edit Milk' }))
+    await waitFor(() => expect(within(screen.getByRole('dialog')).getByRole('switch', { name: 'Favorite at Aldi' })).toBeChecked())
+    await userEvent.keyboard('{Escape}')
+    await userEvent.click(screen.getByRole('button', { name: 'Edit Bread' }))
+    const favorite = within(screen.getByRole('dialog')).getByRole('switch', { name: 'Favorite at Aldi' })
+    expect(favorite).not.toBeChecked()
+    await userEvent.click(favorite)
+    await waitFor(() => expect(favorite).toBeChecked())
     await waitFor(() => expect(sentBodies(spy, 'POST', '/api/spaces/s1/layouts/aldi/favorites')).toEqual([{ name: 'Bread' }]))
   })
 

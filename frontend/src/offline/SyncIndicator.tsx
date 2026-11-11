@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { catalogKeys, type Catalog } from '../api/catalog'
 import { useCurrentUser } from '../auth/useAuth'
 import { Button } from '../components/ui'
-import { Dialog } from '../lists/ItemEditor'
+import { Dialog } from '../components/Dialog'
 import { errorMessage, t, tDynamic } from '../i18n/messages'
 import { syncEngine, useMergeWarnings, useSyncStatus } from './engine'
 import { useOnline } from './online'
@@ -21,12 +21,12 @@ export function SyncIndicator() {
   return (
     <div className="flex items-center gap-1">
       {!online && (
-        <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium" role="status">
+        <span className="rounded-full bg-brand-ink/10 px-2.5 py-0.5 text-sm font-medium whitespace-nowrap" role="status">
           {pending > 0 ? t('offline.badgePending', { count: pending }) : t('offline.badge')}
         </span>
       )}
       {online && status === 'syncing' && pending > 0 && (
-        <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs" role="status">
+        <span className="rounded-full bg-brand-ink/10 px-2.5 py-0.5 text-sm whitespace-nowrap" role="status">
           {t('offline.saving')}
         </span>
       )}
@@ -34,7 +34,7 @@ export function SyncIndicator() {
         <button
           onClick={() => setOpen(true)}
           aria-label={t('warnings.open', { count: warnings.length })}
-          className="flex size-11 items-center justify-center rounded-full text-xl hover:bg-white/15"
+          className="flex size-12 items-center justify-center rounded-full text-xl hover:bg-brand-ink/10"
         >
           ⚠
         </button>
@@ -51,12 +51,12 @@ function WarningsDialog({ warnings, onClose }: { warnings: StoredWarning[]; onCl
 
   return (
     <Dialog title={t('warnings.title')} onClose={onClose}>
-      <p className="mb-3 text-sm text-gray-600 dark:text-gray-400">{t('warnings.explanation')}</p>
-      <ul className="mb-4 max-h-[50dvh] space-y-2 overflow-y-auto">
+      <p className="text-muted">{t('warnings.explanation')}</p>
+      <ul className="max-h-[50dvh] space-y-2 overflow-y-auto">
         {[...warnings].reverse().map((w) => (
-          <li key={w.id} className="rounded-lg bg-yellow-50 px-3 py-2 text-sm dark:bg-yellow-950">
+          <li key={w.id} className="rounded-lg bg-raised px-3 py-2 text-sm">
             {warningText(w, (id) => categoryName(w.spaceId, id))}
-            <span className="block text-xs text-gray-500">{new Date(w.at).toLocaleString()}</span>
+            <span className="block text-xs text-muted">{new Date(w.at).toLocaleString()}</span>
           </li>
         ))}
       </ul>

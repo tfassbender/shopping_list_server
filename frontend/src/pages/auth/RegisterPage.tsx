@@ -4,7 +4,8 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { authApi, type Language } from '../../api/auth'
 import { safeRedirect } from '../../auth/RequireAuth'
 import { useAuthActions, useSession } from '../../auth/useAuth'
-import { Button, ErrorText, PageTitle, SuccessText, TextField } from '../../components/ui'
+import { Page } from '../../components/AppBar'
+import { Button, ErrorText, SuccessText, TextField } from '../../components/ui'
 import { getLanguage, t } from '../../i18n/messages'
 
 const MIN_PASSWORD_LENGTH = 8
@@ -33,10 +34,11 @@ export function RegisterPage() {
 
   if (register.data?.verificationRequired) {
     return (
-      <section className="mx-auto max-w-sm">
-        <PageTitle>{t('auth.register.title')}</PageTitle>
+      <Page title={t('auth.register.title')}>
+      <div className="mx-auto max-w-sm space-y-4 py-6">
         <SuccessText>{t('auth.register.checkMail', { email })}</SuccessText>
-      </section>
+      </div>
+    </Page>
     )
   }
 
@@ -46,8 +48,8 @@ export function RegisterPage() {
   }
 
   return (
-    <section className="mx-auto max-w-sm">
-      <PageTitle>{t('auth.register.title')}</PageTitle>
+    <Page title={t('auth.register.title')}>
+      <div className="mx-auto max-w-sm space-y-4 py-6">
       <form onSubmit={submit} className="space-y-4">
         <TextField label={t('auth.email')} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
         <div>
@@ -59,7 +61,7 @@ export function RegisterPage() {
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
           />
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('auth.displayNameHint')}</p>
+          <p className="mt-1 text-xs text-muted">{t('auth.displayNameHint')}</p>
         </div>
         <div>
           <TextField
@@ -71,7 +73,7 @@ export function RegisterPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('auth.passwordHint', { min: MIN_PASSWORD_LENGTH })}</p>
+          <p className="mt-1 text-xs text-muted">{t('auth.passwordHint', { min: MIN_PASSWORD_LENGTH })}</p>
         </div>
         <ErrorText error={register.error} />
         <Button type="submit" className="w-full" disabled={register.isPending}>
@@ -79,10 +81,11 @@ export function RegisterPage() {
         </Button>
       </form>
       <div className="mt-6 text-center text-sm">
-        <Link to={`/login?redirect=${encodeURIComponent(redirect)}`} className="text-green-700 underline dark:text-green-400">
+        <Link to={`/login?redirect=${encodeURIComponent(redirect)}`} className="text-accent underline">
           {t('auth.register.haveAccount')}
         </Link>
       </div>
-    </section>
+    </div>
+    </Page>
   )
 }

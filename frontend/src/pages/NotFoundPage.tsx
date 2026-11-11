@@ -1,13 +1,15 @@
 import { Link } from 'react-router'
+import { Page } from '../components/AppBar'
 import { t } from '../i18n/messages'
 
 export function NotFoundPage() {
   return (
-    <section className="space-y-3">
-      <h2 className="text-2xl font-bold">{t('notFound.title')}</h2>
-      <Link to="/" className="text-green-700 underline dark:text-green-400">
-        {t('notFound.back')}
-      </Link>
-    </section>
+    <Page title={t('notFound.title')} back="/">
+      <div className="py-6">
+        <Link to="/" className="font-semibold text-accent underline">
+          {t('notFound.back')}
+        </Link>
+      </div>
+    </Page>
   )
 }

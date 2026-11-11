@@ -67,8 +67,10 @@ describe('App routing and auth', () => {
     })
     renderWithProviders(<AppRoutes />, '/settings')
 
-    await userEvent.click(await screen.findByLabelText('Move checked items to the end of the list'))
+    await userEvent.click(await screen.findByRole('switch', { name: 'Show notes about merged changes' }))
 
-    expect(sentBodies(spy, 'PUT', '/api/users/me/settings')).toEqual([{ ...testUser.settings, checkedItemsToEnd: false }])
+    expect(sentBodies(spy, 'PUT', '/api/users/me/settings')).toEqual([
+      { ...testUser.settings, ignoreMergeWarnings: !testUser.settings.ignoreMergeWarnings },
+    ])
   })
 })

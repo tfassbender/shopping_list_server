@@ -4,10 +4,10 @@ import { useParams } from 'react-router'
 import { catalogApi, catalogKeys, useCatalog, type Catalog, type Category } from '../../api/catalog'
 import { InlineForm } from '../../components/InlineForm'
 import { SortableList } from '../../components/SortableList'
-import { Button, Card, ErrorText, Loading, PageTitle } from '../../components/ui'
+import { Page } from '../../components/AppBar'
+import { Button, ErrorText, Loading, SectionTitle } from '../../components/ui'
 import { t } from '../../i18n/messages'
 import { OnlineOnly } from '../../offline/online'
-import { BackLink } from './MembersPage'
 
 /** Manage categories (name, color, order) and units of a space. */
 export function CatalogPage() {
@@ -20,8 +20,13 @@ export function CatalogPage() {
     onSuccess: (updated) => queryClient.setQueryData(catalogKeys.catalog(spaceId), updated),
   })
 
-  if (error) return <ErrorText error={error} />
-  if (!catalog) return <Loading />
+  if (!catalog) {
+    return (
+      <Page title={t('catalog.title')} back={`/spaces/${spaceId}`}>
+        {error ? <ErrorText error={error} /> : <Loading />}
+      </Page>
+    )
+  }
 
   function reorder(ids: string[]) {
     // Show the new order immediately, then save it.
@@ -31,14 +36,13 @@ export function CatalogPage() {
   }
 
   return (
-    <section className="space-y-6">
-      <PageTitle action={<BackLink to={`/spaces/${spaceId}`} />}>{t('catalog.title')}</PageTitle>
+    <Page title={t('catalog.title')} back={`/spaces/${spaceId}`}>
       <ErrorText error={update.error} />
       <OnlineOnly>
       <div className="space-y-6">
       <div className="space-y-3">
-        <h3 className="text-lg font-semibold">{t('catalog.categories')}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">{t('catalog.categoriesHint')}</p>
+        <SectionTitle>{t('catalog.categories')}</SectionTitle>
+        <p className="text-sm text-muted">{t('catalog.categoriesHint')}</p>
         <SortableList
           items={catalog.categories}
           getId={(c) => c.id}
@@ -58,7 +62,7 @@ export function CatalogPage() {
       <UnitsEditor units={catalog.units} onChange={(units) => update.mutate(() => catalogApi.setUnits(spaceId, units))} />
       </div>
       </OnlineOnly>
-    </section>
+    </Page>
   )
 }
 
@@ -83,9 +87,9 @@ function CategoryRow({ category, onSave, onDelete }: { category: Category; onSav
         maxLength={40}
         onChange={(e) => setName(e.target.value)}
         onBlur={() => name.trim() && name.trim() !== category.name && onSave(name.trim(), category.color)}
-        className="min-h-10 min-w-0 flex-1 rounded border border-transparent bg-transparent px-2 hover:border-gray-300 focus:border-green-600 focus:outline-none dark:hover:border-gray-600"
+        className="min-h-10 min-w-0 flex-1 rounded border border-transparent bg-transparent px-2 hover:border-line focus:border-accent focus:outline-none"
       />
-      <button onClick={onDelete} aria-label={t('catalog.deleteCategory', { name: category.name })} className="flex size-10 items-center justify-center text-gray-500 hover:text-red-600">
+      <button onClick={onDelete} aria-label={t('catalog.deleteCategory', { name: category.name })} className="flex size-10 items-center justify-center text-muted hover:text-red-600">
         ✕
       </button>
     </div>
@@ -112,7 +116,7 @@ function NewCategoryForm({ onAdd }: { onAdd: (name: string, color: string) => vo
         value={name}
         maxLength={40}
         onChange={(e) => setName(e.target.value)}
-        className="min-h-11 min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 dark:border-gray-600 dark:bg-gray-900"
+        className="min-h-11 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3"
       />
       <Button type="submit" disabled={!name.trim()}>
         {t('common.create')}
@@ -123,19 +127,19 @@ function NewCategoryForm({ onAdd }: { onAdd: (name: string, color: string) => vo
 
 function UnitsEditor({ units, onChange }: { units: string[]; onChange: (units: string[]) => void }) {
   return (
-    <Card className="space-y-3">
-      <h3 className="text-lg font-semibold">{t('catalog.units')}</h3>
+    <section className="space-y-3">
+      <SectionTitle>{t('catalog.units')}</SectionTitle>
       <ul className="flex flex-wrap gap-2">
         {units.map((unit) => (
-          <li key={unit} className="flex items-center gap-1 rounded-full bg-gray-100 py-1 pr-1 pl-3 dark:bg-gray-800">
+          <li key={unit} className="flex items-center gap-1 rounded-full bg-raised py-1 pr-1 pl-3">
             {unit}
-            <button aria-label={t('catalog.removeUnit', { name: unit })} onClick={() => onChange(units.filter((u) => u !== unit))} className="flex size-8 items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+            <button aria-label={t('catalog.removeUnit', { name: unit })} onClick={() => onChange(units.filter((u) => u !== unit))} className="flex size-8 items-center justify-center rounded-full hover:bg-raised">
               ✕
             </button>
           </li>
         ))}
       </ul>
       <InlineForm label={t('catalog.newUnit')} submitLabel={t('common.create')} maxLength={20} clearOnSubmit onSubmit={(unit) => onChange([...units, unit])} />
-    </Card>
+    </section>
   )
 }

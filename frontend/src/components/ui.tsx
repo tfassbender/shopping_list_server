@@ -1,20 +1,20 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
+import { useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react'
 import { ApiError } from '../api/client'
 import { errorMessage, t } from '../i18n/messages'
 
 /*
  * Small shared building blocks so pages look consistent. Touch targets are at least 44px high
- * (`min-h-11`), the recommended minimum for fingers on mobile.
+ * (`min-h-11` and up), the recommended minimum for fingers on mobile. Colors come from the theme tokens
+ * in index.css (`brand`, `muted`, `line`, ...), which switch with dark mode by themselves.
  */
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost'
 
 const buttonStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-green-600 text-white hover:bg-green-700 disabled:bg-green-400 dark:bg-green-700 dark:hover:bg-green-600',
-  secondary:
-    'border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700',
-  danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-400',
-  ghost: 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800',
+  primary: 'bg-brand text-brand-ink hover:brightness-95 disabled:opacity-50',
+  secondary: 'border border-line bg-surface hover:bg-raised disabled:opacity-50',
+  danger: 'bg-danger text-white hover:brightness-95 disabled:opacity-50',
+  ghost: 'hover:bg-raised disabled:opacity-50',
 }
 
 export function Button({
@@ -25,25 +25,48 @@ export function Button({
   return (
     <button
       type="button"
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 font-medium transition-colors disabled:cursor-not-allowed ${buttonStyles[variant]} ${className}`}
+      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 font-semibold transition disabled:cursor-not-allowed ${buttonStyles[variant]} ${className}`}
       {...props}
     />
   )
 }
 
+const inputClass =
+  'block min-h-12 w-full rounded-lg border border-line bg-raised px-3 text-base text-fg focus:border-accent focus:ring-2 focus:ring-accent/30 focus:outline-none'
+
+/*
+ * Fields get a <label> linked by id (`htmlFor`) instead of wrapping the control: a wrapped <select> would
+ * otherwise get its option texts added to its accessible name.
+ */
 export function TextField({
   label,
   className = '',
+  id,
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
+  const generatedId = useId()
+  const inputId = id ?? generatedId
   return (
-    <label className={`block ${className}`}>
-      <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
-      <input
-        className="block min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-base focus:border-green-600 focus:ring-2 focus:ring-green-600/30 focus:outline-none dark:border-gray-600 dark:bg-gray-900"
-        {...props}
-      />
-    </label>
+    <div className={`block ${className}`}>
+      <label htmlFor={inputId} className="mb-1 block text-sm text-muted">
+        {label}
+      </label>
+      <input id={inputId} className={inputClass} {...props} />
+    </div>
+  )
+}
+
+export function SelectField(props: { label: string; value: string; onChange: (value: string) => void; children: ReactNode; className?: string }) {
+  const id = useId()
+  return (
+    <div className={`block ${props.className ?? ''}`}>
+      <label htmlFor={id} className="mb-1 block text-sm text-muted">
+        {props.label}
+      </label>
+      <select id={id} value={props.value} onChange={(e) => props.onChange(e.target.value)} className={inputClass}>
+        {props.children}
+      </select>
+    </div>
   )
 }
 
@@ -60,33 +83,16 @@ export function ErrorText({ error }: { error: unknown }) {
 
 export function SuccessText({ children }: { children: ReactNode }) {
   return (
-    <p role="status" className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800 dark:bg-green-950 dark:text-green-300">
+    <p role="status" className="rounded-lg bg-raised px-3 py-2 text-sm text-accent">
       {children}
     </p>
-  )
-}
-
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 ${className}`}>
-      {children}
-    </div>
-  )
-}
-
-export function PageTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
-  return (
-    <div className="mb-4 flex items-center justify-between gap-2">
-      <h2 className="text-2xl font-bold">{children}</h2>
-      {action}
-    </div>
   )
 }
 
 /** A failed load with a retry button (e.g. server unreachable and nothing cached yet). */
 export function LoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 py-4">
       <ErrorText error={error} />
       <Button variant="secondary" onClick={onRetry}>
         {t('common.retry')}
@@ -96,5 +102,135 @@ export function LoadError({ error, onRetry }: { error: unknown; onRetry: () => v
 }
 
 export function Loading() {
-  return <p className="text-gray-500 dark:text-gray-400">{t('common.loading')}</p>
+  return <p className="py-4 text-muted">{t('common.loading')}</p>
+}
+
+/** Small uppercase heading above a group of rows ("Members", "Display", a category, ...). */
+export function SectionTitle({ children, color }: { children: ReactNode; color?: string }) {
+  return (
+    <h2 className="mt-6 mb-1 flex items-center gap-2 text-sm font-semibold tracking-wide text-muted uppercase">
+      {color && <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />}
+      {children}
+    </h2>
+  )
+}
+
+/** Muted explanation text between rows. */
+export function Hint({ children }: { children: ReactNode }) {
+  return <p className="py-3 text-muted">{children}</p>
+}
+
+/**
+ * One full-width row of a page (settings, members, spaces): a main text with an optional hint below, and
+ * something at the end (value, chevron, button). With `onClick` the whole row is a button.
+ */
+export function Row(props: {
+  title: ReactNode
+  hint?: ReactNode
+  start?: ReactNode
+  end?: ReactNode
+  onClick?: () => void
+  danger?: boolean
+  chevron?: boolean
+}) {
+  const content = (
+    <>
+      {props.start}
+      <span className="min-w-0 flex-1">
+        <span className={`block ${props.danger ? 'text-danger' : ''}`}>{props.title}</span>
+        {props.hint && <span className="block text-sm text-muted">{props.hint}</span>}
+      </span>
+      {props.end}
+      {props.chevron && <ChevronRight />}
+    </>
+  )
+  const className = 'flex min-h-15 w-full items-center gap-3 border-b border-line px-2 py-2 text-left'
+  return props.onClick ? (
+    <button type="button" onClick={props.onClick} className={`${className} hover:bg-raised`}>
+      {content}
+    </button>
+  ) : (
+    <div className={className}>{content}</div>
+  )
+}
+
+export function ChevronRight() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="size-5 shrink-0 text-muted" aria-hidden="true">
+      <path d="M9 5l7 7-7 7" />
+    </svg>
+  )
+}
+
+/** A round initial (members, spaces). */
+export function Avatar({ name }: { name: string }) {
+  return (
+    <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-raised font-bold text-accent">
+      {name.trim().charAt(0).toUpperCase() || '?'}
+    </span>
+  )
+}
+
+/**
+ * A few exclusive choices side by side (language, theme, access). `aria-pressed` tells screen readers
+ * which one is chosen.
+ */
+export function Segmented<T extends string>(props: { label: string; options: { value: T; label: string }[]; value: T; onChange: (value: T) => void }) {
+  return (
+    <div role="group" aria-label={props.label} className="flex rounded-xl border border-line bg-raised p-0.5">
+      {props.options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          aria-pressed={option.value === props.value}
+          onClick={() => props.onChange(option.value)}
+          className="min-h-11 flex-1 rounded-[10px] px-2 aria-pressed:bg-surface aria-pressed:font-semibold aria-pressed:shadow-sm"
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** On/off switch: a styled checkbox, so keyboard and screen readers work as usual. */
+export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (checked: boolean) => void; label: string }) {
+  return (
+    <span className="relative inline-block h-[30px] w-[52px] shrink-0">
+      <input
+        type="checkbox"
+        role="switch"
+        aria-label={label}
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="peer absolute inset-0 z-10 m-0 cursor-pointer opacity-0"
+      />
+      <span className="pointer-events-none absolute inset-0 rounded-full bg-line transition peer-checked:bg-accent peer-focus-visible:outline-2 peer-focus-visible:outline-accent" />
+      <span className="pointer-events-none absolute top-[3px] left-[3px] size-6 rounded-full bg-white shadow transition peer-checked:translate-x-[22px]" />
+    </span>
+  )
+}
+
+/**
+ * The round + button at the bottom right of the content column: the one way to add something on a page
+ * (item, space, token).
+ */
+export function Fab({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
+  return (
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-10">
+      <div className="mx-auto flex max-w-2xl justify-end px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+        <button
+          type="button"
+          aria-label={label}
+          onClick={onClick}
+          disabled={disabled}
+          className="pointer-events-auto flex size-16 items-center justify-center rounded-full bg-brand text-brand-ink shadow-lg hover:brightness-95 disabled:opacity-50"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" className="size-7" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  )
 }

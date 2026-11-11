@@ -3,7 +3,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { authApi } from '../../api/auth'
 import { useAuthActions } from '../../auth/useAuth'
-import { Button, ErrorText, Loading, PageTitle, SuccessText, TextField } from '../../components/ui'
+import { Page } from '../../components/AppBar'
+import { Button, ErrorText, Loading, SuccessText, TextField } from '../../components/ui'
 import { t } from '../../i18n/messages'
 
 /** Target of the link in the verification email: confirms the address and logs the user in. */
@@ -37,8 +38,8 @@ export function VerifyEmailPage() {
   }
 
   return (
-    <section className="mx-auto max-w-sm space-y-4">
-      <PageTitle>{t('auth.verify.title')}</PageTitle>
+    <Page title={t('auth.verify.title')}>
+      <div className="mx-auto max-w-sm space-y-4 py-6">
       {verify.isPending && <Loading />}
       <ErrorText error={verify.error} />
       {(verify.isError || !token) && (
@@ -51,7 +52,8 @@ export function VerifyEmailPage() {
           </Button>
         </form>
       )}
-    </section>
+    </div>
+    </Page>
   )
 }
 
@@ -65,8 +67,8 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <section className="mx-auto max-w-sm">
-      <PageTitle>{t('auth.forgot.title')}</PageTitle>
+    <Page title={t('auth.forgot.title')}>
+      <div className="mx-auto max-w-sm space-y-4 py-6">
       {forgot.isSuccess ? (
         <SuccessText>{t('auth.forgot.sent')}</SuccessText>
       ) : (
@@ -78,7 +80,8 @@ export function ForgotPasswordPage() {
           </Button>
         </form>
       )}
-    </section>
+    </div>
+    </Page>
   )
 }
 
@@ -103,8 +106,8 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <section className="mx-auto max-w-sm">
-      <PageTitle>{t('auth.reset.title')}</PageTitle>
+    <Page title={t('auth.reset.title')}>
+      <div className="mx-auto max-w-sm space-y-4 py-6">
       <form onSubmit={submit} className="space-y-4">
         <TextField
           label={t('auth.newPassword')}
@@ -120,6 +123,7 @@ export function ResetPasswordPage() {
           {t('auth.reset.submit')}
         </Button>
       </form>
-    </section>
+    </div>
+    </Page>
   )
 }

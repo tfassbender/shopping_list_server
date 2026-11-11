@@ -30,7 +30,7 @@ describe('language', () => {
     mockApi(listRoutes({ ...testUser, settings: { ...testUser.settings, language: 'de' } }))
     renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
 
-    expect(await screen.findByLabelText('Artikel hinzufügen...')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Artikel hinzufügen' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Milk bearbeiten' })).toBeInTheDocument()
   })
 
@@ -55,7 +55,8 @@ describe('voice input', () => {
   it('is hidden without browser support', async () => {
     mockApi(listRoutes())
     renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
-    await screen.findByLabelText('Add item...')
+    await userEvent.click(await screen.findByRole('button', { name: 'Add item' }))
+    expect(screen.getByLabelText('Name')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Speak an item' })).not.toBeInTheDocument()
   })
 
@@ -79,9 +80,10 @@ describe('voice input', () => {
     mockApi(listRoutes())
     renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Speak an item' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Add item' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Speak an item' }))
 
-    await waitFor(() => expect(screen.getByLabelText('Add item...')).toHaveValue('Oat milk'))
+    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveValue('Oat milk'))
   })
 })
 
