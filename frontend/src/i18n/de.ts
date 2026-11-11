@@ -114,6 +114,8 @@ export const de: Record<MessageKey, string> = {
   'layouts.connectedLists': 'Listen',
   'layouts.connectedHint': 'Dieses Geschäft wird bei den angehakten Listen angeboten.',
   'layouts.delete': 'Geschäft löschen',
+  'layouts.copy': 'Geschäft kopieren',
+  'layouts.copyName': '{name} (Kopie)',
   'layouts.deleteText': 'Listen, die für dieses Geschäft sortiert sind, kehren zur Reihenfolge des Hinzufügens zurück.',
   'shop.label': 'Geschäft',
   'shop.none': 'Kein Geschäft (Reihenfolge des Hinzufügens)',

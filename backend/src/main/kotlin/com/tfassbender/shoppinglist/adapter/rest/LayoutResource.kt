@@ -34,6 +34,13 @@ data class CreateLayoutRequest(
     val id: String? = null,
 )
 
+data class CopyLayoutRequest(
+    @field:Schema(description = "Name of the copy")
+    val name: String = "",
+    @field:Schema(description = "Optional client-generated id")
+    val id: String? = null,
+)
+
 data class UpdateLayoutRequest(val name: String = "", val mode: LayoutMode = LayoutMode.CATEGORIES)
 
 @Schema(description = "Complete new order. CATEGORIES: category ids; ITEMS: item names (case-insensitive)")
@@ -91,6 +98,19 @@ class LayoutResource(
     fun create(@PathParam("spaceId") spaceId: String, request: CreateLayoutRequest): LayoutDto {
         val layout = layoutService.create(currentUser.id(), SpaceId(spaceId), request.name, request.mode, request.id?.let(::LayoutId))
         return LayoutDto.from(layout)
+    }
+
+    @POST
+    @Path("/{layoutId}/copy")
+    @Operation(
+        operationId = "copyLayout",
+        summary = "Copy a layout: same mode, category and item order and connected lists; personal favorites are not copied",
+    )
+    @ResponseStatus(201)
+    @APIResponse(responseCode = "201", description = "Created", content = [Content(schema = Schema(implementation = LayoutDto::class))])
+    fun copy(@PathParam("spaceId") spaceId: String, @PathParam("layoutId") layoutId: String, request: CopyLayoutRequest): LayoutDto {
+        val copy = layoutService.copy(currentUser.id(), SpaceId(spaceId), LayoutId(layoutId), request.name, request.id?.let(::LayoutId))
+        return LayoutDto.from(copy)
     }
 
     @GET

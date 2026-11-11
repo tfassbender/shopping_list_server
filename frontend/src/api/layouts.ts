@@ -21,6 +21,8 @@ export const layoutsApi = {
   create: (spaceId: string, name: string, mode: LayoutMode) => api.post<ShopLayout>(base(spaceId), { name, mode }),
   update: (spaceId: string, id: string, name: string, mode: LayoutMode) => api.put<ShopLayout>(`${base(spaceId)}/${id}`, { name, mode }),
   delete: (spaceId: string, id: string) => api.delete(`${base(spaceId)}/${id}`),
+  /** Same mode, orders and connected lists; personal favorites are not copied. */
+  copy: (spaceId: string, id: string, name: string) => api.post<ShopLayout>(`${base(spaceId)}/${id}/copy`, { name }),
   setCategoryOrder: (spaceId: string, id: string, entries: string[]) =>
     api.put<ShopLayout>(`${base(spaceId)}/${id}/category-order`, { entries }),
   setItemOrder: (spaceId: string, id: string, entries: string[]) => api.put<ShopLayout>(`${base(spaceId)}/${id}/item-order`, { entries }),

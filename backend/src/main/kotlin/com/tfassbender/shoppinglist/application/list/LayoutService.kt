@@ -62,6 +62,18 @@ class LayoutService(
             layout
         }
 
+    fun copy(userId: UserId, spaceId: SpaceId, sourceId: LayoutId, name: String, newId: LayoutId? = null): ShopLayout =
+        locks.withLock(spaceId) {
+            access.requireMember(spaceId, userId)
+            val id = newId ?: LayoutId(UUID.randomUUID().toString())
+            if (layouts.findById(spaceId, id) != null) {
+                throw DomainException(ErrorKind.CONFLICT, "LAYOUT_EXISTS", "Layout ${id.value} already exists")
+            }
+            val layout = load(spaceId, sourceId).copyAs(id, name, clock.instant()).copy(seq = sequence.next(spaceId))
+            layouts.save(layout)
+            layout
+        }
+
     fun update(userId: UserId, spaceId: SpaceId, layoutId: LayoutId, name: String, mode: LayoutMode): ShopLayout =
         modify(userId, spaceId, layoutId) { it.rename(name).withMode(mode) }
 

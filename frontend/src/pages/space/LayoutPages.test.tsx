@@ -150,6 +150,31 @@ describe('layout editor', () => {
     expect(await screen.findByRole('heading', { name: 'Aldi' })).toBeInTheDocument()
   })
 
+  it('copies a shop under a new name and opens the copy', async () => {
+    let layouts = [layout]
+    const spy = mockApi({
+      'GET /api/users/me': testUser,
+      'GET /api/spaces/s1/catalog': catalog,
+      'GET /api/spaces/s1/layouts': () => layouts,
+      'GET /api/spaces/s1/lists': [],
+      'POST /api/spaces/s1/layouts/aldi/copy': (body) => {
+        const copy = { ...layout, id: 'aldi-2', name: (body as { name: string }).name }
+        layouts = [...layouts, copy]
+        return { status: 201, body: copy }
+      },
+    })
+    renderWithProviders(<AppRoutes />, '/spaces/s1/layouts/aldi')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Copy shop' }))
+    const name = within(screen.getByRole('dialog')).getByLabelText('Name')
+    expect(name).toHaveValue('Aldi (copy)')
+    await userEvent.clear(name)
+    await userEvent.type(name, 'Aldi Süd{Enter}')
+
+    expect(await screen.findByRole('heading', { name: 'Aldi Süd' })).toBeInTheDocument()
+    expect(sentBodies(spy, 'POST', '/api/spaces/s1/layouts/aldi/copy')).toEqual([{ name: 'Aldi Süd' }])
+  })
+
   it('deletes a shop only after confirming in the dialog', async () => {
     let layouts = [layout]
     const spy = mockApi({

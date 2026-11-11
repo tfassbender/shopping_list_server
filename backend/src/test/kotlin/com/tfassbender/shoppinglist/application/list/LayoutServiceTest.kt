@@ -15,6 +15,7 @@ import com.tfassbender.shoppinglist.application.space.SpaceLocks
 import com.tfassbender.shoppinglist.domain.DomainException
 import com.tfassbender.shoppinglist.domain.list.CategoryId
 import com.tfassbender.shoppinglist.domain.list.ItemId
+import com.tfassbender.shoppinglist.domain.list.LayoutId
 import com.tfassbender.shoppinglist.domain.list.LayoutMode
 import com.tfassbender.shoppinglist.domain.list.ListChange
 import com.tfassbender.shoppinglist.domain.list.ListId
@@ -106,6 +107,36 @@ class LayoutServiceTest {
         assertEquals(setOf(listId), service.connectList(bob, spaceId, layout.id, listId).listIds)
         assertEquals("LIST_NOT_FOUND", assertThrows<DomainException> { service.connectList(bob, spaceId, layout.id, ListId("missing")) }.code)
         assertTrue(service.disconnectList(bob, spaceId, layout.id, listId).listIds.isEmpty())
+    }
+
+    @Test
+    fun `a copy takes mode, orders and connected lists, but no favorites`() {
+        val aldi = service.create(anna, spaceId, "Aldi Nord", LayoutMode.ITEMS)
+        service.setCategoryOrder(anna, spaceId, aldi.id, listOf(bakery, dairy))
+        service.setItemOrder(anna, spaceId, aldi.id, listOf("Bread", "Milk"))
+        service.connectList(anna, spaceId, aldi.id, listId)
+        service.addFavorite(anna, spaceId, aldi.id, "Milk")
+
+        val copy = service.copy(bob, spaceId, aldi.id, " Aldi Süd ")
+
+        assertTrue(copy.id != aldi.id)
+        assertEquals("Aldi Süd", copy.name)
+        assertEquals(LayoutMode.ITEMS, copy.mode)
+        assertEquals(listOf(bakery, dairy), copy.categoryOrder)
+        assertEquals(listOf("Bread", "Milk"), copy.itemOrder)
+        assertEquals(setOf(listId), copy.listIds)
+        assertTrue(copy.seq > service.get(anna, spaceId, aldi.id).seq) // new seq, so other clients pull it
+        assertTrue(service.favorites(anna, spaceId, copy.id).isEmpty())
+        assertEquals(listOf("Aldi Nord", "Aldi Süd"), service.layouts(anna, spaceId).map { it.name }) // the original is unchanged
+    }
+
+    @Test
+    fun `copy validation`() {
+        val aldi = service.create(anna, spaceId, "Aldi", LayoutMode.CATEGORIES)
+        assertEquals("INVALID_NAME", assertThrows<DomainException> { service.copy(anna, spaceId, aldi.id, " ") }.code)
+        assertEquals("LAYOUT_EXISTS", assertThrows<DomainException> { service.copy(anna, spaceId, aldi.id, "Copy", aldi.id) }.code)
+        assertEquals("LAYOUT_NOT_FOUND", assertThrows<DomainException> { service.copy(anna, spaceId, LayoutId("missing"), "Copy") }.code)
+        assertEquals("SPACE_NOT_FOUND", assertThrows<DomainException> { service.copy(UserId("x"), spaceId, aldi.id, "Copy") }.code)
     }
 
     @Test

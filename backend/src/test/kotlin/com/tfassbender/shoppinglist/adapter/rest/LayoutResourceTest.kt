@@ -3,6 +3,7 @@ package com.tfassbender.shoppinglist.adapter.rest
 import io.quarkus.test.junit.QuarkusTest
 import org.hamcrest.Matchers.contains
 import org.hamcrest.Matchers.equalTo
+import org.hamcrest.Matchers.hasItem
 import org.hamcrest.Matchers.hasSize
 import org.hamcrest.Matchers.nullValue
 import org.junit.jupiter.api.BeforeEach
@@ -73,6 +74,21 @@ class LayoutResourceTest {
         user.request().delete("${layouts()}/$layoutId/lists/$listId").then().statusCode(200).body("listIds", hasSize<Any>(0))
         user.request().delete("${layouts()}/$layoutId").then().statusCode(204)
         user.request().queryParam("sort", layoutId).get(list()).then().statusCode(404).body("code", equalTo("LAYOUT_NOT_FOUND"))
+    }
+
+    @Test
+    fun `a layout can be copied`() {
+        val layoutId = createLayout()
+        user.request().put("${layouts()}/$layoutId/lists/$listId").then().statusCode(200)
+
+        user.request().body(mapOf("name" to "Aldi Süd", "id" to "aldi-sued")).post("${layouts()}/$layoutId/copy")
+            .then().statusCode(201)
+            .body("id", equalTo("aldi-sued"))
+            .body("name", equalTo("Aldi Süd"))
+            .body("listIds", contains(listId))
+        user.request().get(layouts()).then().body("id", hasItem("aldi-sued")).body("id", hasItem(layoutId))
+        user.request().body(mapOf("name" to "")).post("${layouts()}/$layoutId/copy")
+            .then().statusCode(400).body("code", equalTo("INVALID_NAME"))
     }
 
     @Test

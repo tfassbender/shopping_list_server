@@ -111,6 +111,8 @@ export const en = {
   'layouts.connectedLists': 'Lists',
   'layouts.connectedHint': 'This shop is offered on the checked lists.',
   'layouts.delete': 'Delete shop',
+  'layouts.copy': 'Copy shop',
+  'layouts.copyName': '{name} (copy)',
   'layouts.deleteText': 'Lists sorted for this shop go back to the order of adding.',
   'shop.label': 'Shop',
   'shop.none': 'No shop (order of adding)',

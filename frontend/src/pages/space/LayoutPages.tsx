@@ -74,6 +74,7 @@ export function LayoutEditorPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [copying, setCopying] = useState(false)
 
   // Each call returns the updated layout; it replaces the cached one (instant UI update).
   const update = useMutation({
@@ -81,6 +82,14 @@ export function LayoutEditorPage() {
     onMutate: () => queryClient.cancelQueries({ queryKey: layoutKeys.all(spaceId) }),
     onSuccess: (updated) => replaceCached(updated),
     onError: () => queryClient.invalidateQueries({ queryKey: layoutKeys.all(spaceId) }),
+  })
+  const copy = useMutation({
+    mutationFn: (name: string) => layoutsApi.copy(spaceId, layoutId, name),
+    onSuccess: (created) => {
+      queryClient.invalidateQueries({ queryKey: layoutKeys.all(spaceId) })
+      setCopying(false)
+      navigate(`/spaces/${spaceId}/layouts/${created.id}`)
+    },
   })
   const remove = useMutation({
     mutationFn: () => layoutsApi.delete(spaceId, layoutId),
@@ -164,11 +173,29 @@ export function LayoutEditorPage() {
 
       <ConnectedLists spaceId={spaceId} layout={layout} onChange={replaceCached} />
 
-      <Button variant="danger" onClick={() => setConfirmDelete(true)}>
-        {t('layouts.delete')}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" onClick={() => setCopying(true)}>
+          <Icon name="copy" />
+          {t('layouts.copy')}
+        </Button>
+        <Button variant="danger" onClick={() => setConfirmDelete(true)}>
+          {t('layouts.delete')}
+        </Button>
+      </div>
       </div>
       </OnlineOnly>
+      {copying && (
+        <NameDialog
+          title={t('layouts.copy')}
+          // the server allows 60 characters; a long name is cut so the suggestion is always valid
+          initialValue={t('layouts.copyName', { name: layout.name }).slice(0, 60)}
+          submitLabel={t('common.create')}
+          pending={copy.isPending}
+          error={copy.error}
+          onSubmit={(name) => copy.mutate(name)}
+          onClose={() => setCopying(false)}
+        />
+      )}
       {confirmDelete && (
         <ConfirmDialog
           title={t('common.deleteTitle', { name: layout.name })}
