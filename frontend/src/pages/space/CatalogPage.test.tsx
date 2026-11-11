@@ -1,6 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { vi } from 'vitest'
 import { AppRoutes } from '../../App'
 import { hueOf } from '../../components/ColorPicker'
 import { mockApi, sentBodies, testUser } from '../../test/mockApi'
@@ -88,7 +87,6 @@ describe('CatalogPage', () => {
   })
 
   it('renames on blur and deletes after confirmation', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     const spy = setup()
     renderWithProviders(<AppRoutes />, '/spaces/s1/catalog')
 
@@ -100,7 +98,15 @@ describe('CatalogPage', () => {
       expect(sentBodies(spy, 'PUT', '/api/spaces/s1/catalog/categories/dairy')).toEqual([{ name: 'Milk products', color: '#0000ff' }]),
     )
 
+    // Cancel keeps the category, the dialog's Delete removes it
     await userEvent.click(screen.getByRole('button', { name: 'Delete Vegetables' }))
+    const confirm = screen.getByRole('alertdialog', { name: 'Delete "Vegetables"?' })
+    expect(confirm).toHaveTextContent('Its items become uncategorized.')
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Cancel' }))
+    expect(screen.getAllByLabelText('Category name')).toHaveLength(2)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete Vegetables' }))
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(screen.getAllByLabelText('Category name')).toHaveLength(1))
   })
 

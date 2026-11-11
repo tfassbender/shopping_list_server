@@ -7,6 +7,7 @@ import { listsApi, useLists } from '../../api/lists'
 import { InlineForm } from '../../components/InlineForm'
 import { SortableList } from '../../components/SortableList'
 import { Page } from '../../components/AppBar'
+import { ConfirmDialog } from '../../components/Dialog'
 import { Icon } from '../../components/Icon'
 import { Button, ErrorText, Fab, Hint, Loading, Row, SectionTitle, Switch } from '../../components/ui'
 import { t, tDynamic } from '../../i18n/messages'
@@ -72,6 +73,7 @@ export function LayoutEditorPage() {
   const layout = layouts?.find((l) => l.id === layoutId)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   // Each call returns the updated layout; it replaces the cached one (instant UI update).
   const update = useMutation({
@@ -162,11 +164,20 @@ export function LayoutEditorPage() {
 
       <ConnectedLists spaceId={spaceId} layout={layout} onChange={replaceCached} />
 
-      <Button variant="danger" onClick={() => window.confirm(t('common.confirmDelete', { name: layout.name })) && remove.mutate()}>
+      <Button variant="danger" onClick={() => setConfirmDelete(true)}>
         {t('layouts.delete')}
       </Button>
       </div>
       </OnlineOnly>
+      {confirmDelete && (
+        <ConfirmDialog
+          title={t('common.deleteTitle', { name: layout.name })}
+          text={t('layouts.deleteText')}
+          confirmLabel={t('layouts.delete')}
+          onConfirm={() => remove.mutate()}
+          onClose={() => setConfirmDelete(false)}
+        />
+      )}
     </Page>
   )
 }

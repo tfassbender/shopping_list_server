@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { useParams } from 'react-router'
 import { catalogApi, catalogKeys, useCatalog, type Catalog, type Category } from '../../api/catalog'
 import { ColorPicker } from '../../components/ColorPicker'
+import { ConfirmDialog } from '../../components/Dialog'
 import { InlineForm } from '../../components/InlineForm'
 import { SortableList } from '../../components/SortableList'
 import { Page, useBackTo } from '../../components/AppBar'
@@ -15,6 +16,7 @@ export function CatalogPage() {
   const { spaceId = '' } = useParams()
   // Opened from a list or a shop, back leads there; otherwise to the space page.
   const back = useBackTo(`/spaces/${spaceId}`)
+  const [deleting, setDeleting] = useState<Category | null>(null)
   const { data: catalog, error } = useCatalog(spaceId)
   const queryClient = useQueryClient()
   // Every catalog call returns the new catalog: put it straight into the cache.
@@ -55,7 +57,7 @@ export function CatalogPage() {
             <CategoryRow
               category={category}
               onSave={(name, color) => update.mutate(() => catalogApi.updateCategory(spaceId, category.id, name, color))}
-              onDelete={() => window.confirm(t('catalog.deleteCategoryConfirm', { name: category.name })) && update.mutate(() => catalogApi.deleteCategory(spaceId, category.id))}
+              onDelete={() => setDeleting(category)}
             />
           )}
         />
@@ -65,6 +67,15 @@ export function CatalogPage() {
       <UnitsEditor units={catalog.units} onChange={(units) => update.mutate(() => catalogApi.setUnits(spaceId, units))} />
       </div>
       </OnlineOnly>
+      {deleting && (
+        <ConfirmDialog
+          title={t('common.deleteTitle', { name: deleting.name })}
+          text={t('catalog.deleteCategoryText')}
+          confirmLabel={t('common.delete')}
+          onConfirm={() => update.mutate(() => catalogApi.deleteCategory(spaceId, deleting.id))}
+          onClose={() => setDeleting(null)}
+        />
+      )}
     </Page>
   )
 }

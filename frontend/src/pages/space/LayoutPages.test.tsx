@@ -121,6 +121,32 @@ describe('layout editor', () => {
     expect(await screen.findByRole('heading', { name: 'Aldi' })).toBeInTheDocument()
   })
 
+  it('deletes a shop only after confirming in the dialog', async () => {
+    let layouts = [layout]
+    const spy = mockApi({
+      'GET /api/users/me': testUser,
+      'GET /api/spaces/s1/catalog': catalog,
+      'GET /api/spaces/s1/layouts': () => layouts,
+      'GET /api/spaces/s1/lists': [],
+      'DELETE /api/spaces/s1/layouts/aldi': () => {
+        layouts = []
+        return { status: 204 }
+      },
+    })
+    renderWithProviders(<AppRoutes />, '/spaces/s1/layouts/aldi')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete shop' }))
+    const confirm = screen.getByRole('alertdialog', { name: 'Delete "Aldi"?' })
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Cancel' }))
+    expect(spy.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete shop' }))
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete shop' }))
+    // back on the overview, which is now empty
+    expect(await screen.findByRole('heading', { name: 'Shops' })).toBeInTheDocument()
+    expect(spy.mock.calls.some(([url, init]) => String(url).endsWith('/layouts/aldi') && init?.method === 'DELETE')).toBe(true)
+  })
+
   it('switches the mode, adds item entries and connects lists', async () => {
     let current = { ...layout }
     const spy = mockApi({
