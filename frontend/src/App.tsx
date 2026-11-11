@@ -1,5 +1,5 @@
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
-import { QueryClient } from '@tanstack/react-query'
+import { QueryClient, useQueryClient } from '@tanstack/react-query'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router'
@@ -9,6 +9,7 @@ import { getSession, setSession, shouldRefresh } from './auth/session'
 import { useCurrentUser, useSession } from './auth/useAuth'
 import { Layout } from './components/Layout'
 import { syncEngine } from './offline/engine'
+import { startLiveUpdates } from './offline/liveUpdates'
 import { defaultStorage } from './offline/storage'
 import { ListPage } from './lists/ListPage'
 import { ForgotPasswordPage, ResetPasswordPage, VerifyEmailPage } from './pages/auth/EmailTokenPages'
@@ -83,7 +84,7 @@ function SessionRefresher() {
 
 /**
  * Keeps the offline data fresh: loads and syncs all spaces on start, again when the connection comes
- * back or the tab becomes visible, and every minute while visible.
+ * back or the tab becomes visible, and every few minutes as a fallback for missed live updates.
  */
 function OfflineSync() {
   const session = useSession()
@@ -105,7 +106,30 @@ function OfflineSync() {
   return null
 }
 
-const SYNC_INTERVAL_MS = 60_000
+const SYNC_INTERVAL_MS = 5 * 60_000
+
+/**
+ * Live updates (SSE): when another member changes something in a space, its lists are synced and the
+ * cached space data (catalog, shops, members) is refreshed - notify, then refetch.
+ */
+function LiveUpdates() {
+  const session = useSession()
+  const queryClient = useQueryClient()
+  useEffect(() => {
+    if (!session) return
+    return startLiveUpdates({
+      getToken: () => getSession()?.token ?? null,
+      onConnected: () => void syncEngine.syncAll(),
+      onEvent: (event) => {
+        if (event.type !== 'SPACE_CHANGED' || !event.spaceId) return
+        void syncEngine.sync(event.spaceId)
+        void queryClient.invalidateQueries({ queryKey: ['spaces', event.spaceId] })
+        void queryClient.invalidateQueries({ queryKey: ['spaces'], exact: true })
+      },
+    })
+  }, [session, queryClient])
+  return null
+}
 const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
 /**
@@ -136,6 +160,7 @@ export function App() {
       <ThemeSync />
       <SessionRefresher />
       <OfflineSync />
+      <LiveUpdates />
       <BrowserRouter>
         <AppRoutes />
       </BrowserRouter>

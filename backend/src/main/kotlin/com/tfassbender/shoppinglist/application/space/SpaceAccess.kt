@@ -1,5 +1,6 @@
 package com.tfassbender.shoppinglist.application.space
 
+import com.tfassbender.shoppinglist.application.port.SpaceChangeNotifier
 import com.tfassbender.shoppinglist.application.port.SpaceRepository
 import com.tfassbender.shoppinglist.domain.DomainException
 import com.tfassbender.shoppinglist.domain.ErrorKind
@@ -7,6 +8,7 @@ import com.tfassbender.shoppinglist.domain.space.Space
 import com.tfassbender.shoppinglist.domain.space.SpaceId
 import com.tfassbender.shoppinglist.domain.user.UserId
 import jakarta.enterprise.context.ApplicationScoped
+import jakarta.inject.Inject
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -15,13 +17,25 @@ import kotlin.concurrent.withLock
  * One in-process lock per space around load-modify-save, so concurrent requests on the same space can't
  * overwrite each other's changes (single-instance deployment). Reentrant: a locked operation may call
  * another one on the same space.
+ *
+ * Every locked operation modifies the space, so this is also the one place that announces changes:
+ * when the outermost lock is released after success (the data is saved by then), [notifier] is told.
  */
 @ApplicationScoped
-class SpaceLocks {
+class SpaceLocks @Inject constructor(private val notifier: SpaceChangeNotifier) {
     private val locks = ConcurrentHashMap<SpaceId, ReentrantLock>()
 
-    fun <T> withLock(spaceId: SpaceId, action: () -> T): T =
-        locks.computeIfAbsent(spaceId) { ReentrantLock() }.withLock(action)
+    /** For tests that don't care about notifications. */
+    constructor() : this(SpaceChangeNotifier.NONE)
+
+    fun <T> withLock(spaceId: SpaceId, action: () -> T): T {
+        val lock = locks.computeIfAbsent(spaceId) { ReentrantLock() }
+        val result = lock.withLock(action)
+        if (!lock.isHeldByCurrentThread) {
+            notifier.spaceChanged(spaceId)
+        }
+        return result
+    }
 }
 
 /**

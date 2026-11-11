@@ -4,7 +4,7 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–8 done. Next: Phase 9.
+**Status:** Phases 0–9 done. Next: Phase 10.
 
 ## Guiding principles
 
@@ -271,10 +271,18 @@ Tests: queue/sync logic (Vitest), manual offline test checklist.
 
 ## Phase 9 – Live updates (SSE)
 
-- [ ] SSE endpoint: notification "space changed (seq)" for the user's spaces
-- [ ] Auth for SSE (`fetch`-based SSE with header, or short-lived stream token)
-- [ ] Client: on notification → pull changes; reconnect with backoff
+- [x] SSE endpoint: notification "space changed (seq)" for the user's spaces
+- [x] Auth for SSE (`fetch`-based SSE with header, or short-lived stream token)
+- [x] Client: on notification → pull changes; reconnect with backoff
 - [ ] Android mechanism: decided later
+
+Decided while implementing: one stream per user, `GET /api/events` (`SPACE_CHANGED` with space id and
+seq, `PING` heartbeat every 25 s), filtered per event by membership. Auth: **`fetch`-based SSE with the
+normal `Authorization` header** (no stream token; works for API tokens too). Changes are announced by
+`SpaceLocks` when the outermost lock of a space is released after success - every mutation already runs
+under that lock, so no service needs to remember to notify. Client: reconnect with backoff 1 s → 30 s,
+full sync after each (re)connect; the periodic sync fallback is now every 5 minutes.
+
 
 ## Phase 10 – i18n, polish & Could-features
 
