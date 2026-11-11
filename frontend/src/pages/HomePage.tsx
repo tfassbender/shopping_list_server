@@ -5,6 +5,7 @@ import { HealthIndicator } from '../components/HealthIndicator'
 import { InlineForm } from '../components/InlineForm'
 import { Card, ErrorText, Loading, PageTitle } from '../components/ui'
 import { t } from '../i18n/messages'
+import { OnlineOnly } from '../offline/online'
 
 /** Start page: the user's spaces. A space holds lists and is shared with its members. */
 export function HomePage() {
@@ -36,7 +37,9 @@ export function HomePage() {
           </li>
         ))}
       </ul>
-      <InlineForm label={t('spaces.newName')} submitLabel={t('common.create')} clearOnSubmit disabled={create.isPending} onSubmit={(name) => create.mutate(name)} />
+      <OnlineOnly>
+        <InlineForm label={t('spaces.newName')} submitLabel={t('common.create')} clearOnSubmit disabled={create.isPending} onSubmit={(name) => create.mutate(name)} />
+      </OnlineOnly>
       <ErrorText error={create.error} />
       <HealthIndicator />
     </section>

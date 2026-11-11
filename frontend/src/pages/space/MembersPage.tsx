@@ -5,6 +5,7 @@ import { spaceKeys, spacesApi, useSpace, type CreatedInvite, type Member } from 
 import { useCurrentUser } from '../../auth/useAuth'
 import { Button, Card, ErrorText, Loading, PageTitle } from '../../components/ui'
 import { t, tDynamic } from '../../i18n/messages'
+import { OnlineOnly } from '../../offline/online'
 
 export function MembersPage() {
   const { spaceId = '' } = useParams()
@@ -19,12 +20,14 @@ export function MembersPage() {
     <section className="space-y-6">
       <PageTitle action={<BackLink to={`/spaces/${spaceId}`} />}>{t('space.members')}</PageTitle>
       <ErrorText error={members.error} />
+      <OnlineOnly>
       <ul className="space-y-2">
         {members.data?.map((member) => (
           <MemberRow key={member.userId} spaceId={spaceId} member={member} isMe={member.userId === me.id} canManage={isOwner} />
         ))}
       </ul>
       {isOwner && <InvitesSection spaceId={spaceId} />}
+      </OnlineOnly>
     </section>
   )
 }

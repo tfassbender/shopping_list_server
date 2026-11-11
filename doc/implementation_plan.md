@@ -4,7 +4,7 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–7 done. Next: Phase 8.
+**Status:** Phases 0–8 done. Next: Phase 9.
 
 ## Guiding principles
 
@@ -249,12 +249,23 @@ Tests: merge rules incl. edge cases (unit), batch idempotency, e2e two clients s
 
 Goal: the web app works without connection.
 
-- [ ] Local store in IndexedDB (spaces, lists, items, catalog, layouts) – the UI reads from it
-- [ ] Change queue: `listChanges` writes locally + enqueues; sync on reconnect / app start / interval
-- [ ] Pull with `since`, apply to local store
-- [ ] Offline indicator; space management screens disabled offline
-- [ ] **Merge warning icon** + dialog listing the warnings; respects "ignore merge warnings" setting
-- [ ] Service worker caching the app shell (needed for offline start; also the base for PWA)
+- [x] Local store in IndexedDB (spaces, lists, items, catalog, layouts) – the UI reads from it
+- [x] Change queue: `listChanges` writes locally + enqueues; sync on reconnect / app start / interval
+- [x] Pull with `since`, apply to local store
+- [x] Offline indicator; space management screens disabled offline
+- [x] **Merge warning icon** + dialog listing the warnings; respects "ignore merge warnings" setting
+- [x] Service worker caching the app shell (needed for offline start; also the base for PWA)
+
+Decided while implementing:
+- Lists/items: own `SyncEngine` (`frontend/src/offline`) with confirmed server state + acknowledged +
+  queued changes per space in IndexedDB (`idb-keyval`); the UI shows server state with pending changes
+  applied. Everything else (spaces, catalog, layouts, favorites, user) via TanStack Query with its cache
+  persisted to IndexedDB (`networkMode: offlineFirst`).
+- Shop sorting moved to the client (`sortForLayout`, a port of `ItemSorter` with mirrored tests) so it
+  works offline; the catalog API now includes usage counts. `?sort=` stays for other API clients.
+- Sync on app start, reconnect, tab becoming visible and every 60 s (SSE in Phase 9).
+- Hand-written service worker (`public/sw.js`, production builds only) instead of a build plugin.
+- Logout clears the offline data. Manual checklist: `doc/offline_test_checklist.md`.
 
 Tests: queue/sync logic (Vitest), manual offline test checklist.
 

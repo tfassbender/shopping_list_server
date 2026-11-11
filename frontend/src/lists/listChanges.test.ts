@@ -1,5 +1,7 @@
 import type { Item, ShoppingList } from '../api/lists'
-import { applyLocal } from './listChanges'
+import type { NewSyncOp, SyncOp } from '../api/sync'
+import { applyOp, applyPull } from '../offline/applyOp'
+import { toSyncOps } from './listChanges'
 import { amountText, groupItems, sortItems } from './sortItems'
 
 const item = (id: string, overrides: Partial<Item> = {}): Item => ({
@@ -16,39 +18,67 @@ const item = (id: string, overrides: Partial<Item> = {}): Item => ({
 })
 
 const list: ShoppingList = { id: 'l', spaceId: 's', name: 'Groceries', createdAt: '', seq: 1, items: [item('a'), item('bb', { checked: true })] }
+const NOW = '2026-02-02T00:00:00Z'
+const op = (o: NewSyncOp) => ({ ...o, changeId: 'c' }) as SyncOp
+const apply = (o: NewSyncOp, lists = { l: list }) => applyOp(lists, op(o), 's', NOW)
 
-describe('applyLocal', () => {
-  it('adds an item with defaults', () => {
-    const result = applyLocal(list, { type: 'addItem', item: { id: 'new', name: ' Milk ' } })
-    expect(result.items.at(-1)).toMatchObject({ id: 'new', name: 'Milk', checked: false, quantity: null })
+describe('toSyncOps', () => {
+  it('splits an edit into one operation per field', () => {
+    expect(toSyncOps(list, { type: 'editItem', itemId: 'a', fields: { quantity: '2', unit: null } })).toEqual([
+      { type: 'EDIT_ITEM', listId: 'l', itemId: 'a', field: 'QUANTITY', value: '2' },
+      { type: 'EDIT_ITEM', listId: 'l', itemId: 'a', field: 'UNIT', value: null },
+    ])
   })
 
-  it('edits only the given fields, blank clears', () => {
-    const withQty = applyLocal(list, { type: 'editItem', itemId: 'a', fields: { quantity: '2', unit: 'l' } })
-    expect(withQty.items[0]).toMatchObject({ quantity: '2', unit: 'l', name: 'a' })
-    const cleared = applyLocal(withQty, { type: 'editItem', itemId: 'a', fields: { unit: ' ' } })
-    expect(cleared.items[0]).toMatchObject({ quantity: '2', unit: null })
+  it('"remove checked" names the items checked on this device', () => {
+    expect(toSyncOps(list, { type: 'removeChecked' })).toEqual([{ type: 'REMOVE_CHECKED', listId: 'l', itemIds: ['bb'] }])
   })
 
-  it('never clears the name', () => {
-    expect(applyLocal(list, { type: 'editItem', itemId: 'a', fields: { name: '' } }).items[0].name).toBe('a')
+  it('adds carry the client-generated item id', () => {
+    expect(toSyncOps(list, { type: 'addItem', item: { id: 'x', name: 'Milk', categoryId: 'dairy' } })).toEqual([
+      { type: 'ADD_ITEM', listId: 'l', itemId: 'x', name: 'Milk', categoryId: 'dairy' },
+    ])
+  })
+})
+
+describe('applyOp (optimistic local view)', () => {
+  it('creates lists and adds items with defaults', () => {
+    const created = applyOp({}, op({ type: 'CREATE_LIST', listId: 'n', name: ' New ' }), 's', NOW)
+    expect(created.n).toMatchObject({ name: 'New', items: [], createdAt: NOW })
+    const added = apply({ type: 'ADD_ITEM', listId: 'l', itemId: 'm', name: ' Milk ', unit: ' ' })
+    expect(added.l.items.at(-1)).toMatchObject({ id: 'm', name: 'Milk', unit: null, checked: false })
   })
 
-  it('checks, unchecks, deletes and removes checked', () => {
-    expect(applyLocal(list, { type: 'check', itemId: 'a' }).items[0].checked).toBe(true)
-    expect(applyLocal(list, { type: 'uncheck', itemId: 'bb' }).items[1].checked).toBe(false)
-    expect(applyLocal(list, { type: 'deleteItem', itemId: 'a' }).items.map((i) => i.id)).toEqual(['bb'])
-    expect(applyLocal(list, { type: 'removeChecked' }).items.map((i) => i.id)).toEqual(['a'])
+  it('edits fields; blank clears, the name can not be cleared', () => {
+    expect(apply({ type: 'EDIT_ITEM', listId: 'l', itemId: 'a', field: 'QUANTITY', value: ' 3 ' }).l.items[0].quantity).toBe('3')
+    expect(apply({ type: 'EDIT_ITEM', listId: 'l', itemId: 'a', field: 'CATEGORY', value: 'dairy' }).l.items[0].categoryId).toBe('dairy')
+    expect(apply({ type: 'EDIT_ITEM', listId: 'l', itemId: 'a', field: 'NAME', value: '' }).l.items[0].name).toBe('a')
   })
 
-  it('renames', () => {
-    expect(applyLocal(list, { type: 'rename', name: ' Weekend ' }).name).toBe('Weekend')
+  it('checks, unchecks, deletes and removes the given checked items', () => {
+    expect(apply({ type: 'CHECK_ITEM', listId: 'l', itemId: 'a' }).l.items[0].checked).toBe(true)
+    expect(apply({ type: 'UNCHECK_ITEM', listId: 'l', itemId: 'bb' }).l.items[1].checked).toBe(false)
+    expect(apply({ type: 'DELETE_ITEM', listId: 'l', itemId: 'a' }).l.items.map((i) => i.id)).toEqual(['bb'])
+    expect(apply({ type: 'REMOVE_CHECKED', listId: 'l', itemIds: ['bb'] }).l.items.map((i) => i.id)).toEqual(['a'])
   })
 
-  it('does not mutate the input', () => {
+  it('ignores changes to lists that no longer exist and duplicate adds', () => {
+    const lists = { l: list }
+    expect(apply({ type: 'CHECK_ITEM', listId: 'gone', itemId: 'a' }, lists)).toBe(lists)
+    expect(apply({ type: 'ADD_ITEM', listId: 'l', itemId: 'a', name: 'again' }).l.items).toHaveLength(2)
+  })
+
+  it('does not mutate its input', () => {
     const copy = structuredClone(list)
-    applyLocal(list, { type: 'check', itemId: 'a' })
+    apply({ type: 'CHECK_ITEM', listId: 'l', itemId: 'a' })
     expect(list).toEqual(copy)
+  })
+
+  it('applyPull keeps unchanged items and lists of a delta', () => {
+    const result = applyPull({ l: list }, {
+      seq: 5, fullResync: false, lists: [], listIds: ['l'], catalog: null, layouts: null, layoutIds: [],
+    }, 's')
+    expect(result.l).toEqual(list)
   })
 })
 

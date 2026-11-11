@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useSyncExternalStore } from 'react'
 import { accountApi, type SessionResponse } from '../api/auth'
+import { syncEngine } from '../offline/engine'
 import { clearSession, getSession, setSession, subscribeSession } from './session'
 
 /** The current session; re-renders the component on login/logout. */
@@ -29,8 +30,9 @@ export function useAuthActions() {
 
   const logout = useCallback(() => {
     clearSession()
-    // Drop all cached data of the previous user.
+    // Drop all cached and offline data of the previous user (also from IndexedDB).
     queryClient.clear()
+    void syncEngine.clear()
   }, [queryClient])
 
   return { startSession, logout }

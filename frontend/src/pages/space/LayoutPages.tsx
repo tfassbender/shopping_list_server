@@ -8,6 +8,7 @@ import { InlineForm } from '../../components/InlineForm'
 import { SortableList } from '../../components/SortableList'
 import { Button, Card, ErrorText, Loading, PageTitle } from '../../components/ui'
 import { t, tDynamic } from '../../i18n/messages'
+import { OnlineOnly } from '../../offline/online'
 import { Checkbox } from '../SettingsPage'
 import { BackLink } from './MembersPage'
 
@@ -43,7 +44,9 @@ export function LayoutsPage() {
           </li>
         ))}
       </ul>
-      <InlineForm label={t('layouts.newName')} submitLabel={t('common.create')} clearOnSubmit disabled={create.isPending} onSubmit={(name) => create.mutate(name)} />
+      <OnlineOnly>
+        <InlineForm label={t('layouts.newName')} submitLabel={t('common.create')} clearOnSubmit disabled={create.isPending} onSubmit={(name) => create.mutate(name)} />
+      </OnlineOnly>
     </section>
   )
 }
@@ -103,7 +106,8 @@ export function LayoutEditorPage() {
     <section className="space-y-6">
       <PageTitle action={<BackLink to={`/spaces/${spaceId}/layouts`} />}>{layout.name}</PageTitle>
       <ErrorText error={update.error ?? remove.error} />
-
+      <OnlineOnly>
+      <div className="space-y-6">
       <InlineForm
         key={layout.name}
         label={t('common.name')}
@@ -150,6 +154,8 @@ export function LayoutEditorPage() {
       <Button variant="danger" onClick={() => window.confirm(t('common.confirmDelete', { name: layout.name })) && remove.mutate()}>
         {t('layouts.delete')}
       </Button>
+      </div>
+      </OnlineOnly>
     </section>
   )
 }

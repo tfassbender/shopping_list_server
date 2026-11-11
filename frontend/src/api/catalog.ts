@@ -10,6 +10,8 @@ export interface Category {
 export interface Catalog {
   categories: Category[]
   units: string[]
+  /** How often each item was bought (normalized name -> count), for "most used first". */
+  usage?: Record<string, number>
 }
 
 export interface Suggestion {

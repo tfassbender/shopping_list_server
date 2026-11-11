@@ -2,10 +2,10 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import { AppRoutes } from '../App'
-import type { Item, ShoppingList } from '../api/lists'
-import { mockApi, sentBodies, testUser } from '../test/mockApi'
+import type { Item } from '../api/lists'
+import { fakeSyncServer } from '../test/fakeSyncServer'
+import { mockApi, testUser } from '../test/mockApi'
 import { loginForTest, renderWithProviders } from '../test/render'
-import { applyLocal, type ListChange } from './listChanges'
 
 const catalog = {
   categories: [
@@ -19,76 +19,63 @@ const item = (id: string, name: string, overrides: Partial<Item> = {}): Item => 
   id, name, quantity: null, unit: null, note: null, categoryId: null, checked: false, createdAt: `2026-01-01T00:00:0${id}Z`, seq: 1, ...overrides,
 })
 
-/** A fake backend that applies the same change logic, so tests see realistic responses. */
-function fakeListBackend(initial: Item[]) {
-  let list: ShoppingList = { id: 'l1', spaceId: 's1', name: 'Groceries', createdAt: '', seq: 1, items: initial }
-  const change = (c: ListChange) => () => {
-    list = applyLocal(list, c)
-    return list
-  }
-  const routes = {
+/** A list "Groceries" with the given items behind a fake sync server, plus the other endpoints the page uses. */
+function setup(items: Item[], extraRoutes: Record<string, unknown> = {}) {
+  const server = fakeSyncServer('s1', [{ id: 'l1', spaceId: 's1', name: 'Groceries', createdAt: '', seq: 1, items }])
+  const spy = mockApi({
     'GET /api/users/me': testUser,
     'GET /api/spaces/s1': space,
-    'GET /api/spaces/s1/lists': [],
     'GET /api/spaces/s1/catalog': catalog,
-    'GET /api/spaces/s1/lists/l1': () => list,
-    'POST /api/spaces/s1/lists/l1/items': (body: unknown) => change({ type: 'addItem', item: body as Item })(),
-    'POST /api/spaces/s1/lists/l1/items/1/check': change({ type: 'check', itemId: '1' }),
-    'POST /api/spaces/s1/lists/l1/items/1/uncheck': change({ type: 'uncheck', itemId: '1' }),
-    'POST /api/spaces/s1/lists/l1/remove-checked': change({ type: 'removeChecked' }),
-    'PATCH /api/spaces/s1/lists/l1/items/1': (body: unknown) => change({ type: 'editItem', itemId: '1', fields: body as never })(),
-  }
-  return { routes, current: () => list }
+    'GET /api/spaces/s1/layouts': [],
+    ...server.routes,
+    ...(extraRoutes as object),
+  })
+  renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
+  return { server, spy }
 }
 
 describe('ListPage', () => {
   beforeEach(() => loginForTest())
 
   it('adds an item via the quick add field', async () => {
-    const backend = fakeListBackend([])
-    const spy = mockApi(backend.routes)
-    renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
+    const { server } = setup([])
 
     await userEvent.type(await screen.findByLabelText('Add item...'), 'Milk{Enter}')
 
     expect(await screen.findByRole('checkbox', { name: 'Milk' })).toBeInTheDocument()
-    const [body] = sentBodies(spy, 'POST', '/api/spaces/s1/lists/l1/items') as { id: string; name: string }[]
-    expect(body.name).toBe('Milk')
-    expect(body.id).toMatch(/^[0-9a-f-]{36}$/) // client-generated UUID
     expect(screen.getByLabelText('Add item...')).toHaveValue('')
+    await waitFor(() => expect(server.received('ADD_ITEM')).toHaveLength(1))
+    const [added] = server.received('ADD_ITEM') as { itemId: string; name: string }[]
+    expect(added.name).toBe('Milk')
+    expect(added.itemId).toMatch(/^[0-9a-f-]{36}$/) // client-generated UUID
   })
 
   it('checks an item by tapping and offers undo', async () => {
-    const backend = fakeListBackend([item('1', 'Milk'), item('2', 'Bread')])
-    mockApi(backend.routes)
-    renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
+    const { server } = setup([item('1', 'Milk'), item('2', 'Bread')])
 
     await userEvent.click(await screen.findByRole('checkbox', { name: 'Milk' }))
     expect(screen.getByRole('checkbox', { name: 'Milk' })).toHaveAttribute('aria-checked', 'true')
     // checked items move to the end (setting is on for the test user)
     expect(screen.getAllByRole('checkbox').map((el) => el.getAttribute('aria-label'))).toEqual(['Bread', 'Milk'])
 
-    await userEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'Undo' }))
-    await waitFor(() => expect(backend.current().items[0].checked).toBe(false))
+    await userEvent.click(within(screen.getByText('"Milk" checked').parentElement!).getByRole('button', { name: 'Undo' }))
     expect(screen.getByRole('checkbox', { name: 'Milk' })).toHaveAttribute('aria-checked', 'false')
+    await waitFor(() => expect(server.list('l1').items[0].checked).toBe(false))
   })
 
-  it('removes all checked items after confirmation', async () => {
+  it('removes the checked items after confirmation', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    const backend = fakeListBackend([item('1', 'Milk', { checked: true }), item('2', 'Bread')])
-    mockApi(backend.routes)
-    renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
+    const { server } = setup([item('1', 'Milk', { checked: true }), item('2', 'Bread')])
 
     await userEvent.click(await screen.findByRole('button', { name: 'Remove checked (1)' }))
 
-    await waitFor(() => expect(screen.queryByRole('checkbox', { name: 'Milk' })).not.toBeInTheDocument())
-    expect(backend.current().items.map((i) => i.name)).toEqual(['Bread'])
+    expect(screen.queryByRole('checkbox', { name: 'Milk' })).not.toBeInTheDocument()
+    await waitFor(() => expect(server.received('REMOVE_CHECKED')).toEqual([expect.objectContaining({ itemIds: ['1'] })]))
+    expect(server.list('l1').items.map((i) => i.name)).toEqual(['Bread'])
   })
 
-  it('edit sends only the changed fields', async () => {
-    const backend = fakeListBackend([item('1', 'Milk', { quantity: '1' })])
-    const spy = mockApi(backend.routes)
-    renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
+  it('edit sends one change per changed field', async () => {
+    const { server } = setup([item('1', 'Milk', { quantity: '1' })])
 
     await userEvent.click(await screen.findByRole('button', { name: 'Edit Milk' }))
     const dialog = screen.getByRole('dialog')
@@ -97,71 +84,70 @@ describe('ListPage', () => {
     await userEvent.type(within(dialog).getByLabelText('Unit'), 'l')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
 
-    await waitFor(() => expect(sentBodies(spy, 'PATCH', '/api/spaces/s1/lists/l1/items/1')).toEqual([{ quantity: '3', unit: 'l' }]))
     expect(await screen.findByText('3 l')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(server.received('EDIT_ITEM').map((op) => op.type === 'EDIT_ITEM' && [op.field, op.value])).toEqual([
+        ['QUANTITY', '3'],
+        ['UNIT', 'l'],
+      ]),
+    )
   })
 
-  it('a slow server response does not undo a newer local change', async () => {
-    const backend = fakeListBackend([item('1', 'Milk')])
-    let releaseCheck: () => void = () => {}
-    mockApi({
-      ...backend.routes,
-      // The check request hangs until released; meanwhile the user unchecks again.
-      'POST /api/spaces/s1/lists/l1/items/1/check': () => backend.routes['POST /api/spaces/s1/lists/l1/items/1/check'](),
-    })
-    const fetchSpy = vi.mocked(globalThis.fetch)
-    const original = fetchSpy.getMockImplementation()!
-    fetchSpy.mockImplementation(async (input, init) => {
-      if (String(input).endsWith('/check')) await new Promise<void>((resolve) => (releaseCheck = resolve))
-      return original(input, init)
-    })
-    renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
+  it('works offline: changes are shown at once and sent when the server is back', async () => {
+    const { server } = setup([item('1', 'Milk')])
+    await screen.findByRole('checkbox', { name: 'Milk' })
+    server.offline = true
 
-    await userEvent.click(await screen.findByRole('checkbox', { name: 'Milk' }))
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Milk' })) // uncheck while check is in flight
-    releaseCheck()
+    await userEvent.type(screen.getByLabelText('Add item...'), 'Bread{Enter}')
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Milk' }))
 
-    await waitFor(() => expect(backend.current().items[0].checked).toBe(false))
-    expect(screen.getByRole('checkbox', { name: 'Milk' })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByRole('checkbox', { name: 'Bread' })).toBeInTheDocument()
+    expect(await screen.findByText('Offline · 2 unsaved')).toBeInTheDocument()
+    expect(server.received()).toHaveLength(0)
+
+    server.offline = false
+    window.dispatchEvent(new Event('online'))
+    const { syncEngine } = await import('../offline/engine')
+    await syncEngine.syncAll()
+
+    await waitFor(() => expect(server.received().map((op) => op.type)).toEqual(['ADD_ITEM', 'CHECK_ITEM']))
+    await waitFor(() => expect(screen.queryByText(/unsaved/)).not.toBeInTheDocument())
   })
 
   it('groups items by category in category order', async () => {
-    const backend = fakeListBackend([item('1', 'Milk', { categoryId: 'dairy' }), item('2', 'Carrots', { categoryId: 'veg' }), item('3', 'Batteries')])
-    mockApi(backend.routes)
-    renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
+    setup([item('1', 'Milk', { categoryId: 'dairy' }), item('2', 'Carrots', { categoryId: 'veg' }), item('3', 'Batteries')])
 
     await screen.findByRole('list', { name: 'Dairy' })
-    const names = screen.getAllByRole('list').map((section) => section.getAttribute('aria-label'))
-    expect(names).toEqual(['Vegetables', 'Dairy', 'Other'])
+    expect(screen.getAllByRole('list').map((section) => section.getAttribute('aria-label'))).toEqual(['Vegetables', 'Dairy', 'Other'])
     expect(within(screen.getByRole('list', { name: 'Dairy' })).getByRole('checkbox', { name: 'Milk' })).toBeInTheDocument()
   })
 
   it('picking an autocomplete suggestion adds the item with category and unit', async () => {
-    const backend = fakeListBackend([])
-    const spy = mockApi({
-      ...backend.routes,
+    const { server } = setup([], {
       'GET /api/spaces/s1/catalog/suggestions': (_: unknown, url: URL) =>
         url.searchParams.get('q') === 'mi' ? [{ name: 'Milk', categoryId: 'dairy', unit: 'l', usageCount: 3 }] : [],
     })
-    renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
 
     await userEvent.type(await screen.findByRole('combobox'), 'mi')
     await userEvent.click(await screen.findByRole('button', { name: /Milk/ }))
 
-    const [body] = sentBodies(spy, 'POST', '/api/spaces/s1/lists/l1/items') as Record<string, unknown>[]
-    expect(body).toMatchObject({ name: 'Milk', categoryId: 'dairy', unit: 'l' })
     expect(await screen.findByRole('list', { name: 'Dairy' })).toBeInTheDocument()
+    await waitFor(() => expect(server.received('ADD_ITEM')[0]).toMatchObject({ name: 'Milk', categoryId: 'dairy', unit: 'l' }))
   })
 
   it('editor offers the categories of the space', async () => {
-    const backend = fakeListBackend([item('1', 'Milk')])
-    const spy = mockApi(backend.routes)
-    renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
+    const { server } = setup([item('1', 'Milk')])
 
     await userEvent.click(await screen.findByRole('button', { name: 'Edit Milk' }))
     await userEvent.selectOptions(within(screen.getByRole('dialog')).getByLabelText('Category'), 'Dairy')
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }))
 
-    await waitFor(() => expect(sentBodies(spy, 'PATCH', '/api/spaces/s1/lists/l1/items/1')).toEqual([{ categoryId: 'dairy' }]))
+    await waitFor(() => expect(server.received('EDIT_ITEM')).toEqual([expect.objectContaining({ field: 'CATEGORY', value: 'dairy' })]))
+  })
+
+  it('shows a hint for a list that does not exist', async () => {
+    setup([])
+    renderWithProviders(<AppRoutes />, '/spaces/s1/lists/unknown')
+    expect(await screen.findByText('This list does not exist (anymore).')).toBeInTheDocument()
   })
 })

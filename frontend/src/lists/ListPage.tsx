@@ -2,8 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useCatalog, type Category } from '../api/catalog'
-import { layoutsApi, rememberedLayout, rememberLayout, useLayouts, type ShopLayout } from '../api/layouts'
-import { listKeys, listsApi, newId, useList, type Item, type ShoppingList } from '../api/lists'
+import { layoutKeys, layoutsApi, rememberedLayout, rememberLayout, useFavorites, useLayouts, type ShopLayout } from '../api/layouts'
+import { listsApi, newId, type Item } from '../api/lists'
 import { useSpace } from '../api/spaces'
 import { useCurrentUser } from '../auth/useAuth'
 import { InlineForm } from '../components/InlineForm'
@@ -11,8 +11,10 @@ import { Button, ErrorText, Loading } from '../components/ui'
 import { t } from '../i18n/messages'
 import { BackLink } from '../pages/space/MembersPage'
 import { ItemEditor } from './ItemEditor'
-import { useListChanges } from './listChanges'
+import { syncEngine, useLocalList } from '../offline/engine'
+import { useListActions } from './listChanges'
 import { QuickAdd } from './QuickAdd'
+import { normalizeName, sortForLayout } from './sortForLayout'
 import { amountText, groupItems, groupSorted, sortItems, type ItemSection } from './sortItems'
 
 const UNDO_TIMEOUT_MS = 5000
@@ -23,17 +25,18 @@ export function ListPage() {
   const [chosenLayoutId, setChosenLayoutId] = useState<string | null>(() => rememberedLayout(listId))
   // A remembered layout may have been deleted by someone else in the meantime.
   const layout = layouts?.find((l) => l.id === chosenLayoutId) ?? null
-  const sort = layout?.id ?? null
 
-  const { data: list, error: loadError } = useList(spaceId, listId, sort)
+  // Lists come from the offline-first sync engine; everything else from the (persisted) query cache.
+  const list = useLocalList(spaceId, listId)
   const { data: space } = useSpace(spaceId)
   const { data: user } = useCurrentUser()
   const { data: catalog } = useCatalog(spaceId)
-  const { apply, error } = useListChanges(spaceId, listId, sort)
+  const { data: favoriteNames } = useFavorites(spaceId, layout?.id ?? null)
+  const { apply } = useListActions(spaceId, listId)
   const [editing, setEditing] = useState<Item | null>(null)
   const [renaming, setRenaming] = useState(false)
   const [undo, setUndo] = useState<Item | null>(null)
-  const toggleFavorite = useToggleFavorite(spaceId, listId, sort)
+  const toggleFavorite = useToggleFavorite(spaceId, layout?.id ?? null)
 
   // The undo hint disappears after a few seconds.
   useEffect(() => {
@@ -42,13 +45,22 @@ export function ListPage() {
     return () => window.clearTimeout(timer)
   }, [undo])
 
-  if (loadError) return <ErrorText error={loadError} />
-  if (!list) return <Loading />
+  if (list === undefined) return <Loading />
+  if (list === null) {
+    return (
+      <section className="space-y-3">
+        <p>{t('error.LIST_NOT_FOUND')}</p>
+        <BackLink to={`/spaces/${spaceId}`} />
+      </section>
+    )
+  }
 
   const categories = catalog?.categories ?? []
   const checkedToEnd = user?.settings.checkedItemsToEnd ?? true
+  const favorites = new Set(favoriteNames ?? [])
+  const isFavorite = (item: Item) => favorites.has(normalizeName(item.name))
   const sections = layout
-    ? groupSorted(list.items, categories, layout.mode, checkedToEnd)
+    ? groupSorted(sortForLayout(list.items, layout, categories, favorites, catalog?.usage ?? {}, checkedToEnd), categories, layout.mode, checkedToEnd)
     : groupItems(sortItems(list.items, checkedToEnd), categories, checkedToEnd)
   const checkedCount = list.items.filter((i) => i.checked).length
 
@@ -90,7 +102,7 @@ export function ListPage() {
 
       <ShopSelector spaceId={spaceId} listId={listId} layouts={layouts ?? []} selected={layout?.id ?? null} onSelect={chooseLayout} />
       <QuickAdd spaceId={spaceId} categories={categories} onAdd={(item) => apply({ type: 'addItem', item: { id: newId(), ...item } })} />
-      <ErrorText error={error ?? toggleFavorite.error} />
+      <ErrorText error={toggleFavorite.error} />
 
       {list.items.length === 0 && <p className="text-gray-500 dark:text-gray-400">{t('list.empty')}</p>}
       {sections.map((section) => (
@@ -100,7 +112,8 @@ export function ListPage() {
           categories={categories}
           onToggle={toggle}
           onEdit={setEditing}
-          onFavorite={layout ? (item) => toggleFavorite.mutate(item) : undefined}
+          isFavorite={isFavorite}
+          onFavorite={layout ? (item) => toggleFavorite.mutate({ name: item.name, favorite: isFavorite(item) }) : undefined}
         />
       ))}
 
@@ -177,16 +190,16 @@ function ShopSelector(props: { spaceId: string; listId: string; layouts: ShopLay
   )
 }
 
-/** Toggles a personal favorite in the current shop; the star updates at once, the order after the reload. */
-function useToggleFavorite(spaceId: string, listId: string, sort: string | null) {
+/** Toggles a personal favorite in the current shop; star and order update at once (needs a connection). */
+function useToggleFavorite(spaceId: string, layoutId: string | null) {
   const queryClient = useQueryClient()
-  const key = listKeys.detail(spaceId, listId, sort)
+  const key = layoutKeys.favorites(spaceId, layoutId ?? '')
   return useMutation({
-    mutationFn: (item: Item) =>
-      item.favorite ? layoutsApi.removeFavorite(spaceId, sort!, item.name) : layoutsApi.addFavorite(spaceId, sort!, item.name),
-    onMutate: (item) =>
-      queryClient.setQueryData<ShoppingList>(key, (list) =>
-        list ? { ...list, items: list.items.map((i) => (i.id === item.id ? { ...i, favorite: !item.favorite } : i)) } : list,
+    mutationFn: ({ name, favorite }: { name: string; favorite: boolean }) =>
+      favorite ? layoutsApi.removeFavorite(spaceId, layoutId!, name) : layoutsApi.addFavorite(spaceId, layoutId!, name),
+    onMutate: ({ name, favorite }) =>
+      queryClient.setQueryData<string[]>(key, (names = []) =>
+        favorite ? names.filter((n) => n !== normalizeName(name)) : [...names, normalizeName(name)],
       ),
     onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
   })
@@ -198,6 +211,7 @@ function Section(props: {
   categories: Category[]
   onToggle: (item: Item) => void
   onEdit: (item: Item) => void
+  isFavorite: (item: Item) => boolean
   onFavorite?: (item: Item) => void
 }) {
   const { section } = props
@@ -218,6 +232,7 @@ function Section(props: {
           <ItemRow
             key={item.id}
             item={item}
+            favorite={props.isFavorite(item)}
             color={colorOf(item)}
             onToggle={() => props.onToggle(item)}
             onEdit={() => props.onEdit(item)}
@@ -230,7 +245,14 @@ function Section(props: {
 }
 
 /** One item: the large left part toggles "checked" on tap; star (with a shop selected) and pencil on the right. */
-export function ItemRow(props: { item: Item; onToggle: () => void; onEdit: () => void; onFavorite?: () => void; color?: string }) {
+export function ItemRow(props: {
+  item: Item
+  onToggle: () => void
+  onEdit: () => void
+  onFavorite?: () => void
+  favorite?: boolean
+  color?: string
+}) {
   const { item } = props
   const amount = amountText(item)
   return (
@@ -251,11 +273,11 @@ export function ItemRow(props: { item: Item; onToggle: () => void; onEdit: () =>
       {props.onFavorite && (
         <button
           onClick={props.onFavorite}
-          aria-pressed={!!item.favorite}
+          aria-pressed={!!props.favorite}
           aria-label={t('item.favoriteNamed', { name: item.name })}
-          className={`flex w-11 items-center justify-center text-xl ${item.favorite ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'}`}
+          className={`flex w-11 items-center justify-center text-xl ${props.favorite ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'}`}
         >
-          {item.favorite ? '★' : '☆'}
+          {props.favorite ? '★' : '☆'}
         </button>
       )}
       <button onClick={props.onEdit} aria-label={t('item.editNamed', { name: item.name })} className="flex w-12 items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
@@ -282,9 +304,8 @@ function DeleteListButton({ spaceId, listId, name }: { spaceId: string; listId: 
   const remove = useMutation({
     mutationFn: () => listsApi.delete(spaceId, listId),
     onSuccess: () => {
-      // Drop the cached list in every sort variant.
-      queryClient.removeQueries({ queryKey: ['spaces', spaceId, 'lists', listId] })
-      queryClient.invalidateQueries({ queryKey: listKeys.all(spaceId), exact: true })
+      void syncEngine.sync(spaceId)
+      queryClient.invalidateQueries({ queryKey: ['spaces', spaceId, 'lists'] })
       navigate(`/spaces/${spaceId}`)
     },
   })

@@ -4,6 +4,7 @@ import { AppRoutes } from '../../App'
 import type { Item, ShoppingList } from '../../api/lists'
 import type { ShopLayout } from '../../api/layouts'
 import { groupSorted } from '../../lists/sortItems'
+import { fakeSyncServer } from '../../test/fakeSyncServer'
 import { mockApi, sentBodies, testUser } from '../../test/mockApi'
 import { loginForTest, renderWithProviders } from '../../test/render'
 import { categoriesInLayoutOrder } from './LayoutPages'
@@ -49,24 +50,23 @@ describe('shop selection on the list screen', () => {
   beforeEach(() => loginForTest())
 
   function setup() {
-    const unsorted: ShoppingList = {
+    const list: ShoppingList = {
       id: 'l1', spaceId: 's1', name: 'Groceries', createdAt: '', seq: 1,
       items: [item('1', 'Milk', { categoryId: 'dairy' }), item('2', 'Bread', { categoryId: 'bakery' })],
     }
+    let favorites = ['milk']
     return mockApi({
       'GET /api/users/me': testUser,
       'GET /api/spaces/s1': { id: 's1', name: 'Home', myRole: 'MEMBER', memberCount: 1, createdAt: '' },
       'GET /api/spaces/s1/catalog': catalog,
       'GET /api/spaces/s1/layouts': [layout],
-      'GET /api/spaces/s1/lists/l1': (_: unknown, url: URL) =>
-        url.searchParams.get('sort') === 'aldi'
-          ? { ...unsorted, sortedBy: 'aldi', items: [{ ...unsorted.items[1], favorite: false }, { ...unsorted.items[0], favorite: true }] }
-          : unsorted,
-      'POST /api/spaces/s1/layouts/aldi/favorites': { names: ['bread', 'milk'] },
+      'GET /api/spaces/s1/layouts/aldi/favorites': () => ({ names: favorites }),
+      'POST /api/spaces/s1/layouts/aldi/favorites': (body) => ({ names: (favorites = [...favorites, (body as { name: string }).name.toLowerCase()]) }),
+      ...fakeSyncServer('s1', [list]).routes,
     })
   }
 
-  it('sorts by the chosen shop, remembers it and offers favorites', async () => {
+  it('sorts by the chosen shop (on the device), remembers it and offers favorites', async () => {
     const spy = setup()
     renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
 
@@ -77,19 +77,19 @@ describe('shop selection on the list screen', () => {
 
     await waitFor(() => expect(screen.getAllByRole('list').map((l) => l.getAttribute('aria-label'))).toEqual(['Bakery', 'Dairy']))
     expect(localStorage.getItem('shoppinglist.listLayout')).toBe('{"l1":"aldi"}')
-    expect(screen.getByRole('button', { name: 'Favorite Milk' })).toHaveAttribute('aria-pressed', 'true')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Favorite Milk' })).toHaveAttribute('aria-pressed', 'true'))
 
     await userEvent.click(screen.getByRole('button', { name: 'Favorite Bread' }))
-    expect(sentBodies(spy, 'POST', '/api/spaces/s1/layouts/aldi/favorites')).toEqual([{ name: 'Bread' }])
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Favorite Bread' })).toHaveAttribute('aria-pressed', 'true'))
+    await waitFor(() => expect(sentBodies(spy, 'POST', '/api/spaces/s1/layouts/aldi/favorites')).toEqual([{ name: 'Bread' }]))
   })
 
   it('uses the remembered shop when opening the list again', async () => {
     localStorage.setItem('shoppinglist.listLayout', '{"l1":"aldi"}')
-    const spy = setup()
+    setup()
     renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
 
-    await screen.findByRole('list', { name: 'Bakery' })
-    expect(spy.mock.calls.some(([url]) => String(url).includes('sort=aldi'))).toBe(true)
+    expect(await screen.findByRole('list', { name: 'Bakery' })).toBeInTheDocument()
   })
 })
 

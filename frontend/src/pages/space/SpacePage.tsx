@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { listKeys, listsApi, newId, useLists } from '../../api/lists'
+import { newId } from '../../api/lists'
 import { spaceKeys, spacesApi, useSpace } from '../../api/spaces'
 import { InlineForm } from '../../components/InlineForm'
 import { Button, Card, ErrorText, Loading, PageTitle } from '../../components/ui'
 import { t } from '../../i18n/messages'
+import { syncEngine, useSpaceLists } from '../../offline/engine'
+import { OnlineOnly } from '../../offline/online'
 
 /** A space: its lists plus links to members and (owner) rename/delete. */
 export function SpacePage() {
@@ -52,6 +54,7 @@ export function SpacePage() {
       </nav>
 
       {isOwner && (
+        <OnlineOnly>
         <div className="flex flex-wrap gap-2 border-t border-gray-200 pt-4 dark:border-gray-800">
           <Button variant="secondary" onClick={() => setRenaming(true)}>
             {t('space.rename')}
@@ -64,6 +67,7 @@ export function SpacePage() {
             {t('space.delete')}
           </Button>
         </div>
+        </OnlineOnly>
       )}
     </section>
   )
@@ -77,22 +81,21 @@ export function SpaceLink({ to, children }: { to: string; children: string }) {
   )
 }
 
+/** The lists come from the offline sync engine, so they can be created and opened without connection. */
 function SpaceLists({ spaceId }: { spaceId: string }) {
-  const { data: lists, error } = useLists(spaceId)
-  const queryClient = useQueryClient()
+  const lists = useSpaceLists(spaceId)
   const navigate = useNavigate()
-  const create = useMutation({
-    mutationFn: (name: string) => listsApi.create(spaceId, name, newId()),
-    onSuccess: (list) => {
-      queryClient.invalidateQueries({ queryKey: listKeys.all(spaceId) })
-      navigate(`/spaces/${spaceId}/lists/${list.id}`)
-    },
-  })
+
+  function create(name: string) {
+    const listId = newId()
+    syncEngine.enqueue(spaceId, { type: 'CREATE_LIST', listId, name })
+    navigate(`/spaces/${spaceId}/lists/${listId}`)
+  }
 
   return (
     <div className="space-y-3">
       <h3 className="text-lg font-semibold">{t('lists.title')}</h3>
-      <ErrorText error={error ?? create.error} />
+      {lists === undefined && <Loading />}
       {lists?.length === 0 && <p className="text-gray-500 dark:text-gray-400">{t('lists.empty')}</p>}
       <ul className="space-y-2">
         {lists?.map((list) => (
@@ -100,13 +103,15 @@ function SpaceLists({ spaceId }: { spaceId: string }) {
             <Link to={`/spaces/${spaceId}/lists/${list.id}`} className="block">
               <Card className="flex items-center justify-between hover:border-green-500">
                 <span className="text-lg font-medium">{list.name}</span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{t('lists.openCount', { count: list.openItems })}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {t('lists.openCount', { count: list.items.filter((i) => !i.checked).length })}
+                </span>
               </Card>
             </Link>
           </li>
         ))}
       </ul>
-      <InlineForm label={t('lists.newName')} submitLabel={t('common.create')} clearOnSubmit disabled={create.isPending} onSubmit={(name) => create.mutate(name)} />
+      <InlineForm label={t('lists.newName')} submitLabel={t('common.create')} clearOnSubmit onSubmit={create} />
     </div>
   )
 }

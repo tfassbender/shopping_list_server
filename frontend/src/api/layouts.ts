@@ -26,6 +26,7 @@ export const layoutsApi = {
   setItemOrder: (spaceId: string, id: string, entries: string[]) => api.put<ShopLayout>(`${base(spaceId)}/${id}/item-order`, { entries }),
   connect: (spaceId: string, id: string, listId: string) => api.put<ShopLayout>(`${base(spaceId)}/${id}/lists/${listId}`, {}),
   disconnect: (spaceId: string, id: string, listId: string) => api.delete<ShopLayout>(`${base(spaceId)}/${id}/lists/${listId}`),
+  favorites: (spaceId: string, id: string) => api.get<{ names: string[] }>(`${base(spaceId)}/${id}/favorites`),
   addFavorite: (spaceId: string, id: string, name: string) => api.post<{ names: string[] }>(`${base(spaceId)}/${id}/favorites`, { name }),
   removeFavorite: (spaceId: string, id: string, name: string) =>
     api.delete<{ names: string[] }>(`${base(spaceId)}/${id}/favorites?name=${encodeURIComponent(name)}`),
@@ -34,6 +35,19 @@ export const layoutsApi = {
 export const layoutKeys = {
   all: (spaceId: string) => ['spaces', spaceId, 'layouts'] as const,
   detail: (spaceId: string, id: string) => ['spaces', spaceId, 'layouts', id] as const,
+  favorites: (spaceId: string, id: string) => ['spaces', spaceId, 'layouts', id, 'favorites'] as const,
+}
+
+/**
+ * The user's favorites (normalized names) in a layout. A plain array (not a Set) because the query cache
+ * is persisted as JSON for offline use.
+ */
+export function useFavorites(spaceId: string, layoutId: string | null) {
+  return useQuery({
+    queryKey: layoutKeys.favorites(spaceId, layoutId ?? ''),
+    queryFn: async () => (await layoutsApi.favorites(spaceId, layoutId!)).names,
+    enabled: layoutId !== null,
+  })
 }
 
 export function useLayouts(spaceId: string) {

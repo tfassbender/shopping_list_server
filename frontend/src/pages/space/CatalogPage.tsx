@@ -6,6 +6,7 @@ import { InlineForm } from '../../components/InlineForm'
 import { SortableList } from '../../components/SortableList'
 import { Button, Card, ErrorText, Loading, PageTitle } from '../../components/ui'
 import { t } from '../../i18n/messages'
+import { OnlineOnly } from '../../offline/online'
 import { BackLink } from './MembersPage'
 
 /** Manage categories (name, color, order) and units of a space. */
@@ -33,7 +34,8 @@ export function CatalogPage() {
     <section className="space-y-6">
       <PageTitle action={<BackLink to={`/spaces/${spaceId}`} />}>{t('catalog.title')}</PageTitle>
       <ErrorText error={update.error} />
-
+      <OnlineOnly>
+      <div className="space-y-6">
       <div className="space-y-3">
         <h3 className="text-lg font-semibold">{t('catalog.categories')}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">{t('catalog.categoriesHint')}</p>
@@ -54,6 +56,8 @@ export function CatalogPage() {
       </div>
 
       <UnitsEditor units={catalog.units} onChange={(units) => update.mutate(() => catalogApi.setUnits(spaceId, units))} />
+      </div>
+      </OnlineOnly>
     </section>
   )
 }

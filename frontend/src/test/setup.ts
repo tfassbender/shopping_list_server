@@ -2,9 +2,12 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
 import { reloadSessionForTests } from '../auth/session'
+import { syncEngine } from '../offline/engine'
 
-afterEach(() => {
+afterEach(async () => {
   cleanup()
+  // Forget the offline data of the test (the engine is a module-wide singleton).
+  await syncEngine.clear()
   vi.restoreAllMocks()
   localStorage.clear()
   reloadSessionForTests()

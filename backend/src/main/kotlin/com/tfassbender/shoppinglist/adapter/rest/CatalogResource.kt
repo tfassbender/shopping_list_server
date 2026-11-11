@@ -35,11 +35,17 @@ data class UnitsRequest(val units: List<String> = emptyList())
 
 data class CategoryDto(val id: String, val name: String, val color: String)
 
-data class CatalogDto(val categories: List<CategoryDto>, val units: List<String>) {
+data class CatalogDto(
+    val categories: List<CategoryDto>,
+    val units: List<String>,
+    @field:Schema(description = "How often each item was bought (normalized lowercase name -> count); for client-side sorting")
+    val usage: Map<String, Int> = emptyMap(),
+) {
     companion object {
         fun from(catalog: SpaceCatalog) = CatalogDto(
             catalog.categories.map { CategoryDto(it.id.value, it.name, it.color) },
             catalog.units,
+            catalog.history.filterValues { it.usageCount > 0 }.mapValues { it.value.usageCount },
         )
     }
 }

@@ -5,6 +5,7 @@ import { accountApi, type User, type UserSettings } from '../api/auth'
 import { useAuthActions, useCurrentUser } from '../auth/useAuth'
 import { Button, Card, ErrorText, Loading, PageTitle, SuccessText, TextField } from '../components/ui'
 import { t, tDynamic } from '../i18n/messages'
+import { OnlineOnly } from '../offline/online'
 import { ApiTokensSection } from './settings/ApiTokensSection'
 
 export function SettingsPage() {
@@ -13,12 +14,16 @@ export function SettingsPage() {
   return (
     <section className="space-y-4">
       <PageTitle>{t('settings.title')}</PageTitle>
+      <OnlineOnly>
+      <div className="space-y-4">
       <ProfileSection user={user} />
       <DisplaySection user={user} />
       <PasswordSection />
       <ApiTokensSection />
       <SessionSection />
       <DeleteAccountSection />
+      </div>
+      </OnlineOnly>
     </section>
   )
 }
