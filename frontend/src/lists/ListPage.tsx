@@ -269,7 +269,7 @@ function ItemRow(props: { item: Item; onToggle: () => void; onEdit: () => void }
       >
         <span className={`min-w-0 ${item.checked ? 'text-muted line-through' : ''}`}>
           {amount && <span className={`mr-1.5 ${item.checked ? '' : 'font-semibold'}`}>{amount}</span>}
-          <span>{item.name}</span>
+          <span className={item.checked ? '' : 'font-semibold'}>{item.name}</span>
           {item.note && <span className="block truncate text-[0.9rem] text-muted">{item.note}</span>}
         </span>
       </button>
