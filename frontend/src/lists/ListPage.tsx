@@ -17,7 +17,8 @@ import { ItemEditor } from './ItemEditor'
 import { setLastList } from './lastList'
 import { useListActions } from './listChanges'
 import { normalizeName, sortForLayout } from './sortForLayout'
-import { amountText, groupSorted, sortItems, type ItemSection } from './sortItems'
+import { categoryHeadersShown, rememberCategoryHeaders } from './categoryHeaders'
+import { amountText, groupSorted, sortItems, withoutCategoryHeaders, type ItemSection } from './sortItems'
 
 type DialogName = 'add' | 'shop' | 'rename' | 'delete' | null
 
@@ -52,6 +53,7 @@ export function ListPage() {
   const [editing, setEditing] = useState<Item | null>(null)
   // Ids of the items the sort button moved to the end (kept while the page is open).
   const [movedToEnd, setMovedToEnd] = useState<ReadonlySet<string>>(new Set())
+  const [showHeaders, setShowHeaders] = useState(categoryHeadersShown)
 
   useEffect(() => {
     if (list) setLastList({ spaceId, listId })
@@ -71,10 +73,17 @@ export function ListPage() {
   const isFavorite = (item: Item) => favorites.has(normalizeName(item.name))
   // Without a shop the list is exactly in the order of adding - no category groups, which would look like
   // a shop's sorting.
-  const sections = layout
+  const grouped = layout
     ? groupSorted(sortForLayout(list.items, layout, categories, favorites, catalog?.usage ?? {}, false), categories, layout.mode, movedToEnd)
     : groupSorted(sortItems(list.items), categories, 'ITEMS', movedToEnd)
+  // Headers off: same order, the category shows as a colored bar at each item instead.
+  const sections = showHeaders ? grouped : withoutCategoryHeaders(grouped)
   const checked = list.items.filter((i) => i.checked)
+
+  function toggleHeaders() {
+    setShowHeaders(!showHeaders)
+    rememberCategoryHeaders(!showHeaders)
+  }
 
   function toggle(item: Item) {
     apply({ type: item.checked ? 'uncheck' : 'check', itemId: item.id })
@@ -99,16 +108,29 @@ export function ListPage() {
       back="/"
       sub={shopLine}
       actions={
-        <button
-          type="button"
-          aria-label={t('list.sortChecked')}
-          title={t('list.sortChecked')}
-          disabled={checked.length === 0}
-          onClick={() => setMovedToEnd(new Set(checked.map((i) => i.id)))}
-          className={iconButtonClass}
-        >
-          <Icon name="sortChecked" className="text-[1.3rem]" />
-        </button>
+        <>
+          <button
+            type="button"
+            aria-label={t('list.categoryHeaders')}
+            title={t('list.categoryHeaders')}
+            aria-pressed={showHeaders}
+            onClick={toggleHeaders}
+            className={`${iconButtonClass} aria-pressed:bg-brand-ink/15`}
+          >
+            {/* dimmed when off, so the state is visible at a glance */}
+            <Icon name="categories" className={`text-[1.2rem] ${showHeaders ? '' : 'opacity-45'}`} />
+          </button>
+          <button
+            type="button"
+            aria-label={t('list.sortChecked')}
+            title={t('list.sortChecked')}
+            disabled={checked.length === 0}
+            onClick={() => setMovedToEnd(new Set(checked.map((i) => i.id)))}
+            className={iconButtonClass}
+          >
+            <Icon name="sortChecked" className="text-[1.3rem]" />
+          </button>
+        </>
       }
       menu={[
         { label: t('list.menu.rename'), icon: 'rename', onSelect: () => setDialog('rename') },
@@ -124,7 +146,7 @@ export function ListPage() {
       <ErrorText error={toggleFavorite.error ?? deleteList.error} />
       {list.items.length === 0 && <p className="py-10 text-center text-lg text-muted">{t('list.empty')}</p>}
       {sections.map((section) => (
-        <ItemSectionView key={section.key} section={section} categories={categories} onToggle={toggle} onEdit={setEditing} />
+        <ItemSectionView key={section.key} section={section} categories={categories} colorBars={!showHeaders} onToggle={toggle} onEdit={setEditing} />
       ))}
 
       <Fab label={t('addItem.title')} onClick={() => setDialog('add')} />
@@ -238,7 +260,13 @@ function useToggleFavorite(spaceId: string, layoutId: string | null) {
 }
 
 /** A block of items under a header: category name with its color, "Other" or "Checked" (none in item mode). */
-function ItemSectionView(props: { section: ItemSection; categories: Category[]; onToggle: (item: Item) => void; onEdit: (item: Item) => void }) {
+function ItemSectionView(props: {
+  section: ItemSection
+  categories: Category[]
+  colorBars: boolean
+  onToggle: (item: Item) => void
+  onEdit: (item: Item) => void
+}) {
   const { section } = props
   const title =
     section.category?.name ??
@@ -248,7 +276,14 @@ function ItemSectionView(props: { section: ItemSection; categories: Category[]; 
       {section.kind !== 'items' && <SectionTitle color={section.category?.color}>{title}</SectionTitle>}
       <ul aria-label={title} className={section.kind === 'items' ? 'mt-3' : ''}>
         {section.items.map((item) => (
-          <ItemRow key={item.id} item={item} onToggle={() => props.onToggle(item)} onEdit={() => props.onEdit(item)} />
+          <ItemRow
+            key={item.id}
+            item={item}
+            // a bar for every item when headers are off (transparent without category, so the texts line up)
+            barColor={props.colorBars ? (props.categories.find((c) => c.id === item.categoryId)?.color ?? 'transparent') : undefined}
+            onToggle={() => props.onToggle(item)}
+            onEdit={() => props.onEdit(item)}
+          />
         ))}
       </ul>
     </section>
@@ -256,11 +291,18 @@ function ItemSectionView(props: { section: ItemSection; categories: Category[]; 
 }
 
 /** One item: tapping the row checks/unchecks it; ⋯ opens the details. No checkbox - checked = struck through. */
-function ItemRow(props: { item: Item; onToggle: () => void; onEdit: () => void }) {
+function ItemRow(props: { item: Item; barColor?: string; onToggle: () => void; onEdit: () => void }) {
   const { item } = props
   const amount = amountText(item)
   return (
     <li className="flex items-stretch border-b border-line hover:bg-raised">
+      {props.barColor && (
+        <span
+          aria-hidden="true"
+          className={`my-2.5 w-1.5 shrink-0 rounded-full ${item.checked ? 'opacity-40' : ''}`}
+          style={{ backgroundColor: props.barColor }}
+        />
+      )}
       <button
         type="button"
         role="checkbox"

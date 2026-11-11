@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { AppRoutes } from '../../App'
 import type { Item, ShoppingList } from '../../api/lists'
 import type { ShopLayout } from '../../api/layouts'
-import { groupSorted } from '../../lists/sortItems'
+import { groupSorted, withoutCategoryHeaders } from '../../lists/sortItems'
 import { fakeSyncServer } from '../../test/fakeSyncServer'
 import { mockApi, sentBodies, testUser } from '../../test/mockApi'
 import { loginForTest, renderWithProviders } from '../../test/render'
@@ -38,6 +38,13 @@ describe('layout helpers', () => {
     ]
     const summary = groupSorted(sorted, categories, 'CATEGORIES', new Set(['3'])).map((s) => `${s.kind}:${s.items.map((i) => i.name).join(',')}`)
     expect(summary).toEqual(['category:Bread', 'category:Milk', 'other:Batteries', 'checked:Cheese'])
+  })
+
+  it('without category headers keeps the order in one section, only the checked section stays', () => {
+    const sorted = [item('1', 'Bread', { categoryId: 'bakery' }), item('2', 'Milk', { categoryId: 'dairy' }), item('3', 'Cheese', { categoryId: 'dairy', checked: true })]
+    const sections = withoutCategoryHeaders(groupSorted(sorted, categories, 'CATEGORIES', new Set(['3'])))
+    expect(sections.map((s) => `${s.kind}:${s.items.map((i) => i.name).join(',')}`)).toEqual(['items:Bread,Milk', 'checked:Cheese'])
+    expect(withoutCategoryHeaders([])).toEqual([])
   })
 
   it('uses one header-less section in item mode', () => {
@@ -91,6 +98,28 @@ describe('shop selection on the list screen', () => {
     await userEvent.click(favorite)
     await waitFor(() => expect(favorite).toBeChecked())
     await waitFor(() => expect(sentBodies(spy, 'POST', '/api/spaces/s1/layouts/aldi/favorites')).toEqual([{ name: 'Bread' }]))
+  })
+
+  it('hides the category headers with the header button and shows a color bar per item instead', async () => {
+    localStorage.setItem('shoppinglist.listLayout', '{"l1":"aldi"}')
+    setup()
+    renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
+
+    expect(await screen.findByRole('heading', { name: 'Bakery' })).toBeInTheDocument()
+    const toggle = screen.getByRole('button', { name: 'Show category headers' })
+    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByRole('heading', { name: 'Bakery' })).not.toBeInTheDocument()
+    // same order as with headers (shop order), one color bar per item
+    expect(screen.getAllByRole('checkbox').map((el) => el.getAttribute('aria-label'))).toEqual(['Bread', 'Milk'])
+    const bar = screen.getByRole('checkbox', { name: 'Bread' }).parentElement!.firstElementChild as HTMLElement
+    expect(bar).toHaveStyle({ backgroundColor: '#aa8800' })
+    expect(localStorage.getItem('shoppinglist.categoryHeaders')).toBe('false') // remembered on this device
+
+    await userEvent.click(toggle)
+    expect(await screen.findByRole('heading', { name: 'Bakery' })).toBeInTheDocument()
   })
 
   it('uses the remembered shop when opening the list again', async () => {

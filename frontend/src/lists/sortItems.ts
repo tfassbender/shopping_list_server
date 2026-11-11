@@ -57,6 +57,16 @@ export function groupSorted(
   return withCheckedSection(sections, atEnd)
 }
 
+/**
+ * The same items in the same order, but without category headers: all sections become one header-less
+ * section. Only the "Checked" section (moved there by the sort button) stays separate.
+ */
+export function withoutCategoryHeaders(sections: ItemSection[]): ItemSection[] {
+  const items = sections.filter((s) => s.kind !== 'checked').flatMap((s) => s.items)
+  const checked = sections.filter((s) => s.kind === 'checked')
+  return [...(items.length > 0 ? [{ key: '__items', kind: 'items' as const, items }] : []), ...checked]
+}
+
 /** "2 l" / "2" / "l" / "" - quantity and unit as shown in front of the item name. */
 export function amountText(item: Pick<Item, 'quantity' | 'unit'>): string {
   return formatAmount(item)

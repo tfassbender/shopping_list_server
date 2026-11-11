@@ -242,6 +242,7 @@ export const en = {
   'newList.space': 'In space',
   'newList.spaceHint': 'Everyone in the space sees this list.',
   'list.sortChecked': 'Move checked items to the end',
+  'list.categoryHeaders': 'Show category headers',
   'list.sortedFor': 'Sorted for {shop}',
   'list.unsorted': 'Order of adding',
   'list.menu.rename': 'Rename list',

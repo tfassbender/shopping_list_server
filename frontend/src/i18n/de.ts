@@ -241,6 +241,7 @@ export const de: Record<MessageKey, string> = {
   'newList.space': 'Im Bereich',
   'newList.spaceHint': 'Alle im Bereich sehen diese Liste.',
   'list.sortChecked': 'Erledigte ans Ende verschieben',
+  'list.categoryHeaders': 'Kategorie-Überschriften anzeigen',
   'list.sortedFor': 'Sortiert für {shop}',
   'list.unsorted': 'Reihenfolge des Hinzufügens',
   'list.menu.rename': 'Liste umbenennen',
