@@ -93,6 +93,15 @@ class SyncService(
         if (operations.size > MAX_BATCH) {
             throw DomainException(ErrorKind.VALIDATION, "BATCH_TOO_LARGE", "At most $MAX_BATCH changes per batch")
         }
+        // A batch that only repeats applied changes (a resend) changes nothing: no new seq, no notification.
+        val alreadyApplied = locks.read(spaceId) {
+            access.requireMember(spaceId, userId)
+            val state = syncStates.find(spaceId)
+            operations.all { state.isApplied(it.changeId) }.takeIf { it }?.let { sequence.current(spaceId) }
+        }
+        if (alreadyApplied != null) {
+            return PushResult(alreadyApplied, operations.map { ChangeResult(it.changeId, ChangeStatus.DUPLICATE) }, emptyList())
+        }
         return locks.withLock(spaceId) {
             access.requireMember(spaceId, userId)
             val now = clock.instant()
@@ -107,14 +116,15 @@ class SyncService(
                 batch.apply(operation)
                 state = state.remember(operation.changeId, now)
             }
-            // Save the remembered change ids first: saving lists may move the purge horizon in the same file.
-            syncStates.save(state)
-            batch.saveTouchedLists()
+            // The applied change ids are saved last: if saving a list fails (file storage has no rollback),
+            // the client's resend must be applied again, not answered with DUPLICATE.
+            val purgedSeq = batch.saveTouchedLists()
+            syncStates.save(state.withPurged(purgedSeq))
             PushResult(context.seq, batch.results, batch.warningViews())
         }
     }
 
-    fun pull(userId: UserId, spaceId: SpaceId, since: Long): PullResult {
+    fun pull(userId: UserId, spaceId: SpaceId, since: Long): PullResult = locks.read(spaceId) {
         access.requireMember(spaceId, userId)
         val current = sequence.current(spaceId)
         val full = syncStates.find(spaceId).needsFullResync(since, current)
@@ -128,7 +138,7 @@ class SyncService(
         val spaceCatalog = catalogs.find(spaceId)
         val catalogChanged = full || spaceCatalog.seq > since
         val spaceLayouts = layouts.findBySpace(spaceId)
-        return PullResult(
+        PullResult(
             seq = current,
             fullResync = full,
             lists = changed,
@@ -192,12 +202,12 @@ class SyncService(
             WarningView(warning, find(warning.listId)?.name, by?.let { users.findById(it)?.displayName })
         }
 
-        fun saveTouchedLists() {
-            touched.values.forEach { list ->
-                store.save(list)
-                catalog.recordItemChanges(spaceId, list, appliedChanges[list.id].orEmpty(), context.seq)
-            }
-        }
+        /** Returns the highest purged tombstone seq (0 = none), see [ListStore.saveWithoutPurgeRecord]. */
+        fun saveTouchedLists(): Long = touched.values.maxOfOrNull { list ->
+            val purgedSeq = store.saveWithoutPurgeRecord(list)
+            catalog.recordItemChanges(spaceId, list, appliedChanges[list.id].orEmpty(), context.seq)
+            purgedSeq
+        } ?: 0
     }
 
     companion object {

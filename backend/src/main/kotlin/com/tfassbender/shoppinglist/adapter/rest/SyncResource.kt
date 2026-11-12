@@ -6,7 +6,7 @@ import com.tfassbender.shoppinglist.application.list.SyncOperation
 import com.tfassbender.shoppinglist.application.list.SyncService
 import com.tfassbender.shoppinglist.application.list.WarningView
 import com.tfassbender.shoppinglist.domain.DomainException
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.list.Item
 import com.tfassbender.shoppinglist.domain.list.ItemAspect
 import com.tfassbender.shoppinglist.domain.list.ItemField

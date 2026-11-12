@@ -8,7 +8,7 @@ import com.tfassbender.shoppinglist.application.port.ShoppingListRepository
 import com.tfassbender.shoppinglist.application.port.SpaceRepository
 import com.tfassbender.shoppinglist.application.port.SyncStateRepository
 import com.tfassbender.shoppinglist.application.port.UserRepository
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.list.ChangeContext
 import com.tfassbender.shoppinglist.domain.list.ItemId
 import com.tfassbender.shoppinglist.domain.list.LayoutId

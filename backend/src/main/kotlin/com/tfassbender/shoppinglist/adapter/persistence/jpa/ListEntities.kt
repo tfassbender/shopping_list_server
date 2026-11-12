@@ -1,6 +1,6 @@
 package com.tfassbender.shoppinglist.adapter.persistence.jpa
 
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.list.Item
 import com.tfassbender.shoppinglist.domain.list.ItemAspect
 import com.tfassbender.shoppinglist.domain.list.ItemId

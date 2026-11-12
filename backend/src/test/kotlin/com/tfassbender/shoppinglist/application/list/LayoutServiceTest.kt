@@ -12,7 +12,7 @@ import com.tfassbender.shoppinglist.application.space.CatalogService
 import com.tfassbender.shoppinglist.application.space.SpaceAccess
 import com.tfassbender.shoppinglist.application.space.SpaceLocks
 import com.tfassbender.shoppinglist.domain.DomainException
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.list.ItemId
 import com.tfassbender.shoppinglist.domain.list.LayoutId
 import com.tfassbender.shoppinglist.domain.list.LayoutMode

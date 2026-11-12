@@ -1,6 +1,6 @@
 package com.tfassbender.shoppinglist.domain.space
 
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.user.Language
 
 /**

@@ -1,5 +1,6 @@
 package com.tfassbender.shoppinglist.application.space
 
+import com.tfassbender.shoppinglist.application.auth.UserLocks
 import com.tfassbender.shoppinglist.application.port.SpaceRepository
 import com.tfassbender.shoppinglist.application.port.UserRepository
 import com.tfassbender.shoppinglist.domain.user.UserId
@@ -14,6 +15,7 @@ class AccountDeletionService(
     private val users: UserRepository,
     private val spaces: SpaceRepository,
     private val locks: SpaceLocks,
+    private val userLocks: UserLocks,
 ) {
     fun deleteAccount(userId: UserId) {
         spaces.findByMember(userId).forEach { candidate ->
@@ -25,6 +27,6 @@ class AccountDeletionService(
                 }
             }
         }
-        users.delete(userId)
+        userLocks.withLock(userId) { users.delete(userId) }
     }
 }

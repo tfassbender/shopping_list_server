@@ -51,11 +51,11 @@ class RestExceptionMapperTest {
     }
 
     @Test
-    fun `illegal argument maps to 400`() {
-        val response = mapper.toResponse(IllegalArgumentException("bad"))
+    fun `illegal argument is a server bug, not a client error`() {
+        val response = mapper.toResponse(IllegalArgumentException("A space needs exactly one owner"))
 
-        assertEquals(400, response.status)
-        assertEquals("INVALID_REQUEST", (response.entity as ErrorResponse).code)
+        assertEquals(500, response.status)
+        assertEquals("INTERNAL_ERROR", (response.entity as ErrorResponse).code)
     }
 
     @Test

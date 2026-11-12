@@ -39,9 +39,12 @@ class SpaceService(
 
     fun create(userId: UserId, name: String): Space {
         val space = Space.create(SpaceId(UUID.randomUUID().toString()), name, userId, clock.instant())
-        spaces.save(space)
-        // Default categories and units in the creator's language.
-        catalog.createDefaults(space.id, users.findById(userId)?.settings?.language ?: Language.EN)
+        // One lock (and transaction) for the space and its catalog: no space without categories after a failure.
+        locks.withLock(space.id) {
+            spaces.save(space)
+            // Default categories and units in the creator's language.
+            catalog.createDefaults(space.id, users.findById(userId)?.settings?.language ?: Language.EN)
+        }
         return space
     }
 

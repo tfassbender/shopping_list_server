@@ -3,7 +3,9 @@ package com.tfassbender.shoppinglist.adapter.rest
 import com.fasterxml.jackson.databind.JsonNode
 import com.tfassbender.shoppinglist.application.list.LayoutService
 import com.tfassbender.shoppinglist.application.list.ShoppingListService
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.DomainException
+import com.tfassbender.shoppinglist.domain.ErrorKind
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.list.Item
 import com.tfassbender.shoppinglist.domain.list.ItemField
 import com.tfassbender.shoppinglist.domain.list.ItemId
@@ -140,7 +142,7 @@ class ListResource(
     @Path("/{listId}")
     @Operation(operationId = "getList", summary = "A list with its items")
     fun get(@PathParam("spaceId") spaceId: String, @PathParam("listId") listId: String, @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION, required = false) sort: String?) =
-        toDto(listService.get(currentUser.id(), SpaceId(spaceId), ListId(listId)), sort)
+        toDto(listService.get(currentUser.id(), SpaceId(spaceId), ListId(listId)), layoutToSortBy(spaceId, sort))
 
     @PUT
     @Path("/{listId}/name")
@@ -186,10 +188,13 @@ class ListResource(
         val id = ItemId(itemId)
         val changes = EDITABLE_FIELDS.filter { (json, _) -> body.has(json) }.map { (json, field) ->
             val value = body.get(json)
+            // asText() would turn an object or array into "" and silently clear the field.
+            if (!value.isNull && !value.isTextual) throw invalidRequest("'$json' must be a string or null")
             ListChange.EditItem(id, field, if (value.isNull) null else value.asText())
         }
-        require(changes.isNotEmpty()) { "No editable field given" }
-        return toDto(listService.applyChanges(currentUser.id(), SpaceId(spaceId), ListId(listId), changes), sort)
+        if (changes.isEmpty()) throw invalidRequest("No editable field given")
+        val layoutId = layoutToSortBy(spaceId, sort)
+        return toDto(listService.applyChanges(currentUser.id(), SpaceId(spaceId), ListId(listId), changes), layoutId)
     }
 
     @POST
@@ -228,13 +233,27 @@ class ListResource(
     fun removeChecked(@PathParam("spaceId") spaceId: String, @PathParam("listId") listId: String, @QueryParam("sort") @Parameter(description = SORT_DESCRIPTION, required = false) sort: String?) =
         change(spaceId, listId, sort, ListChange.RemoveChecked())
 
-    private fun change(spaceId: String, listId: String, sort: String?, change: ListChange): ListDto =
-        toDto(listService.apply(currentUser.id(), SpaceId(spaceId), ListId(listId), change), sort)
+    private fun change(spaceId: String, listId: String, sort: String?, change: ListChange): ListDto {
+        val layoutId = layoutToSortBy(spaceId, sort)
+        return toDto(listService.apply(currentUser.id(), SpaceId(spaceId), ListId(listId), change), layoutId)
+    }
 
-    private fun toDto(list: ShoppingList, sort: String?): ListDto {
-        val layoutId = sort?.takeIf { it.isNotBlank() }?.let(::LayoutId) ?: return ListDto.from(list)
+    /**
+     * Checked BEFORE a change is saved: an unknown layout must fail the request, not answer 404 for a
+     * change that was already applied (a client retrying it would then get ITEM_EXISTS).
+     */
+    private fun layoutToSortBy(spaceId: String, sort: String?): LayoutId? {
+        val layoutId = sort?.takeIf { it.isNotBlank() }?.let(::LayoutId) ?: return null
+        layoutService.get(currentUser.id(), SpaceId(spaceId), layoutId)
+        return layoutId
+    }
+
+    private fun toDto(list: ShoppingList, layoutId: LayoutId?): ListDto {
+        if (layoutId == null) return ListDto.from(list)
         return ListDto.from(list, layoutService.sort(currentUser.id(), list, layoutId), layoutId.value)
     }
+
+    private fun invalidRequest(message: String) = DomainException(ErrorKind.VALIDATION, "INVALID_REQUEST", message)
 
     private companion object {
         const val SORT_DESCRIPTION = "Optional layout id: sort the items for this shop"

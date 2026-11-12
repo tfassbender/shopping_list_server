@@ -137,6 +137,24 @@ class ListResourceTest {
     }
 
     @Test
+    fun `a change with an unknown sort layout is refused before it is applied`() {
+        val listId = createList()
+        member.request().queryParam("sort", "no-such-layout").body(mapOf("name" to "Milk")).post("${lists()}/$listId/items")
+            .then().statusCode(404).body("code", equalTo("LAYOUT_NOT_FOUND"))
+        member.request().get("${lists()}/$listId").then().statusCode(200).body("items", hasSize<Any>(0))
+    }
+
+    @Test
+    fun `an edit with a non-text value is a 400 and changes nothing`() {
+        val listId = createList()
+        val milk = addItem(listId, "Milk")
+        member.request().body(mapOf("note" to "fresh")).patch("${lists()}/$listId/items/$milk").then().statusCode(200)
+        member.request().body("""{"note": {}}""").patch("${lists()}/$listId/items/$milk")
+            .then().statusCode(400).body("code", equalTo("INVALID_REQUEST"))
+        member.request().get("${lists()}/$listId").then().body("items[0].note", equalTo("fresh"))
+    }
+
+    @Test
     fun `list summaries count open and checked items`() {
         val listId = createList()
         val milk = addItem(listId, "Milk")

@@ -38,6 +38,7 @@ class AuthService(
     private val users: UserRepository,
     private val emailSender: EmailSender,
     private val tokenIssuer: TokenIssuer,
+    private val locks: UserLocks,
     private val clock: Clock,
     @param:ConfigProperty(name = "shoppinglist.auth.email-disabled", defaultValue = "false")
     val emailDisabled: Boolean,
@@ -103,12 +104,17 @@ class AuthService(
 
     fun verifyEmail(rawToken: String): AuthResult {
         requireEmailEnabled()
-        val user = users.findByVerificationTokenHash(SecretTokens.hash(rawToken))
-        if (user?.emailVerification == null || !user.emailVerification.isValidAt(clock.instant())) {
-            throw DomainException(ErrorKind.VALIDATION, "INVALID_TOKEN", "Invalid or expired verification link")
+        val hash = SecretTokens.hash(rawToken)
+        val found = users.findByVerificationTokenHash(hash) ?: throw invalidToken("verification")
+        val verified = locks.withLock(found.id) {
+            // Re-read under the lock: the token may have been used or replaced meanwhile.
+            val user = users.findById(found.id)
+            val token = user?.emailVerification
+            if (user == null || token == null || token.hash != hash || !token.isValidAt(clock.instant())) {
+                throw invalidToken("verification")
+            }
+            user.copy(emailVerified = true, emailVerification = null).also(users::save)
         }
-        val verified = user.copy(emailVerified = true, emailVerification = null)
-        users.save(verified)
         return AuthResult(verified, tokenIssuer.issue(verified))
     }
 
@@ -124,32 +130,44 @@ class AuthService(
         requireEmailEnabled()
         val user = runCatching { users.findByEmail(Email.of(email)) }.getOrNull() ?: return
         val rawToken = SecretTokens.newRawToken()
-        val updated = user.copy(passwordReset = pendingToken(rawToken, resetTtlMinutes))
-        users.save(updated)
+        val updated = update(user.id) { it.copy(passwordReset = pendingToken(rawToken, resetTtlMinutes)) } ?: return
         emailSender.sendPasswordReset(updated.email, updated.displayName, updated.settings.language, rawToken)
     }
 
     fun resetPassword(rawToken: String, newPassword: String): AuthResult {
         requireEmailEnabled()
         Passwords.validate(newPassword)
-        val user = users.findByPasswordResetTokenHash(SecretTokens.hash(rawToken))
-        if (user?.passwordReset == null || !user.passwordReset.isValidAt(clock.instant())) {
-            throw DomainException(ErrorKind.VALIDATION, "INVALID_TOKEN", "Invalid or expired reset link")
+        val hash = SecretTokens.hash(rawToken)
+        val found = users.findByPasswordResetTokenHash(hash) ?: throw invalidToken("reset")
+        val updated = locks.withLock(found.id) {
+            // Re-read under the lock: a link must work only once, also for two clicks at the same time.
+            val user = users.findById(found.id)
+            val token = user?.passwordReset
+            if (user == null || token == null || token.hash != hash || !token.isValidAt(clock.instant())) {
+                throw invalidToken("reset")
+            }
+            // Following the emailed link proves ownership of the address, so it also verifies it.
+            user.withNewPassword(Passwords.hash(newPassword))
+                .copy(emailVerified = true, emailVerification = null)
+                .also(users::save)
         }
-        // Following the emailed link proves ownership of the address, so it also verifies it.
-        val updated = user.withNewPassword(Passwords.hash(newPassword))
-            .copy(emailVerified = true, emailVerification = null)
-        users.save(updated)
         return AuthResult(updated, tokenIssuer.issue(updated))
     }
 
     private fun sendVerificationMail(user: User): User {
         val rawToken = SecretTokens.newRawToken()
-        val updated = user.copy(emailVerification = pendingToken(rawToken, verificationTtlMinutes))
-        users.save(updated)
+        val updated = update(user.id) { it.copy(emailVerification = pendingToken(rawToken, verificationTtlMinutes)) } ?: return user
         emailSender.sendVerification(updated.email, updated.displayName, updated.settings.language, rawToken)
         return updated
     }
+
+    /** Load-modify-save under the user's lock; null if the user was deleted meanwhile. */
+    private fun update(userId: UserId, change: (User) -> User): User? = locks.withLock(userId) {
+        users.findById(userId)?.let(change)?.also(users::save)
+    }
+
+    private fun invalidToken(kind: String) =
+        DomainException(ErrorKind.VALIDATION, "INVALID_TOKEN", "Invalid or expired $kind link")
 
     private fun pendingToken(rawToken: String, ttlMinutes: Long) =
         PendingToken(SecretTokens.hash(rawToken), clock.instant().plus(Duration.ofMinutes(ttlMinutes)))

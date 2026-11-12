@@ -1,5 +1,6 @@
 package com.tfassbender.shoppinglist.application.auth
 
+import com.tfassbender.shoppinglist.application.port.TransactionRunner
 import com.tfassbender.shoppinglist.application.InMemoryApiTokenRepository
 import com.tfassbender.shoppinglist.application.InMemoryUserRepository
 import com.tfassbender.shoppinglist.application.MutableClock
@@ -22,7 +23,7 @@ class ApiTokenServiceTest {
     private val clock = MutableClock()
     private val users = InMemoryUserRepository()
     private val repository = InMemoryApiTokenRepository()
-    private val service = ApiTokenService(repository, users, clock)
+    private val service = ApiTokenService(repository, users, UserLocks(TransactionRunner.NONE), clock)
     private val anna = UserId("anna-1")
 
     init {

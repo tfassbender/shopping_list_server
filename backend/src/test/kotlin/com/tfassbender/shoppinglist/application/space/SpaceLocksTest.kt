@@ -31,6 +31,12 @@ class SpaceLocksTest {
     }
 
     @Test
+    fun `reads under the lock are not announced`() {
+        assertEquals("read", locks.read(space) { "read" })
+        assertEquals(emptyList(), notified)
+    }
+
+    @Test
     fun `failed changes are not announced`() {
         assertThrows<IllegalStateException> { locks.withLock(space) { error("rejected") } }
         assertEquals(emptyList(), notified)

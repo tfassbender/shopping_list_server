@@ -2,6 +2,8 @@ package com.tfassbender.shoppinglist.domain.list
 
 import com.tfassbender.shoppinglist.domain.DomainException
 import com.tfassbender.shoppinglist.domain.ErrorKind
+import com.tfassbender.shoppinglist.domain.requireClientId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.space.SpaceCatalog
 import com.tfassbender.shoppinglist.domain.space.SpaceId
 import java.time.Instant

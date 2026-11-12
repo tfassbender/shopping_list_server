@@ -3,8 +3,10 @@ package com.tfassbender.shoppinglist.architecture
 import com.tngtech.archunit.core.domain.JavaClasses
 import com.tngtech.archunit.core.importer.ClassFileImporter
 import com.tngtech.archunit.core.importer.ImportOption
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
 import com.tngtech.archunit.library.Architectures.layeredArchitecture
+import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices
 import org.junit.jupiter.api.Test
 
 /**
@@ -32,17 +34,33 @@ class HexagonalArchitectureTest {
     }
 
     @Test
-    fun `domain is free of framework dependencies`() {
-        noClasses().that().resideInAPackage("$BASE_PACKAGE.domain..")
-            .should().dependOnClassesThat().resideInAnyPackage(
-                "io.quarkus..",
-                "io.vertx..",
-                "jakarta..",
-                "com.fasterxml..",
-                "org.eclipse.microprofile..",
+    fun `domain depends only on the JDK, Kotlin and itself`() {
+        // An allow-list, so a new library can't slip into the domain unnoticed.
+        classes().that().resideInAPackage("$BASE_PACKAGE.domain..")
+            .should().onlyDependOnClassesThat().resideInAnyPackage(
+                "java..",
+                "kotlin..",
+                "org.jetbrains.annotations..",
+                "$BASE_PACKAGE.domain..",
             )
             .because("the domain must stay pure Kotlin")
-            .allowEmptyShould(true)
+            .check(productionClasses)
+    }
+
+    @Test
+    fun `domain packages are free of cycles`() {
+        slices().matching("$BASE_PACKAGE.domain.(*)..")
+            .should().beFreeOfCycles()
+            .check(productionClasses)
+    }
+
+    @Test
+    fun `REST resources use application services, not repositories`() {
+        // Permission checks and business rules live in the application services; a resource reading a
+        // repository directly would bypass them.
+        noClasses().that().resideInAPackage("$BASE_PACKAGE.adapter.rest..")
+            .should().dependOnClassesThat().haveSimpleNameEndingWith("Repository")
+            .because("REST adapters go through the application layer")
             .check(productionClasses)
     }
 

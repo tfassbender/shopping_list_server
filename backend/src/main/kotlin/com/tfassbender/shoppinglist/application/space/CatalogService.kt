@@ -2,7 +2,7 @@ package com.tfassbender.shoppinglist.application.space
 
 import com.tfassbender.shoppinglist.application.port.CatalogRepository
 import com.tfassbender.shoppinglist.application.port.SequenceCounter
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.list.Item
 import com.tfassbender.shoppinglist.domain.list.ListChange
 import com.tfassbender.shoppinglist.domain.list.ShoppingList

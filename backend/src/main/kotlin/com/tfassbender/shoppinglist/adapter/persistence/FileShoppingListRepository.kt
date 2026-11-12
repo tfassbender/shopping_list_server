@@ -2,7 +2,7 @@ package com.tfassbender.shoppinglist.adapter.persistence
 
 import com.tfassbender.shoppinglist.application.port.SequenceCounter
 import com.tfassbender.shoppinglist.application.port.ShoppingListRepository
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.list.Item
 import com.tfassbender.shoppinglist.domain.list.ItemAspect
 import com.tfassbender.shoppinglist.domain.list.ItemId

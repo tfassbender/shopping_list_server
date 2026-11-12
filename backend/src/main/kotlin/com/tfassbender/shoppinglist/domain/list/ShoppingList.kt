@@ -2,6 +2,8 @@ package com.tfassbender.shoppinglist.domain.list
 
 import com.tfassbender.shoppinglist.domain.DomainException
 import com.tfassbender.shoppinglist.domain.ErrorKind
+import com.tfassbender.shoppinglist.domain.requireClientId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.space.SpaceId
 import java.time.Instant
 
@@ -16,22 +18,6 @@ value class ListId(val value: String) {
 value class ItemId(val value: String) {
     init {
         requireClientId(value, "item")
-    }
-}
-
-/** Client-generated ids (UUIDs) must be simple tokens: they become file names and URL segments. */
-private val CLIENT_ID = Regex("^[A-Za-z0-9_-]{1,64}$")
-
-internal fun requireClientId(value: String, kind: String) {
-    if (!CLIENT_ID.matches(value)) {
-        throw DomainException(ErrorKind.VALIDATION, "INVALID_ID", "Invalid $kind id: '$value'")
-    }
-}
-
-@JvmInline
-value class CategoryId(val value: String) {
-    init {
-        requireClientId(value, "category")
     }
 }
 

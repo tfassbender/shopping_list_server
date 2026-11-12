@@ -2,7 +2,7 @@ package com.tfassbender.shoppinglist.adapter.rest
 
 import com.tfassbender.shoppinglist.application.port.SequenceCounter
 import com.tfassbender.shoppinglist.application.port.SpaceChangeNotifier
-import com.tfassbender.shoppinglist.application.port.SpaceRepository
+import com.tfassbender.shoppinglist.application.space.SpaceAccess
 import com.tfassbender.shoppinglist.domain.space.SpaceId
 import com.tfassbender.shoppinglist.domain.user.UserId
 import io.smallrye.mutiny.Multi
@@ -22,24 +22,24 @@ import java.time.Duration
 /** One live-update notification. `type` PING keeps idle connections open (proxies close silent ones). */
 data class SpaceEventDto(val type: String, val spaceId: String? = null, val seq: Long? = null)
 
-/**
- * A broadcast event. [formerMembers] are users who just lost access and must still get it (they can't be
- * found via the space's members any more); the field is internal and never sent to clients.
- */
-class BroadcastEvent(val dto: SpaceEventDto, val formerMembers: Set<UserId> = emptySet())
+/** A broadcast event and the users who may receive it (internal, never sent to clients). */
+class BroadcastEvent(val dto: SpaceEventDto, val recipients: Set<UserId>)
 
 /**
- * Broadcasts "space changed" to all open event streams. Each stream filters for the spaces its user is a
- * member of (checked per event, so membership changes take effect at once).
+ * Broadcasts "space changed" to all open event streams. The recipients are resolved once per event (the
+ * members at that moment, so membership changes take effect at once); each stream just filters by them.
  */
 @ApplicationScoped
-class SseSpaceChangeNotifier(private val sequence: SequenceCounter) : SpaceChangeNotifier {
+class SseSpaceChangeNotifier(private val sequence: SequenceCounter, private val access: SpaceAccess) : SpaceChangeNotifier {
     private val processor: BroadcastProcessor<BroadcastEvent> = BroadcastProcessor.create()
 
     override fun spaceChanged(spaceId: SpaceId) {
-        processor.onNext(BroadcastEvent(SpaceEventDto(CHANGED, spaceId.value, sequence.current(spaceId))))
+        val members = access.memberIds(spaceId)
+        if (members.isEmpty()) return
+        processor.onNext(BroadcastEvent(SpaceEventDto(CHANGED, spaceId.value, sequence.current(spaceId)), members))
     }
 
+    /** Users who just lost access can't be found via the members any more, so they are named explicitly. */
     override fun accessLost(spaceId: SpaceId, userIds: Collection<UserId>) {
         if (userIds.isEmpty()) return
         processor.onNext(BroadcastEvent(SpaceEventDto(CHANGED, spaceId.value), userIds.toSet()))
@@ -63,7 +63,6 @@ class SseSpaceChangeNotifier(private val sequence: SequenceCounter) : SpaceChang
 @Tag(name = "Sync")
 class EventResource(
     private val notifier: SseSpaceChangeNotifier,
-    private val spaces: SpaceRepository,
     private val currentUser: CurrentUser,
     @param:ConfigProperty(name = "shoppinglist.events.heartbeat-seconds", defaultValue = "25")
     private val heartbeatSeconds: Long,
@@ -77,12 +76,9 @@ class EventResource(
         // Resolve the user now: the security context is only available while the request is set up.
         val userId = currentUser.id()
         val changes = notifier.events()
-            .filter { event -> userId in event.formerMembers || isMember(userId, event.dto.spaceId) }
+            .filter { event -> userId in event.recipients }
             .map { it.dto }
         val pings = Multi.createFrom().ticks().every(Duration.ofSeconds(heartbeatSeconds)).map { SpaceEventDto(SseSpaceChangeNotifier.PING) }
         return Multi.createBy().merging().streams(changes, pings)
     }
-
-    private fun isMember(userId: UserId, spaceId: String?): Boolean =
-        spaceId != null && spaces.findById(SpaceId(spaceId))?.isMember(userId) == true
 }

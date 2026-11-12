@@ -26,6 +26,7 @@ data class ApiTokenCaller(val userId: UserId, val scope: TokenScope)
 class ApiTokenService(
     private val tokens: ApiTokenRepository,
     private val users: UserRepository,
+    private val locks: UserLocks,
     private val clock: Clock,
 ) {
 
@@ -45,12 +46,12 @@ class ApiTokenService(
             createdAt = now,
             expiresAt = validFor?.let { now.plus(it) },
         )
-        tokens.save(tokens.find(userId).add(token))
+        locks.withLock(userId) { tokens.save(tokens.find(userId).add(token)) }
         return CreatedApiToken(token, rawToken)
     }
 
     fun revoke(userId: UserId, tokenId: ApiTokenId) {
-        tokens.save(tokens.find(userId).revoke(tokenId))
+        locks.withLock(userId) { tokens.save(tokens.find(userId).revoke(tokenId)) }
     }
 
     /** Validates a raw token; null if it is unknown, revoked, expired or its user is gone. */
@@ -63,9 +64,15 @@ class ApiTokenService(
         if (!token.isValidAt(now)) return null
         // Remember the last use, but write at most once per hour (not on every request).
         if (token.lastUsedAt == null || token.lastUsedAt.isBefore(now.minus(LAST_USED_RESOLUTION))) {
-            tokens.save(userTokens.markUsed(token.id, now))
+            markUsed(userId, token.id, now)
         }
         return ApiTokenCaller(userId, token.scope)
+    }
+
+    /** Re-reads under the lock: saving the copy read above could undo a concurrent revoke or create. */
+    private fun markUsed(userId: UserId, tokenId: ApiTokenId, now: java.time.Instant) = locks.withLock(userId) {
+        val current = tokens.find(userId)
+        if (current.tokens.any { it.id == tokenId }) tokens.save(current.markUsed(tokenId, now))
     }
 
     private fun parseUserId(rawToken: String): UserId? {

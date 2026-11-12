@@ -1,7 +1,7 @@
 package com.tfassbender.shoppinglist.adapter.rest
 
 import com.tfassbender.shoppinglist.application.list.LayoutService
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.list.LayoutId
 import com.tfassbender.shoppinglist.domain.list.LayoutMode
 import com.tfassbender.shoppinglist.domain.list.ListId

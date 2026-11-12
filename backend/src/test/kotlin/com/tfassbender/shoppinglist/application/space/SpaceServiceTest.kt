@@ -1,5 +1,7 @@
 package com.tfassbender.shoppinglist.application.space
 
+import com.tfassbender.shoppinglist.application.auth.UserLocks
+import com.tfassbender.shoppinglist.application.port.TransactionRunner
 import com.tfassbender.shoppinglist.application.InMemoryCatalogRepository
 import com.tfassbender.shoppinglist.application.InMemorySpaceRepository
 import com.tfassbender.shoppinglist.application.InMemoryUserRepository
@@ -207,7 +209,7 @@ class SpaceServiceTest {
         val foreign = service.create(anna, "Anna's")
         service.acceptInvite(owner, service.createInvite(anna, foreign.id).rawToken)
 
-        AccountDeletionService(users, spaces, locks).deleteAccount(owner)
+        AccountDeletionService(users, spaces, locks, UserLocks(TransactionRunner.NONE)).deleteAccount(owner)
 
         assertEquals(anna, spaces.findById(shared.id)!!.owner.userId)
         assertNull(spaces.findById(lonely.id))

@@ -14,6 +14,7 @@ import jakarta.enterprise.context.ApplicationScoped
 class AccountService(
     private val users: UserRepository,
     private val tokenIssuer: TokenIssuer,
+    private val locks: UserLocks,
 ) {
 
     fun me(userId: UserId): User = load(userId)
@@ -25,13 +26,13 @@ class AccountService(
 
     /** Changes the password and logs out all other sessions; the returned session replaces the current one. */
     fun changePassword(userId: UserId, currentPassword: String, newPassword: String): AuthResult {
-        val user = load(userId)
-        if (!Passwords.matches(currentPassword, user.passwordHash)) {
-            throw DomainException(ErrorKind.VALIDATION, "WRONG_PASSWORD", "Current password is incorrect")
+        val updated = update(userId) { user ->
+            if (!Passwords.matches(currentPassword, user.passwordHash)) {
+                throw DomainException(ErrorKind.VALIDATION, "WRONG_PASSWORD", "Current password is incorrect")
+            }
+            Passwords.validate(newPassword)
+            user.withNewPassword(Passwords.hash(newPassword))
         }
-        Passwords.validate(newPassword)
-        val updated = user.withNewPassword(Passwords.hash(newPassword))
-        users.save(updated)
         return AuthResult(updated, tokenIssuer.issue(updated))
     }
 
@@ -41,10 +42,10 @@ class AccountService(
         return AuthResult(updated, tokenIssuer.issue(updated))
     }
 
-    private fun update(userId: UserId, change: (User) -> User): User {
+    private fun update(userId: UserId, change: (User) -> User): User = locks.withLock(userId) {
         val updated = change(load(userId))
         users.save(updated)
-        return updated
+        updated
     }
 
     private fun load(userId: UserId): User = users.findById(userId)

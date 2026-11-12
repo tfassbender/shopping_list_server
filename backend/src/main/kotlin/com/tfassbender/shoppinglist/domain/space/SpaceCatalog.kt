@@ -2,8 +2,15 @@ package com.tfassbender.shoppinglist.domain.space
 
 import com.tfassbender.shoppinglist.domain.DomainException
 import com.tfassbender.shoppinglist.domain.ErrorKind
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.requireClientId
 import java.time.Instant
+
+@JvmInline
+value class CategoryId(val value: String) {
+    init {
+        requireClientId(value, "category")
+    }
+}
 
 data class Category(val id: CategoryId, val name: String, val color: String) {
     init {
@@ -195,13 +202,14 @@ data class SpaceCatalog(
     private fun updateHistory(name: String, now: Instant, update: (HistoryEntry?) -> HistoryEntry): SpaceCatalog {
         val key = normalize(name)
         if (key.isEmpty()) return this
-        var updated = history + (key to update(history[key]))
-        if (updated.size > MAX_HISTORY) {
-            // Forget the least relevant entries so the file stays small.
-            updated = updated.entries.sortedWith(compareByDescending<Map.Entry<String, HistoryEntry>> { it.value.usageCount }.thenByDescending { it.value.lastUsed })
-                .take(MAX_HISTORY).associate { it.key to it.value }
+        var others = history - key
+        if (others.size >= MAX_HISTORY) {
+            // Forget the least relevant other entries so the file stays small. The entry being updated is
+            // always kept: a new item starts with usage 0 and would otherwise be dropped at once.
+            others = others.entries.sortedWith(compareByDescending<Map.Entry<String, HistoryEntry>> { it.value.usageCount }.thenByDescending { it.value.lastUsed })
+                .take(MAX_HISTORY - 1).associate { it.key to it.value }
         }
-        return copy(history = updated)
+        return copy(history = others + (key to update(history[key])))
     }
 
     private fun requireCategory(id: CategoryId): Category = category(id)

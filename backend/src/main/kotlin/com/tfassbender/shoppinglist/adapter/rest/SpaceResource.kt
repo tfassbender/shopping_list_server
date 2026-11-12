@@ -152,7 +152,8 @@ class SpaceResource(
     @ResponseStatus(201)
     @APIResponse(responseCode = "201", description = "Created", content = [Content(schema = Schema(implementation = CreatedInviteDto::class))])
     fun createInvite(@PathParam("spaceId") spaceId: String, request: CreateInviteRequest?): CreatedInviteDto {
-        val validFor = Duration.ofHours(request?.expiresInHours ?: 24)
+        // Capped before converting: a huge number would overflow (500) instead of failing validation (400).
+        val validFor = Duration.ofHours((request?.expiresInHours ?: 24).coerceIn(-1L, 1_000_000L))
         val created = spaceService.createInvite(currentUser.id(), SpaceId(spaceId), validFor)
         return toDto(created)
     }

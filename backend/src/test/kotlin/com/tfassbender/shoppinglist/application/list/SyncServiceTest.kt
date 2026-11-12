@@ -8,6 +8,7 @@ import com.tfassbender.shoppinglist.application.InMemorySpaceRepository
 import com.tfassbender.shoppinglist.application.InMemorySyncStateRepository
 import com.tfassbender.shoppinglist.application.InMemoryUserRepository
 import com.tfassbender.shoppinglist.application.MutableClock
+import com.tfassbender.shoppinglist.application.port.ShoppingListRepository
 import com.tfassbender.shoppinglist.application.space.CatalogService
 import com.tfassbender.shoppinglist.application.space.SpaceAccess
 import com.tfassbender.shoppinglist.application.space.SpaceLocks
@@ -19,6 +20,7 @@ import com.tfassbender.shoppinglist.domain.list.LayoutMode
 import com.tfassbender.shoppinglist.domain.list.ListChange
 import com.tfassbender.shoppinglist.domain.list.ListId
 import com.tfassbender.shoppinglist.domain.list.MergeWarning
+import com.tfassbender.shoppinglist.domain.list.ShoppingList
 import com.tfassbender.shoppinglist.domain.space.Invite
 import com.tfassbender.shoppinglist.domain.space.InviteId
 import com.tfassbender.shoppinglist.domain.space.Space
@@ -105,6 +107,39 @@ class SyncServiceTest {
 
             assertEquals(listOf(ChangeStatus.DUPLICATE, ChangeStatus.DUPLICATE), second.results.map { it.status })
             assertEquals(2, lists.get(anna, spaceId, listId).activeItems.size)
+        }
+
+        @Test
+        fun `a batch that only repeats applied changes takes no new seq`() {
+            val batch = listOf(change(ListChange.AddItem(ItemId("bread"), "Bread"), "add-bread"))
+            val first = sync.push(bob, spaceId, current(), batch)
+
+            val resent = sync.push(bob, spaceId, current(), batch)
+            val empty = sync.push(bob, spaceId, current(), emptyList())
+
+            assertEquals(first.seq, resent.seq)
+            assertEquals(first.seq, empty.seq)
+            assertEquals(first.seq, current())
+        }
+
+        @Test
+        fun `if saving the lists fails, the change ids are not remembered and a resend applies them`() {
+            var failSaves = true
+            val failingRepo = object : ShoppingListRepository by listRepo {
+                override fun save(list: ShoppingList) {
+                    if (failSaves) throw java.io.IOException("disk full")
+                    listRepo.save(list)
+                }
+            }
+            val failingSync = SyncService(failingRepo, ListStore(failingRepo, syncStates, clock), syncStates, sequence, catalogs, layoutRepo, users, catalog, access, locks, clock)
+            val batch = listOf(change(ListChange.AddItem(ItemId("bread"), "Bread"), "add-bread"))
+
+            assertThrows<java.io.IOException> { failingSync.push(bob, spaceId, current(), batch) }
+            failSaves = false
+            val resent = failingSync.push(bob, spaceId, current(), batch)
+
+            assertEquals(listOf(ChangeStatus.APPLIED), resent.results.map { it.status })
+            assertNotNull(lists.get(anna, spaceId, listId).item(ItemId("bread")))
         }
 
         @Test

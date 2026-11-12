@@ -98,7 +98,8 @@ for backend dev mode and tests (Quarkus Dev Services start PostgreSQL in a conta
 - **Everything (backend + frontend tests, JAR with SPA):** `./gradlew build -PwithFrontend`
   (without `-PwithFrontend` the backend JAR contains no web app)
 - **Run the packaged app:** `java -jar backend/build/quarkus-app/quarkus-run.jar` → http://localhost:4723
-  (Postgres from `SHOPPINGLIST_DB_URL` / `_USER` / `_PASSWORD`; `-Dshoppinglist.storage=file` runs without a database)
+  (Postgres from `SHOPPINGLIST_DB_URL` / `_USER` / `_PASSWORD`; `-Dshoppinglist.storage=file` runs without a database;
+  the JWT key file from `SHOPPINGLIST_JWT_KEY_LOCATION` - required in prod, no fallback to the dev key)
 - **Backend dev (live reload, port 4723):** `./gradlew :backend:quarkusDev` (dev database persisted in
   `backend/data/dev-postgres`)
 - **Backend tests:** `./gradlew :backend:test` (on Postgres; `-Pstorage=file` runs them on the file storage,

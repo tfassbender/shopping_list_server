@@ -1,5 +1,6 @@
 package com.tfassbender.shoppinglist.application.auth
 
+import com.tfassbender.shoppinglist.application.port.TransactionRunner
 import com.tfassbender.shoppinglist.application.FakeTokenIssuer
 import com.tfassbender.shoppinglist.application.InMemoryUserRepository
 import com.tfassbender.shoppinglist.application.MutableClock
@@ -19,8 +20,8 @@ class AccountServiceTest {
     private val users = InMemoryUserRepository()
     private val clock = MutableClock()
     private val tokens = FakeTokenIssuer(clock)
-    private val auth = AuthService(users, RecordingEmailSender(), tokens, clock, true, 60, 30)
-    private val accounts = AccountService(users, tokens)
+    private val auth = AuthService(users, RecordingEmailSender(), tokens, UserLocks(TransactionRunner.NONE), clock, true, 60, 30)
+    private val accounts = AccountService(users, tokens, UserLocks(TransactionRunner.NONE))
     private val user = auth.register(RegisterCommand("anna@example.com", "Anna", "secret-password")).user
 
     @Test

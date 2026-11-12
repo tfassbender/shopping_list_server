@@ -1,5 +1,6 @@
 package com.tfassbender.shoppinglist.application.auth
 
+import com.tfassbender.shoppinglist.application.port.TransactionRunner
 import com.tfassbender.shoppinglist.application.FakeTokenIssuer
 import com.tfassbender.shoppinglist.application.InMemoryUserRepository
 import com.tfassbender.shoppinglist.application.MutableClock
@@ -23,7 +24,7 @@ class AuthServiceTest {
     private val clock = MutableClock()
 
     private fun service(emailDisabled: Boolean) =
-        AuthService(users, mails, FakeTokenIssuer(clock), clock, emailDisabled, verificationTtlMinutes = 60, resetTtlMinutes = 30)
+        AuthService(users, mails, FakeTokenIssuer(clock), UserLocks(TransactionRunner.NONE), clock, emailDisabled, verificationTtlMinutes = 60, resetTtlMinutes = 30)
 
     private val command = RegisterCommand("  Anna@Example.com ", "Anna", "secret-password", Language.DE)
 

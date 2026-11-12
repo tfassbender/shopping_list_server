@@ -22,8 +22,9 @@ import kotlin.concurrent.withLock
  * Each locked operation also runs in one storage transaction (nested operations join it). It commits
  * while the lock is still held, so the next request on the space sees the saved state.
  *
- * Every locked operation modifies the space, so this is also the one place that announces changes:
+ * [withLock] is for operations that modify the space, so it is also the one place that announces changes:
  * when the outermost lock is released after success (the data is committed by then), [notifier] is told.
+ * [read] is for reads that must see a consistent state (no half-written change) and announces nothing.
  */
 @ApplicationScoped
 class SpaceLocks @Inject constructor(
@@ -45,6 +46,14 @@ class SpaceLocks @Inject constructor(
         }
         return result
     }
+
+    /**
+     * Runs a read under the lock without announcing a change. Needed by the sync pull: with file storage
+     * the sequence counter is written before the data, so an unlocked read could report a seq whose
+     * changes it didn't see yet - the client would then never get them.
+     */
+    fun <T> read(spaceId: SpaceId, action: () -> T): T =
+        locks.computeIfAbsent(spaceId) { ReentrantLock() }.withLock { transactions.inTransaction(action) }
 }
 
 /**
@@ -69,4 +78,7 @@ class SpaceAccess(private val spaces: SpaceRepository) {
         }
         return space
     }
+
+    /** Current members of a space (empty if it doesn't exist), e.g. to address a live update. */
+    fun memberIds(spaceId: SpaceId): Set<UserId> = spaces.findById(spaceId)?.members?.map { it.userId }?.toSet().orEmpty()
 }

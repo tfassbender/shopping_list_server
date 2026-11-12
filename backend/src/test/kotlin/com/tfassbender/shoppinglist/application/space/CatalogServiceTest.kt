@@ -9,7 +9,7 @@ import com.tfassbender.shoppinglist.application.list.ListStore
 import com.tfassbender.shoppinglist.application.MutableClock
 import com.tfassbender.shoppinglist.application.list.ShoppingListService
 import com.tfassbender.shoppinglist.domain.DomainException
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.list.ItemField
 import com.tfassbender.shoppinglist.domain.list.ItemId
 import com.tfassbender.shoppinglist.domain.list.ListChange

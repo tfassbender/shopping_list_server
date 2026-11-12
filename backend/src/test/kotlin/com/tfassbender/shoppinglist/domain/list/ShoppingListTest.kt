@@ -1,5 +1,6 @@
 package com.tfassbender.shoppinglist.domain.list
 
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.DomainException
 import com.tfassbender.shoppinglist.domain.list.ListChange.AddItem
 import com.tfassbender.shoppinglist.domain.list.ListChange.CheckItem

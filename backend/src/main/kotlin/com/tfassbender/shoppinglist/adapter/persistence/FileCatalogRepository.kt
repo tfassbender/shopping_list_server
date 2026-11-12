@@ -1,7 +1,7 @@
 package com.tfassbender.shoppinglist.adapter.persistence
 
 import com.tfassbender.shoppinglist.application.port.CatalogRepository
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.space.Category
 import com.tfassbender.shoppinglist.domain.space.HistoryEntry
 import com.tfassbender.shoppinglist.domain.space.SpaceCatalog

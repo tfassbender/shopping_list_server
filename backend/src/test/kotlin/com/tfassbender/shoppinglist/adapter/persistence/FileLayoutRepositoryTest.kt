@@ -1,6 +1,6 @@
 package com.tfassbender.shoppinglist.adapter.persistence
 
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.list.LayoutId
 import com.tfassbender.shoppinglist.domain.list.LayoutMode
 import com.tfassbender.shoppinglist.domain.list.ListId

@@ -1,7 +1,7 @@
 package com.tfassbender.shoppinglist.domain.space
 
 import com.tfassbender.shoppinglist.domain.DomainException
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.user.Language
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -143,6 +143,16 @@ class SpaceCatalogTest {
             assertEquals(SpaceCatalog.MAX_HISTORY, after.history.size)
             assertEquals(9, after.historyFor("New")!!.seq)
             assertEquals(9, after.seq)
+        }
+
+        @Test
+        fun `a new entry is kept even when every remembered item was bought`() {
+            val full = (1..SpaceCatalog.MAX_HISTORY).fold(catalog) { c, i -> c.countUsage("Item $i", null, null, t0) }
+
+            val after = full.learn("New", null, null, t0.plusSeconds(1))
+
+            assertEquals(SpaceCatalog.MAX_HISTORY, after.history.size)
+            assertEquals(0, after.historyFor("New")!!.usageCount)
         }
 
         @Test

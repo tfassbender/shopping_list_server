@@ -71,7 +71,7 @@ class ApiTokenResource(
     @ResponseStatus(201)
     @APIResponse(responseCode = "201", description = "Created", content = [Content(schema = Schema(implementation = CreatedApiTokenDto::class))])
     fun create(request: CreateApiTokenRequest): CreatedApiTokenDto {
-        val created = apiTokens.create(currentUser.id(), request.name, request.scope, request.expiresInDays?.let(Duration::ofDays))
+        val created = apiTokens.create(currentUser.id(), request.name, request.scope, request.expiresInDays?.let { Duration.ofDays(it.coerceIn(-1L, 1_000_000L)) })
         return CreatedApiTokenDto(ApiTokenDto.from(created.token), created.rawToken)
     }
 

@@ -14,7 +14,8 @@ import java.util.UUID
 /**
  * The single place where exceptions become JSON error responses, so the inner layers stay free of HTTP:
  * - [DomainException] → status derived from its [ErrorKind], with its stable code;
- * - [IllegalArgumentException] (malformed request) → 400 `INVALID_REQUEST`;
+ * - an [IllegalArgumentException] is NOT treated as a client error: it comes from a broken invariant or
+ *   corrupt data (a bug), so it is logged as a 500. Invalid input is reported with a [DomainException];
  * - framework [WebApplicationException]s (unknown route, missing auth, ...) → their own status, JSON body;
  * - anything else → 500 `INTERNAL_ERROR`, logged under an error id. Internal details only reach the client
  *   in dev mode (`shoppinglist.errors.include-stack-trace`).
@@ -29,7 +30,6 @@ class RestExceptionMapper(
 
     override fun toResponse(exception: Throwable): Response = when (exception) {
         is DomainException -> error(statusFor(exception.kind), exception.code, exception.message)
-        is IllegalArgumentException -> error(Response.Status.BAD_REQUEST.statusCode, "INVALID_REQUEST", exception.message)
         is WebApplicationException -> frameworkError(exception)
         else -> internalError(exception)
     }

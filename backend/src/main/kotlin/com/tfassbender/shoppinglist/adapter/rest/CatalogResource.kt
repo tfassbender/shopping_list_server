@@ -1,7 +1,7 @@
 package com.tfassbender.shoppinglist.adapter.rest
 
 import com.tfassbender.shoppinglist.application.space.CatalogService
-import com.tfassbender.shoppinglist.domain.list.CategoryId
+import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.space.HistoryEntry
 import com.tfassbender.shoppinglist.domain.space.SpaceCatalog
 import com.tfassbender.shoppinglist.domain.space.SpaceId
