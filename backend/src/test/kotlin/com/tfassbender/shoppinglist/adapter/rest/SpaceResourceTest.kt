@@ -2,6 +2,7 @@ package com.tfassbender.shoppinglist.adapter.rest
 
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.RestAssured.given
+import org.hamcrest.Matchers.contains
 import org.hamcrest.Matchers.containsInAnyOrder
 import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.hasSize
@@ -35,6 +36,17 @@ class SpaceResourceTest {
             .then().statusCode(200).body("name", equalTo("Family"))
         owner.request().delete("/api/spaces/$spaceId").then().statusCode(204)
         owner.request().get("/api/spaces/$spaceId").then().statusCode(404)
+    }
+
+    @Test
+    fun `the user's own order of spaces is used for the space list`() {
+        val owner = TestUsers.register()
+        val home = createSpace(owner, "Home")
+        val work = createSpace(owner, "Work")
+
+        owner.request().body(mapOf("spaceIds" to listOf(work, home))).put("/api/spaces/order")
+            .then().statusCode(200).body("name", contains("Work", "Home"))
+        owner.request().get("/api/spaces").then().statusCode(200).body("name", contains("Work", "Home"))
     }
 
     @Test

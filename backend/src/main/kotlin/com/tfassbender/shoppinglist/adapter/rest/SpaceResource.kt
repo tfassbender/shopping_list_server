@@ -52,6 +52,9 @@ data class InviteDto(val id: String, val createdAt: Instant, val expiresAt: Inst
     }
 }
 
+/** Space ids in the wanted order; unknown ids are ignored, missing spaces come after the listed ones. */
+data class SpaceOrderRequest(val spaceIds: List<String>)
+
 /** The raw token and the full link are only returned here, once. */
 data class CreatedInviteDto(val invite: InviteDto, val token: String, val url: String)
 
@@ -72,6 +75,17 @@ class SpaceResource(
     fun list(): List<SpaceDto> {
         val me = currentUser.id()
         return spaceService.listMine(me).map { SpaceDto.from(it, me) }
+    }
+
+    @PUT
+    @Path("/order")
+    @Operation(
+        operationId = "reorderSpaces",
+        summary = "Set the current user's own order of their spaces (used by the space list); returns the spaces in the new order",
+    )
+    fun reorder(request: SpaceOrderRequest): List<SpaceDto> {
+        val me = currentUser.id()
+        return spaceService.reorder(me, request.spaceIds.map(::SpaceId)).map { SpaceDto.from(it, me) }
     }
 
     @POST

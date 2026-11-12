@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AppRoutes } from '../../App'
+import { layoutRowsVertically, moveWithKeyboard } from '../../test/dragAndDrop'
 import { mockApi, sentBodies, testUser } from '../../test/mockApi'
 import { loginForTest, renderWithProviders } from '../../test/render'
 
@@ -27,6 +28,31 @@ describe('spaces', () => {
     expect(await screen.findByText(/^0 lists · 3 members ·/)).toBeInTheDocument()
     // the avatar shows the whole emoji, not half of it
     expect(screen.getByText('\u{1F34E}')).toBeInTheDocument()
+  })
+
+  it('reorders the spaces by dragging the handle and saves the order', async () => {
+    layoutRowsVertically()
+    const office = { ...space, id: 's2', name: 'Office' }
+    const spy = mockApi({
+      'GET /api/users/me': testUser,
+      'GET /api/spaces': [space, office],
+      'PUT /api/spaces/order': [office, space],
+    })
+    renderWithProviders(<AppRoutes />, '/spaces')
+
+    expect(await screen.findByText(/Drag ⠿ to change the order/)).toBeInTheDocument()
+    await moveWithKeyboard(screen.getByRole('button', { name: 'Move Home' }), 'ArrowDown', 1)
+
+    await waitFor(() => expect(sentBodies(spy, 'PUT', '/api/spaces/order')).toEqual([{ spaceIds: ['s2', 's1'] }]))
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual([expect.stringContaining('Office'), expect.stringContaining('Home')])
+  })
+
+  it('shows no drag handles with a single space', async () => {
+    mockApi({ 'GET /api/users/me': testUser, 'GET /api/spaces': [space] })
+    renderWithProviders(<AppRoutes />, '/spaces')
+
+    expect(await screen.findByText('Home')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Move Home' })).not.toBeInTheDocument()
   })
 
   it('lists spaces and creates a new one', async () => {

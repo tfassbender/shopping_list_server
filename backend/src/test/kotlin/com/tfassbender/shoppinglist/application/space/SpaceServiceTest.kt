@@ -27,7 +27,7 @@ class SpaceServiceTest {
     private val locks = SpaceLocks()
     private val notifier = RecordingNotifier()
     private val catalogs = InMemoryCatalogRepository()
-    private val service = SpaceService(spaces, users, SpaceAccess(spaces), locks, clock, CatalogService(catalogs, com.tfassbender.shoppinglist.application.InMemorySequenceCounter(), SpaceAccess(spaces), locks, clock), notifier)
+    private val service = SpaceService(spaces, users, SpaceAccess(spaces), locks, clock, CatalogService(catalogs, com.tfassbender.shoppinglist.application.InMemorySequenceCounter(), SpaceAccess(spaces), locks, clock), notifier, UserLocks(TransactionRunner.NONE))
 
     private val owner = user("owner", "Olga")
     private val anna = user("anna", "Anna")
@@ -49,6 +49,35 @@ class SpaceServiceTest {
         service.create(anna, "Anna's")
 
         assertEquals(listOf("home", "Work"), service.listMine(owner).map { it.name })
+    }
+
+    @Test
+    fun `each user orders their spaces - unordered ones follow by name`() {
+        val work = service.create(owner, "Work")
+        val home = service.create(owner, "Home")
+        val club = service.create(owner, "Club")
+        join(work.id, anna)
+        join(home.id, anna)
+
+        assertEquals(listOf("Work", "Club", "Home"), service.reorder(owner, listOf(work.id, club.id, home.id)).map { it.name })
+        assertEquals(listOf("Work", "Club", "Home"), service.listMine(owner).map { it.name })
+        // the order is personal: Anna still sees hers by name
+        assertEquals(listOf("Home", "Work"), service.listMine(anna).map { it.name })
+
+        // a space created later comes after the ordered ones
+        service.create(owner, "Attic")
+        assertEquals(listOf("Work", "Club", "Home", "Attic"), service.listMine(owner).map { it.name })
+    }
+
+    @Test
+    fun `reordering ignores spaces the user is not a member of and duplicates`() {
+        val work = service.create(owner, "Work")
+        val home = service.create(owner, "Home")
+        val annas = service.create(anna, "Anna's")
+
+        service.reorder(owner, listOf(home.id, annas.id, home.id, work.id))
+
+        assertEquals(listOf(home.id.value, work.id.value), users.findById(owner)!!.spaceOrder)
     }
 
     @Test

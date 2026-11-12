@@ -76,6 +76,7 @@ abstract class RepositoryContract {
         sessionVersion = 3,
         emailVerification = PendingToken("vhash-$name-$run", t0.plusSeconds(3600)),
         passwordReset = PendingToken("rhash-$name-$run", t0.plusSeconds(1800)),
+        spaceOrder = listOf("s2-$run", "s1-$run"),
     )
 
     private fun savedSpace(owner: UserId = UserId(id("owner"))): Space =
@@ -89,7 +90,10 @@ abstract class RepositoryContract {
         users.save(user)
         assertEquals(user, users.findById(user.id))
 
-        val changed = user.copy(displayName = "Anna B.", emailVerified = true, emailVerification = null, passwordReset = null, sessionVersion = 4)
+        val changed = user.copy(
+            displayName = "Anna B.", emailVerified = true, emailVerification = null, passwordReset = null, sessionVersion = 4,
+            spaceOrder = listOf("s1-$run", "s3-$run", "s2-$run"),
+        )
         users.save(changed)
         assertEquals(changed, users.findById(user.id))
     }

@@ -68,6 +68,11 @@ data class User(
     val sessionVersion: Int = 0,
     val emailVerification: PendingToken? = null,
     val passwordReset: PendingToken? = null,
+    /**
+     * Ids of the user's spaces in the order the user chose (personal: members of a shared space order
+     * their spaces differently). Plain strings, because `domain.space` already depends on this package.
+     */
+    val spaceOrder: List<String> = emptyList(),
 ) {
     init {
         validateDisplayName(displayName)

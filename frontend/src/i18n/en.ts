@@ -271,6 +271,7 @@ export const en = {
   'shop.noShops': 'No shops yet. A shop sorts the list in the order you walk through it.',
   'shop.manage': 'Manage shops',
   'spaces.explanation': 'A space holds lists, categories and shops. Everyone in a space sees and edits the same lists.',
+  'spaces.orderHint': 'Drag ⠿ to change the order of your spaces - the start page shows them in this order too.',
   'spaces.new': 'New space',
   'spaces.summary': '{lists} · {members}',
   'spaces.lists.one': '1 list',

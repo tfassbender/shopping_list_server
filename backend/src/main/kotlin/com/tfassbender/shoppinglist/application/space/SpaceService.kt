@@ -1,6 +1,7 @@
 package com.tfassbender.shoppinglist.application.space
 
 import com.tfassbender.shoppinglist.application.auth.SecretTokens
+import com.tfassbender.shoppinglist.application.auth.UserLocks
 import com.tfassbender.shoppinglist.application.port.SpaceChangeNotifier
 import com.tfassbender.shoppinglist.application.port.SpaceRepository
 import com.tfassbender.shoppinglist.application.port.UserRepository
@@ -35,6 +36,7 @@ class SpaceService(
     private val clock: Clock,
     private val catalog: CatalogService,
     private val notifier: SpaceChangeNotifier,
+    private val userLocks: UserLocks,
 ) {
 
     fun create(userId: UserId, name: String): Space {
@@ -48,7 +50,30 @@ class SpaceService(
         return space
     }
 
-    fun listMine(userId: UserId): List<Space> = spaces.findByMember(userId).sortedBy { it.name.lowercase() }
+    /** The user's spaces in their own order (see [reorder]); spaces not ordered yet follow by name. */
+    fun listMine(userId: UserId): List<Space> =
+        inOrder(spaces.findByMember(userId), users.findById(userId)?.spaceOrder.orEmpty())
+
+    /**
+     * Stores the user's order of their spaces. Lenient on purpose: ids of spaces the user isn't a member of
+     * (e.g. left on another device meanwhile) are dropped, and spaces missing in [order] (e.g. joined
+     * meanwhile) simply come after the ordered ones.
+     */
+    fun reorder(userId: UserId, order: List<SpaceId>): List<Space> {
+        val mine = spaces.findByMember(userId)
+        val memberOf = mine.map { it.id.value }.toSet()
+        val cleaned = order.map { it.value }.distinct().filter { it in memberOf }
+        userLocks.withLock(userId) {
+            val user = users.findById(userId) ?: throw DomainException(ErrorKind.NOT_FOUND, "USER_NOT_FOUND", "No user ${userId.value}")
+            users.save(user.copy(spaceOrder = cleaned))
+        }
+        return inOrder(mine, cleaned)
+    }
+
+    private fun inOrder(spaces: List<Space>, order: List<String>): List<Space> {
+        val position = order.withIndex().associate { it.value to it.index }
+        return spaces.sortedWith(compareBy({ position[it.id.value] ?: Int.MAX_VALUE }, { it.name.lowercase() }))
+    }
 
     fun get(userId: UserId, spaceId: SpaceId): Space = access.requireMember(spaceId, userId)
 

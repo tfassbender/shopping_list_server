@@ -69,7 +69,7 @@ classDiagram
 | `ShoppingList` | One list and its items, merge rules | shared | `shopping_lists`, `items`, `item_stamps` | `spaces/<spaceId>/lists/<listId>.json` |
 | `ShopLayout` | Walking order through one shop | shared | `shop_layouts`, `layout_category_order`, `layout_item_order`, `layout_lists` | `spaces/<spaceId>/layouts/<layoutId>.json` |
 | `SyncState` | Idempotency of change ids, tombstone purge horizon | shared, 1 per space | `sync_states`, `sync_applied_changes` | `spaces/<spaceId>/sync.json` |
-| `User` | Account, credentials, settings | personal | `users` | `users/<userId>/user.json` |
+| `User` | Account, credentials, settings, order of the user's spaces | personal | `users`, `user_space_order` | `users/<userId>/user.json` |
 | `UserApiTokens` | The user's API tokens for AI agents/scripts | personal, 1 per user | `api_tokens` | `users/<userId>/api-tokens.json` |
 
 Not an aggregate but part of the stored state: the **space sequence counter** (table `space_sequences`,
@@ -101,6 +101,7 @@ classDiagram
             Int sessionVersion
             PendingToken? emailVerification
             PendingToken? passwordReset
+            List~String~ spaceOrder
         }
         class UserSettings {
             <<value object>>
@@ -167,6 +168,9 @@ classDiagram
   password-reset tokens (`PendingToken`, with expiry).
 - `sessionVersion` is embedded in every issued JWT. Incrementing it (password change/reset, "log out
   everywhere") invalidates all earlier sessions.
+- `spaceOrder`: ids of the user's spaces in the order the user chose (personal - members of a shared
+  space sort differently). Plain strings, because `domain.space` already depends on `domain.user`; ids of
+  spaces left or deleted meanwhile are ignored and dropped on the next reorder.
 - `settings` are personal preferences that apply on every client (web, Android). The `language` also picks
   the default categories and units of a space the user creates (`CatalogDefaults`).
 

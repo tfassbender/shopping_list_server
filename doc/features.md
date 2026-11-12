@@ -84,6 +84,9 @@ members only see the display name.
 - Contains everything: lists, shop layouts, categories, units, item history, ...
 - **Exception:** API tokens and the account settings are personal (per user), never shared.
 - A user can own and be member of several spaces.
+- **Order of spaces:** each user sorts their spaces by drag and drop on the spaces page (personal, stored
+  on the server, `PUT /api/spaces/order`). The space list and the start page use it; spaces not sorted
+  yet (e.g. joined later) come after the sorted ones, by name.
 
 **Roles:** exactly two per space – **owner** (exactly one) and **member**.
 

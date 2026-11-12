@@ -42,6 +42,8 @@ export const spacesApi = {
   create: (name: string) => api.post<Space>('/api/spaces', { name }),
   rename: (id: string, name: string) => api.put<Space>(`/api/spaces/${id}/name`, { name }),
   delete: (id: string) => api.delete(`/api/spaces/${id}`),
+  /** The user's own order of their spaces (also used by the start page and the Android app). */
+  reorder: (spaceIds: string[]) => api.put<Space[]>('/api/spaces/order', { spaceIds }),
   members: (id: string) => api.get<Member[]>(`/api/spaces/${id}/members`),
   removeMember: (id: string, userId: string) => api.delete(`/api/spaces/${id}/members/${userId}`),
   leave: (id: string) => api.post<void>(`/api/spaces/${id}/leave`),

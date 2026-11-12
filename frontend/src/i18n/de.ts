@@ -270,6 +270,7 @@ export const de: Record<MessageKey, string> = {
   'shop.noShops': 'Noch keine Geschäfte. Ein Geschäft sortiert die Liste in der Reihenfolge deines Wegs.',
   'shop.manage': 'Geschäfte verwalten',
   'spaces.explanation': 'Ein Bereich enthält Listen, Kategorien und Geschäfte. Alle im Bereich sehen und bearbeiten dieselben Listen.',
+  'spaces.orderHint': 'Ziehe ⠿, um die Reihenfolge deiner Bereiche zu ändern - die Startseite zeigt sie auch so.',
   'spaces.new': 'Neuer Bereich',
   'spaces.summary': '{lists} · {members}',
   'spaces.lists.one': '1 Liste',

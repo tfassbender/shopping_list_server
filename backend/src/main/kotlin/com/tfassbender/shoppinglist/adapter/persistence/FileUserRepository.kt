@@ -65,6 +65,7 @@ data class UserFile(
     val sessionVersion: Int = 0,
     val emailVerification: PendingTokenFile? = null,
     val passwordReset: PendingTokenFile? = null,
+    val spaceOrder: List<String> = emptyList(),
 ) {
     fun toDomain() = User(
         id = UserId(id),
@@ -82,6 +83,7 @@ data class UserFile(
         sessionVersion = sessionVersion,
         emailVerification = emailVerification?.toDomain(),
         passwordReset = passwordReset?.toDomain(),
+        spaceOrder = spaceOrder,
     )
 
     companion object {
@@ -99,6 +101,7 @@ data class UserFile(
             sessionVersion = user.sessionVersion,
             emailVerification = PendingTokenFile.fromDomain(user.emailVerification),
             passwordReset = PendingTokenFile.fromDomain(user.passwordReset),
+            spaceOrder = user.spaceOrder,
         )
     }
 }

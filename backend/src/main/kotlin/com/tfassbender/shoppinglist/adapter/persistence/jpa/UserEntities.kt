@@ -10,8 +10,13 @@ import com.tfassbender.shoppinglist.domain.user.TokenScope
 import com.tfassbender.shoppinglist.domain.user.User
 import com.tfassbender.shoppinglist.domain.user.UserId
 import com.tfassbender.shoppinglist.domain.user.UserSettings
+import jakarta.persistence.CollectionTable
+import jakarta.persistence.Column
+import jakarta.persistence.ElementCollection
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.OrderColumn
 import jakarta.persistence.Table
 import java.time.Instant
 
@@ -40,6 +45,13 @@ class UserEntity(
     var passwordResetHash: String?,
     var passwordResetExpiresAt: Instant?,
 ) {
+    /** The user's order of their spaces (table `user_space_order`). */
+    @ElementCollection
+    @CollectionTable(name = "user_space_order", joinColumns = [JoinColumn(name = "user_id")])
+    @OrderColumn(name = "position")
+    @Column(name = "space_id")
+    var spaceOrder: MutableList<String> = mutableListOf()
+
     fun toDomain() = User(
         id = UserId(id),
         email = Email.trusted(email),
@@ -51,6 +63,7 @@ class UserEntity(
         sessionVersion = sessionVersion,
         emailVerification = pendingToken(emailVerificationHash, emailVerificationExpiresAt),
         passwordReset = pendingToken(passwordResetHash, passwordResetExpiresAt),
+        spaceOrder = spaceOrder.toList(),
     )
 
     private fun pendingToken(hash: String?, expiresAt: Instant?): PendingToken? =
@@ -73,7 +86,7 @@ class UserEntity(
             emailVerificationExpiresAt = user.emailVerification?.expiresAt,
             passwordResetHash = user.passwordReset?.hash,
             passwordResetExpiresAt = user.passwordReset?.expiresAt,
-        )
+        ).also { it.spaceOrder = user.spaceOrder.toMutableList() }
     }
 }
 
