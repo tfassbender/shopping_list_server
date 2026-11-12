@@ -49,10 +49,14 @@ Worked through in the session of 2026-11-12 (commits `e0a36aa`..`e99dab9`), each
   "Offline status after logout" is fixed too (`clear()` resets the status).
 - **#14** the offline badge and the ⚠ icon sit in the second header row on the list page - done.
 - E2E tests run once against the dev backend after all fixes: 6/6 passed.
+- **#22** favorite switch vs. Cancel: moot - personal favorites were removed completely (commit
+  `3449012`); the PostgreSQL branch has its own removal task. **#22** adding the same item twice: fine
+  as it is.
+- **#3** (favorite set offline) is moot for the same reason.
 
 **Still open**
-- **#22** favorite switch vs. Cancel; duplicate items without hint.
-- **#23** console noise: to be checked again later.
+- **#23** console noise: to be checked again later (already reduced: 4xx are no longer retried, deleted
+  spaces aren't refetched).
 
 ---
 
@@ -81,9 +85,9 @@ Worked through in the session of 2026-11-12 (commits `e0a36aa`..`e99dab9`), each
 | 19 | Invalid invite link is a dead end; "already member" not recognised | 🟡 | Invites | ✅ fixed (rest OK as is) |
 | 20 | Missing translations for several backend error codes | 🟡 | i18n | ✅ fixed |
 | 21 | Back navigation: Shops page doesn't return to the list; in-app back adds history entries | 🟡 | Navigation | ✅ fixed |
-| 22 | Several smaller UX points | 🟡 | various | ◐ partly |
-| 23 | Cosmetic points | ⚪ | various | ◐ partly |
-| 24 | Unconfirmed / to decide | ❔ | various | ◐ partly |
+| 22 | Several smaller UX points | 🟡 | various | ✅ done or decided |
+| 23 | Cosmetic points | ⚪ | various | ◐ console noise left |
+| 24 | Unconfirmed / to decide | ❔ | various | ✅ done or decided |
 
 ---
 
