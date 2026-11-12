@@ -19,36 +19,63 @@ The testers' scripts are in the same `qa\tester-*` folders. Code paths are relat
 
 **Severity:** 🔴 broken · 🟠 wrong behavior · 🟡 UX problem · ⚪ cosmetic
 
+## Status 2026-11-12
+
+Worked through in the session of 2026-11-12 (commits `e0a36aa`..`e99dab9`), each fix with tests.
+
+**Notes on the fixes**
+- **#2:** new port method `SpaceChangeNotifier.accessLost(...)`; delete/remove/leave notify the users
+  who lost access, so their clients refetch and get the 404.
+- **#8:** a *forced* logout (401) keeps the data on purpose, so the same user's unsaved offline changes
+  survive logging in again. When a *different* user logs in, cached and offline data are wiped first
+  (remembered user id in localStorage). A deliberate logout wipes everything as before.
+- **#9:** the server gives items of one batch distinct `createdAt` (+1 ms each); the client compares
+  instants correctly (ISO strings with differing fraction lengths don't sort as strings).
+- **#19:** a member re-opening a link they already used still gets "invalid" - the server forgets used
+  invites, so it can't tell. Owners/members opening a *valid* link now get a message.
+- **#21:** the header back arrow goes back in the history when the previous page is its target,
+  otherwise it replaces the current entry (`components/backNavigation.ts`).
+
+**Still open**
+- **#18** category header toggle without a shop - needs a decision.
+- **#22** undo/confirmation for "Remove checked" and deleting an item; favorite switch vs. Cancel;
+  the amount field dropping characters ("1.2.3" → "1.23"); duplicate items without hint; emoji
+  counting as two characters in name limits.
+- **#23** "l Oat milk" (unit without amount); history merge changing the spelling; the remaining
+  console noise is reduced (4xx are no longer retried, deleted spaces aren't refetched).
+- **#24** ("offline status after logout" is fixed: `clear()` resets the status.) Start page offline without cached data now shows "Loading..." per space until the first
+  pull (before it showed "no lists", which was wrong too); corrupt data files; data model points.
+
 ---
 
 ## Overview
 
-| # | Finding | Severity | Area |
-|---|---|---|---|
-| 1 | Removed member: list stuck on "Loading...", new items lost | 🔴 | Spaces / sync |
-| 2 | Deleted space / removal not shown live to the people affected | 🟠 | Live updates |
-| 3 | Favorite set offline is silently lost | 🟠 | Shops / offline |
-| 4 | Whitespace-only item name → misleading "merged changes" note | 🟠 | Items |
-| 5 | Duplicate category names allowed | 🟠 | Categories |
-| 6 | Logout / delete account land on `/login?redirect=/settings` | 🟠 | Accounts |
-| 7 | Theme/language change lost on quick reload; other devices' changes ignored | 🟠 | Settings |
-| 8 | Forced logout leaves the previous user's data on the device | 🟠 | Accounts / privacy |
-| 9 | "Order of adding" not stable for items synced together | 🟠 | Lists / sync |
-| 10 | Sort button: re-checked item jumps straight to "Checked" | 🟠 | Lists |
-| 11 | Shop item order: entry with double spaces fails silently | 🟠 | Shops |
-| 12 | Browser back after deleting a space shows contradicting page | 🟠 | Spaces |
-| 13 | "New list" link under an empty space preselects the wrong space | 🟠 | Start page |
-| 14 | List header breaks with the offline badge / ⚠ icon | 🟡 | Layout |
-| 15 | Settings rows: email overlaps its label, long names break the row | 🟡 | Layout |
-| 16 | Long words without spaces overflow (items, list names) | 🟡 | Layout |
-| 17 | Suggestion dropdown: arrow keys don't scroll; Escape closes the whole dialog | 🟡 | Add dialog |
-| 18 | Category header toggle seems to do nothing without a shop | 🟡 | Lists |
-| 19 | Invalid invite link is a dead end; "already member" not recognised | 🟡 | Invites |
-| 20 | Missing translations for several backend error codes | 🟡 | i18n |
-| 21 | Back navigation: Shops page doesn't return to the list; in-app back adds history entries | 🟡 | Navigation |
-| 22 | Several smaller UX points | 🟡 | various |
-| 23 | Cosmetic points | ⚪ | various |
-| 24 | Unconfirmed / to decide | ❔ | various |
+| # | Finding | Severity | Area | Status |
+|---|---|---|---|---|
+| 1 | Removed member: list stuck on "Loading...", new items lost | 🔴 | Spaces / sync | ✅ fixed |
+| 2 | Deleted space / removal not shown live to the people affected | 🟠 | Live updates | ✅ fixed |
+| 3 | Favorite set offline is silently lost | 🟠 | Shops / offline | ✅ fixed (switch disabled offline) |
+| 4 | Whitespace-only item name → misleading "merged changes" note | 🟠 | Items | ✅ fixed |
+| 5 | Duplicate category names allowed | 🟠 | Categories | ✅ fixed |
+| 6 | Logout / delete account land on `/login?redirect=/settings` | 🟠 | Accounts | ✅ fixed |
+| 7 | Theme/language change lost on quick reload; other devices' changes ignored | 🟠 | Settings | ✅ fixed |
+| 8 | Forced logout leaves the previous user's data on the device | 🟠 | Accounts / privacy | ✅ fixed (see note) |
+| 9 | "Order of adding" not stable for items synced together | 🟠 | Lists / sync | ✅ fixed |
+| 10 | Sort button: re-checked item jumps straight to "Checked" | 🟠 | Lists | ✅ fixed |
+| 11 | Shop item order: entry with double spaces fails silently | 🟠 | Shops | ✅ fixed |
+| 12 | Browser back after deleting a space shows contradicting page | 🟠 | Spaces | ✅ fixed |
+| 13 | "New list" link under an empty space preselects the wrong space | 🟠 | Start page | ✅ fixed |
+| 14 | List header breaks with the offline badge / ⚠ icon | 🟡 | Layout | ✅ fixed |
+| 15 | Settings rows: email overlaps its label, long names break the row | 🟡 | Layout | ✅ fixed |
+| 16 | Long words without spaces overflow (items, list names) | 🟡 | Layout | ✅ fixed |
+| 17 | Suggestion dropdown: arrow keys don't scroll; Escape closes the whole dialog | 🟡 | Add dialog | ✅ fixed |
+| 18 | Category header toggle seems to do nothing without a shop | 🟡 | Lists | ❔ to decide |
+| 19 | Invalid invite link is a dead end; "already member" not recognised | 🟡 | Invites | ◐ partly (see note) |
+| 20 | Missing translations for several backend error codes | 🟡 | i18n | ✅ fixed |
+| 21 | Back navigation: Shops page doesn't return to the list; in-app back adds history entries | 🟡 | Navigation | ✅ fixed |
+| 22 | Several smaller UX points | 🟡 | various | ◐ partly |
+| 23 | Cosmetic points | ⚪ | various | ◐ partly |
+| 24 | Unconfirmed / to decide | ❔ | various | ◐ partly |
 
 ---
 
