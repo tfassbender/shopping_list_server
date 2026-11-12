@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link } from 'react-router'
 import { useSpaces, type Space } from '../api/spaces'
-import { Page } from '../components/AppBar'
-import { Button, Hint, LoadError, Loading, SectionTitle } from '../components/ui'
+import { iconButtonClass, Page } from '../components/AppBar'
+import { Icon, type IconName } from '../components/Icon'
+import { Button, Fab, Hint, LoadError, Loading, SectionTitle } from '../components/ui'
 import { t } from '../i18n/messages'
 import { getLastList } from '../lists/lastList'
 import { useSpaceLists } from '../offline/engine'
@@ -10,14 +11,13 @@ import { useOnline } from '../offline/online'
 import { NewListDialog, NewSpaceDialog } from './space/SpaceDialogs'
 
 /**
- * Start page: all lists of all spaces - opening a list is one tap. Everything rarely needed (new list,
- * spaces, settings) is in the ⋮ menu.
+ * Start page: all lists of all spaces - opening a list is one tap. + at the bottom creates a list (as on
+ * a list page for items); spaces and settings are icons in the header, their names show as tooltips.
  */
 export function HomePage() {
   const { data: spaces, isPending, error, refetch } = useSpaces()
-  const navigate = useNavigate()
   const [dialog, setDialog] = useState<'list' | 'space' | null>(null)
-  // "New list" below a space creates the list there; the menu entry preselects the last used space.
+  // "New list" below a space creates the list there; the + button preselects the last used space.
   const [newListSpaceId, setNewListSpaceId] = useState<string | undefined>()
   const lastList = getLastList()
   const openNewList = (spaceId?: string) => {
@@ -28,12 +28,12 @@ export function HomePage() {
   return (
     <Page
       title={t('start.title')}
-      menu={[
-        { label: t('newList.title'), icon: 'newList', onSelect: () => openNewList(), disabled: !spaces?.length },
-        { label: t('spaces.title'), icon: 'spaces', onSelect: () => navigate('/spaces') },
-        'divider',
-        { label: t('nav.settings'), icon: 'settings', onSelect: () => navigate('/settings') },
-      ]}
+      actions={
+        <>
+          <HeaderLink to="/spaces" label={t('spaces.title')} icon="spaces" />
+          <HeaderLink to="/settings" label={t('nav.settings')} icon="settings" />
+        </>
+      }
     >
       {isPending && <Loading />}
       {error && !spaces && <LoadError error={error} onRetry={() => void refetch()} />}
@@ -46,6 +46,8 @@ export function HomePage() {
       {spaces?.map((space) => (
         <SpaceLists key={space.id} space={space} showName={spaces.length > 1} lastListId={lastList?.listId} onNewList={() => openNewList(space.id)} />
       ))}
+      {/* Without a space there is nowhere to put a list: the page asks to create a space instead. */}
+      {!!spaces?.length && <Fab label={t('newList.title')} onClick={() => openNewList()} />}
       {dialog === 'list' && spaces && (
         <NewListDialog
           spaces={spaces}
@@ -102,5 +104,14 @@ function SpaceLists(props: { space: Space; showName: boolean; lastListId?: strin
         )
       })}
     </section>
+  )
+}
+
+/** An icon-only link in the header; `title` shows the name as a tooltip on hover. */
+function HeaderLink({ to, label, icon }: { to: string; label: string; icon: IconName }) {
+  return (
+    <Link to={to} aria-label={label} title={label} className={iconButtonClass}>
+      <Icon name={icon} className="text-[1.3rem]" />
+    </Link>
   )
 }

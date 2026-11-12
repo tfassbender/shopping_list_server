@@ -89,10 +89,8 @@ describe('HomePage', () => {
     })
 
     expect(await screen.findByText(/Create your first space to get started/)).toBeInTheDocument()
-    // a new list needs a space
-    await userEvent.click(screen.getByRole('button', { name: 'Menu' }))
-    expect(screen.getByRole('menuitem', { name: 'New list' })).toBeDisabled()
-    await userEvent.keyboard('{Escape}')
+    // a new list needs a space: no + button yet
+    expect(screen.queryByRole('button', { name: 'New list' })).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Create a space' }))
     await userEvent.type(within(screen.getByRole('dialog', { name: 'New space' })).getByLabelText('Name'), 'Flat{Enter}')
@@ -109,7 +107,8 @@ describe('HomePage', () => {
       'GET /api/spaces/s1/layouts': [],
     })
 
-    await userEvent.click(await screen.findByRole('button', { name: 'New list' }))
+    const hint = await screen.findByRole('region', { name: 'Home' })
+    await userEvent.click(await within(hint).findByRole('button', { name: 'New list' }))
     const dialog = screen.getByRole('dialog', { name: 'New list' })
     // only one space: no choice offered
     expect(within(dialog).queryByRole('group', { name: 'In space' })).not.toBeInTheDocument()
@@ -123,14 +122,14 @@ describe('HomePage', () => {
 
   it('preselects the space of the last used list for a new list', async () => {
     setLastList({ spaceId: 's2', listId: 'gone' })
-    const { servers } = setup([home, office], {}, {
+    const { servers } = setup([home, office], { s1: [list('l1', 's1', 'Groceries')], s2: [list('l2', 's2', 'Coffee corner')] }, {
       'GET /api/spaces/s2': office,
       'GET /api/spaces/s2/catalog': { categories: [], units: [] },
       'GET /api/spaces/s2/layouts': [],
     })
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Menu' }))
-    await userEvent.click(screen.getByRole('menuitem', { name: 'New list' }))
+    await screen.findByRole('link', { name: /Coffee corner/ })
+    await userEvent.click(screen.getByRole('button', { name: 'New list' }))
     const spaceChoice = within(screen.getByRole('dialog')).getByRole('group', { name: 'In space' })
     expect(within(spaceChoice).getByRole('button', { name: 'Office' })).toHaveAttribute('aria-pressed', 'true')
     expect(within(spaceChoice).getByRole('button', { name: 'Home' })).toHaveAttribute('aria-pressed', 'false')
@@ -168,9 +167,11 @@ describe('HomePage', () => {
   })
 
   it('cancelling the new list dialog creates nothing', async () => {
-    const { servers } = setup([home])
+    const { servers } = setup([home], { s1: [list('l1', 's1', 'Groceries')] })
 
-    await userEvent.click(await screen.findByRole('button', { name: 'New list' }))
+    // the + button at the bottom
+    await screen.findByRole('link', { name: /Groceries/ })
+    await userEvent.click(screen.getByRole('button', { name: 'New list' }))
     await userEvent.type(screen.getByLabelText('Name'), 'Nope')
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
@@ -179,16 +180,15 @@ describe('HomePage', () => {
     expect(servers.s1.received()).toHaveLength(0)
   })
 
-  it('leads to the spaces and the settings via the menu', async () => {
+  it('leads to the spaces and the settings via the header icons', async () => {
     setup([home], {}, { 'GET /api/users/me/api-tokens': [] })
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Menu' }))
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Spaces & sharing' }))
+    await userEvent.click(await screen.findByRole('link', { name: 'Spaces & sharing' }))
     expect(await screen.findByRole('heading', { name: 'Spaces & sharing' })).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('link', { name: 'Back' }))
-    await userEvent.click(await screen.findByRole('button', { name: 'Menu' }))
-    await userEvent.click(screen.getByRole('menuitem', { name: 'Settings' }))
+    expect(await screen.findByRole('link', { name: 'Settings' })).toHaveAttribute('title', 'Settings')
+    await userEvent.click(screen.getByRole('link', { name: 'Settings' }))
     expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument()
   })
 
