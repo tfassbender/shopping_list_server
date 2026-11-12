@@ -17,7 +17,6 @@ const base = (spaceId: string) => `/api/spaces/${spaceId}/layouts`
 
 export const layoutsApi = {
   list: (spaceId: string) => api.get<ShopLayout[]>(base(spaceId)),
-  get: (spaceId: string, id: string) => api.get<ShopLayout>(`${base(spaceId)}/${id}`),
   create: (spaceId: string, name: string, mode: LayoutMode) => api.post<ShopLayout>(base(spaceId), { name, mode }),
   update: (spaceId: string, id: string, name: string, mode: LayoutMode) => api.put<ShopLayout>(`${base(spaceId)}/${id}`, { name, mode }),
   delete: (spaceId: string, id: string) => api.delete(`${base(spaceId)}/${id}`),
@@ -32,7 +31,6 @@ export const layoutsApi = {
 
 export const layoutKeys = {
   all: (spaceId: string) => ['spaces', spaceId, 'layouts'] as const,
-  detail: (spaceId: string, id: string) => ['spaces', spaceId, 'layouts', id] as const,
 }
 
 export function useLayouts(spaceId: string) {

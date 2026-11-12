@@ -135,6 +135,8 @@ export const en = {
 
   'nav.settings': 'Settings',
   'nav.logout': 'Log out',
+  'settings.logoutPendingTitle': 'Unsaved changes',
+  'settings.logoutPendingText': '{count} changes could not be sent to the server yet. They will be lost if you log out now.',
 
   'auth.email': 'Email',
   'auth.password': 'Password',
@@ -206,6 +208,8 @@ export const en = {
   'offline.badge': 'Offline',
   'offline.badgePending': 'Offline · {count} unsaved',
   'offline.saving': 'Saving...',
+  'offline.storageFailedShort': 'Not saved on device',
+  'offline.storageFailed': 'This device could not store your data. Changes made offline will be lost when the app is closed.',
   'offline.needsConnection': 'You are offline. This needs a connection to the server - lists still work offline.',
   'warnings.open': 'Show {count} merge note(s)',
   'warnings.title': 'Merged changes',

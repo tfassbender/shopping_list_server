@@ -10,7 +10,7 @@ import { Page, type MenuEntry } from '../../components/AppBar'
 import { ConfirmDialog, Dialog, DialogActions } from '../../components/Dialog'
 import { Icon } from '../../components/Icon'
 import { Avatar, Button, ErrorText, Hint, LoadError, Loading, Row, SectionTitle, Segmented } from '../../components/ui'
-import { t, type MessageKey } from '../../i18n/messages'
+import { formatDateTime, t, type MessageKey } from '../../i18n/messages'
 import { syncEngine } from '../../offline/engine'
 import { OnlineOnly } from '../../offline/online'
 import { NameDialog } from './SpaceDialogs'
@@ -236,7 +236,7 @@ function OpenInvites({ spaceId }: { spaceId: string }) {
         <Row
           key={invite.id}
           title={t('invites.forOnePerson')}
-          hint={t('invites.validUntil', { date: new Date(invite.expiresAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) })}
+          hint={t('invites.validUntil', { date: formatDateTime(invite.expiresAt) })}
           end={
             // disabled while revoking, so a double tap doesn't send a second request (that one would fail)
             <Button variant="secondary" disabled={revoke.isPending} onClick={() => revoke.mutate(invite.id)}>

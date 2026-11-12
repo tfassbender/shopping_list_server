@@ -91,11 +91,13 @@ function SpaceLists(props: { space: Space; showName: boolean; lastListId?: strin
               {list.id === props.lastListId && (lists.length > 1 || props.showName) && <span className="text-sm font-semibold text-accent"> · {t('start.lastUsed')}</span>}
             </span>
             <span
-              aria-label={t('lists.openCount', { count: open.length })}
+              aria-hidden="true"
               className={`flex h-8 min-w-8 items-center justify-center rounded-full bg-raised px-2.5 tabular-nums ${open.length ? 'font-semibold' : 'text-muted'}`}
             >
               {open.length || '✓'}
             </span>
+            {/* aria-label on a plain span is ignored by many screen readers: real (hidden) text instead */}
+            <span className="sr-only">{t('lists.openCount', { count: open.length })}</span>
           </Link>
         )
       })}

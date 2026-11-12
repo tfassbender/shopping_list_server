@@ -10,10 +10,11 @@ import { ConfirmDialog, Dialog, DialogActions } from '../components/Dialog'
 import { Button, ErrorText, Loading, Row, SectionTitle, Segmented, SuccessText, Switch, TextField } from '../components/ui'
 import { isKeepScreenOnSupported, setKeepScreenOn, useKeepScreenOnSetting } from '../device/keepScreenOn'
 import { t } from '../i18n/messages'
+import { syncEngine } from '../offline/engine'
 import { OnlineOnly } from '../offline/online'
 import { NameDialog } from './space/SpaceDialogs'
 
-type DialogName = 'name' | 'password' | 'logoutEverywhere' | 'delete' | null
+type DialogName = 'name' | 'password' | 'logoutEverywhere' | 'logoutPending' | 'delete' | null
 
 /**
  * Settings in plain sections: profile, display, AI agents, account. Display choices apply at once;
@@ -129,7 +130,12 @@ export function SettingsPage() {
         <Row onClick={() => setDialog('password')} title={t('settings.password')} chevron />
         <Row onClick={() => setDialog('logoutEverywhere')} title={t('settings.logoutEverywhere')} />
         <Row
-          onClick={() => logout()}
+          onClick={async () => {
+            // Logging out deletes the offline data: send unsaved changes first, warn if that fails.
+            await syncEngine.syncAll()
+            if (syncEngine.pendingCount() > 0) setDialog('logoutPending')
+            else logout()
+          }}
           title={t('nav.logout')}
         />
         <Row onClick={() => setDialog('delete')} title={t('settings.deleteAccount')} danger />
@@ -166,6 +172,15 @@ export function SettingsPage() {
           text={t('settings.logoutEverywhereConfirm')}
           confirmLabel={t('settings.logoutEverywhereButton')}
           onConfirm={() => logoutEverywhere.mutate()}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog === 'logoutPending' && (
+        <ConfirmDialog
+          title={t('settings.logoutPendingTitle')}
+          text={t('settings.logoutPendingText', { count: syncEngine.pendingCount() })}
+          confirmLabel={t('nav.logout')}
+          onConfirm={() => logout()}
           onClose={() => setDialog(null)}
         />
       )}

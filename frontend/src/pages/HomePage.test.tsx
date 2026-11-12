@@ -40,12 +40,14 @@ describe('HomePage', () => {
     })
 
     const groceries = await screen.findByRole('link', { name: /Groceries/ })
-    expect(within(groceries).getByLabelText('5 open')).toHaveTextContent('5')
+    expect(groceries).toHaveAccessibleName(/Groceries.*5 open/)
+    expect(within(groceries).getByText('5')).toBeInTheDocument()
     expect(groceries).toHaveAttribute('href', '/spaces/s1/lists/l1')
     expect(screen.queryByText(/Milk|Eggs|Nails/)).not.toBeInTheDocument()
 
     const hardware = screen.getByRole('link', { name: /Hardware/ })
-    expect(within(hardware).getByLabelText('0 open')).toHaveTextContent('✓')
+    expect(hardware).toHaveAccessibleName(/Hardware.*0 open/)
+    expect(within(hardware).getByText('✓')).toBeInTheDocument()
     // with one space, its name is not shown as a heading
     expect(screen.queryByRole('heading', { name: 'Home' })).not.toBeInTheDocument()
   })

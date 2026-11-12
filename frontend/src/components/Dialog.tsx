@@ -1,4 +1,4 @@
-import { useEffect, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, type FormEvent, type ReactNode, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { t } from '../i18n/messages'
 import { Button } from './ui'
@@ -20,14 +20,16 @@ export function Dialog(props: {
   role?: 'dialog' | 'alertdialog'
 }) {
   const { onClose } = props
+  const panel = useRef<HTMLElement>(null)
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+  useDialogFocus(panel)
 
   const panelClass =
-    'max-h-[90dvh] w-full space-y-4 overflow-y-auto rounded-t-2xl bg-surface px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-fg shadow-xl sm:max-w-md sm:rounded-2xl sm:pb-5'
+    'outline-none max-h-[90dvh] w-full space-y-4 overflow-y-auto rounded-t-2xl bg-surface px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-fg shadow-xl sm:max-w-md sm:rounded-2xl sm:pb-5'
   const content = (
     <>
       <h2 className="text-xl font-bold">{props.title}</h2>
@@ -38,6 +40,8 @@ export function Dialog(props: {
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center" onClick={onClose}>
       {props.onSubmit ? (
         <form
+          ref={panel as RefObject<HTMLFormElement>}
+          tabIndex={-1}
           role={props.role ?? 'dialog'}
           aria-modal="true"
           aria-label={props.title}
@@ -54,13 +58,48 @@ export function Dialog(props: {
           {content}
         </form>
       ) : (
-        <div role={props.role ?? 'dialog'} aria-modal="true" aria-label={props.title} className={panelClass} onClick={(e) => e.stopPropagation()}>
+        <div ref={panel as RefObject<HTMLDivElement>} tabIndex={-1} role={props.role ?? 'dialog'} aria-modal="true" aria-label={props.title} className={panelClass} onClick={(e) => e.stopPropagation()}>
           {content}
         </div>
       )}
     </div>,
     document.body,
   )
+}
+
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+/**
+ * Keyboard and screen-reader focus for a modal: moves into the dialog when it opens (unless a field has
+ * `autoFocus`), Tab cycles inside it instead of reaching the page behind, and the element that opened
+ * the dialog gets the focus back when it closes.
+ */
+function useDialogFocus(panel: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const element = panel.current
+    if (element && !element.contains(document.activeElement)) element.focus({ preventScroll: true })
+
+    const trapTab = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab' || !element) return
+      const focusable = [...element.querySelectorAll<HTMLElement>(FOCUSABLE)]
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === element)) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    window.addEventListener('keydown', trapTab)
+    return () => {
+      window.removeEventListener('keydown', trapTab)
+      if (opener?.isConnected) opener.focus({ preventScroll: true })
+    }
+  }, [panel])
 }
 
 /** Buttons at the bottom of a dialog, right-aligned. */

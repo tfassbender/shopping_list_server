@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useSyncExternalStore } from 'react'
 import { accountApi, type SessionResponse } from '../api/auth'
 import { syncEngine } from '../offline/engine'
+import { queryStorage } from '../offline/queryStorage'
 import { clearSession, getSession, setSession, subscribeSession } from './session'
 
 const LAST_USER_KEY = 'shoppinglist.lastUser'
@@ -43,6 +44,8 @@ export function useAuthActions() {
     // Drop all cached and offline data of the previous user (also from IndexedDB).
     queryClient.clear()
     void syncEngine.clear()
+    // The persister writes the emptied cache only after a delay - closing the tab at once would keep it.
+    void queryStorage.clear()
   }, [queryClient])
 
   return { startSession, logout }

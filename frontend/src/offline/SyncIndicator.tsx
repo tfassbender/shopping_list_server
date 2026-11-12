@@ -4,7 +4,7 @@ import { catalogKeys, type Catalog } from '../api/catalog'
 import { useCurrentUser } from '../auth/useAuth'
 import { Button } from '../components/ui'
 import { Dialog } from '../components/Dialog'
-import { errorMessage, t, tDynamic } from '../i18n/messages'
+import { errorMessage, formatDateTime, t, tDynamic } from '../i18n/messages'
 import { syncEngine, useMergeWarnings, useSyncStatus } from './engine'
 import { useOnline } from './online'
 import type { StoredWarning } from './syncEngine'
@@ -12,7 +12,7 @@ import type { StoredWarning } from './syncEngine'
 /** Header badges: offline / pending changes, and the merge warning icon (unless the user hides it). */
 export function SyncIndicator({ compact = false }: { compact?: boolean }) {
   const online = useOnline()
-  const { status, pending } = useSyncStatus()
+  const { status, pending, storageFailed } = useSyncStatus()
   const warnings = useMergeWarnings()
   const { data: user } = useCurrentUser()
   const [open, setOpen] = useState(false)
@@ -20,6 +20,11 @@ export function SyncIndicator({ compact = false }: { compact?: boolean }) {
 
   return (
     <div className="flex items-center gap-1">
+      {storageFailed && (
+        <span role="alert" title={t('offline.storageFailed')} className="rounded-full bg-danger/15 px-2.5 py-0.5 text-sm whitespace-nowrap">
+          {t('offline.storageFailedShort')}
+        </span>
+      )}
       {!online && <OfflineBadge pending={pending} />}
       {online && status === 'syncing' && pending > 0 && (
         <span className="rounded-full bg-brand-ink/10 px-2.5 py-0.5 text-sm whitespace-nowrap" role="status">
@@ -67,7 +72,7 @@ function WarningsDialog({ warnings, onClose }: { warnings: StoredWarning[]; onCl
         {[...warnings].reverse().map((w) => (
           <li key={w.id} className="rounded-lg bg-raised px-3 py-2 text-sm">
             {warningText(w, (id) => categoryName(w.spaceId, id))}
-            <span className="block text-xs text-muted">{new Date(w.at).toLocaleString()}</span>
+            <span className="block text-xs text-muted">{formatDateTime(w.at)}</span>
           </li>
         ))}
       </ul>

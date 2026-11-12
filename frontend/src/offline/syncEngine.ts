@@ -49,6 +49,10 @@ export class SyncEngine {
   private statusValue: SyncStatus = 'idle'
   /** A running [clear] - loading must wait for it, or it would read the previous user's data. */
   private clearing: Promise<void> = Promise.resolve()
+  /** Bumped by [clear]: a sync that started before a logout must not write the old user's data back. */
+  private generation = 0
+  /** Set when IndexedDB failed (quota, Safari losing the connection): changes then only live in memory. */
+  private storageFailedValue = false
 
   constructor(
     private api: SyncApi,
@@ -91,6 +95,11 @@ export class SyncEngine {
     return this.statusValue
   }
 
+  /** Whether saving on this device failed - unsent changes would be lost when the app is closed. */
+  get storageFailed(): boolean {
+    return this.storageFailedValue
+  }
+
   pendingCount(): number {
     return [...this.states.values()].reduce((sum, s) => sum + s.queue.length, 0)
   }
@@ -118,12 +127,26 @@ export class SyncEngine {
   private load(spaceId: string): Promise<void> {
     let promise = this.loading.get(spaceId)
     if (!promise) {
-      promise = this.clearing.then(() => this.storage.get<SpaceState>(`space:${spaceId}`)).then((stored) => {
-        if (this.states.has(spaceId)) return
-        this.states.set(spaceId, stored ?? emptyState())
-        // Nothing on this device yet: stay "loading" until the first pull, instead of showing an empty space.
-        if (stored) this.recompute(spaceId)
-      })
+      const generation = this.generation
+      promise = this.clearing
+        .then(() => this.storage.get<SpaceState>(`space:${spaceId}`))
+        .catch((error) => {
+          this.reportStorageError(error)
+          return undefined
+        })
+        .then((stored) => {
+          if (generation !== this.generation) return
+          // Changes made before loading finished (enqueue doesn't wait) go on top of the stored queue.
+          const early = this.states.get(spaceId)
+          const state = stored ?? emptyState()
+          if (early) {
+            state.queue.push(...early.queue)
+            state.warnings.push(...early.warnings)
+          }
+          this.states.set(spaceId, state)
+          // Nothing on this device yet: stay "loading" until the first pull, instead of showing an empty space.
+          if (stored || early) this.recompute(spaceId)
+        })
       this.loading.set(spaceId, promise)
     }
     return promise
@@ -153,6 +176,8 @@ export class SyncEngine {
 
   /** Forgets everything (logout): another user must not see these lists. */
   async clear(): Promise<void> {
+    this.generation++
+    this.inflight.clear()
     this.scheduled.forEach((timer) => clearTimeout(timer))
     this.scheduled.clear()
     this.states.clear()
@@ -188,7 +213,10 @@ export class SyncEngine {
   }
 
   private async runSync(spaceId: string): Promise<void> {
+    const generation = this.generation
+    const stale = () => generation !== this.generation // logged out meanwhile
     await this.load(spaceId)
+    if (stale()) return
     const state = this.stateOf(spaceId)
     const base = state.seq
     this.setStatus('syncing')
@@ -196,10 +224,12 @@ export class SyncEngine {
       const batch = state.queue.slice(0, MAX_BATCH)
       if (batch.length > 0) {
         const pushed = await this.api.push(spaceId, base, batch)
+        if (stale()) return
         this.handlePushResult(spaceId, state, batch, pushed)
       }
       // Pull since the base (not the push seq): other users' changes may lie in between.
       const pulled = await this.api.pull(spaceId, base)
+      if (stale()) return
       state.confirmed = applyPull(state.confirmed, pulled, spaceId)
       state.seq = pulled.seq
       state.acked = []
@@ -209,7 +239,7 @@ export class SyncEngine {
       this.pullListeners.forEach((listener) => listener(spaceId, pulled))
       this.setStatus('idle')
     } catch (error) {
-      this.handleSyncError(spaceId, error)
+      if (!stale()) this.handleSyncError(spaceId, error)
     }
   }
 
@@ -249,7 +279,7 @@ export class SyncEngine {
       this.states.delete(spaceId)
       this.views.delete(spaceId)
       this.loading.delete(spaceId)
-      void this.storage.del(`space:${spaceId}`).then(() => this.saveIndex())
+      void this.storage.del(`space:${spaceId}`).then(() => this.saveIndex()).catch((e) => this.reportStorageError(e))
       this.updateWarnings()
       this.setStatus('idle')
     } else {
@@ -268,12 +298,13 @@ export class SyncEngine {
 
   // ---- internals ----
 
+  /** The in-memory state; if storage isn't loaded yet, a temporary one that [load] merges into the stored one. */
   private stateOf(spaceId: string): SpaceState {
     let state = this.states.get(spaceId)
     if (!state) {
       state = emptyState()
       this.states.set(spaceId, state)
-      this.loading.set(spaceId, Promise.resolve())
+      void this.load(spaceId)
     }
     return state
   }
@@ -292,11 +323,27 @@ export class SyncEngine {
     this.warningsCache = [...this.states.values()].flatMap((s) => s.warnings).sort((a, b) => a.at.localeCompare(b.at))
   }
 
+  /** Never rejects: a failing IndexedDB is reported via [storageFailed] instead of breaking the sync. */
   private async persist(spaceId: string) {
+    const generation = this.generation
+    // Writing before the stored state was read would overwrite its unsent changes.
+    await this.load(spaceId)
     const state = this.states.get(spaceId)
-    if (!state) return
-    await this.storage.set(`space:${spaceId}`, state)
-    await this.saveIndex()
+    if (!state || generation !== this.generation) return
+    try {
+      await this.storage.set(`space:${spaceId}`, state)
+      await this.saveIndex()
+    } catch (error) {
+      this.reportStorageError(error)
+    }
+  }
+
+  private reportStorageError(error: unknown) {
+    console.error('Saving on this device failed', error)
+    if (!this.storageFailedValue) {
+      this.storageFailedValue = true
+      this.notify()
+    }
   }
 
   private saveIndex() {

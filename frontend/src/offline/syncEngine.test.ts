@@ -307,6 +307,60 @@ describe('SyncEngine', () => {
     expect(local.listsOf(SPACE)).toBeUndefined()
   })
 
+  it('a change made before the stored state was loaded does not overwrite the stored queue', async () => {
+    const storage = memoryStorage()
+    const first = engineWith(server, storage)
+    await first.open(SPACE)
+    server.offline = true
+    first.enqueue(SPACE, { type: 'ADD_ITEM', listId: 'l1', itemId: 'bread', name: 'Bread' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const restarted = engineWith(server, storage)
+    restarted.enqueue(SPACE, { type: 'ADD_ITEM', listId: 'l1', itemId: 'milk', name: 'Milk' }) // before start()
+    await restarted.start()
+
+    expect(restarted.pendingCount()).toBe(2)
+    expect(names(restarted)).toEqual(['Bread', 'Milk'])
+  })
+
+  it('a failing device storage is reported and does not break syncing', async () => {
+    const broken: KeyValueStorage = {
+      get: () => Promise.reject(new Error('quota')),
+      set: () => Promise.reject(new Error('quota')),
+      del: () => Promise.reject(new Error('quota')),
+      clear: () => Promise.resolve(),
+    }
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const local = engineWith(server, broken)
+    await local.open(SPACE)
+    local.enqueue(SPACE, { type: 'ADD_ITEM', listId: 'l1', itemId: 'a', name: 'A' })
+    await local.sync(SPACE)
+
+    expect(local.storageFailed).toBe(true)
+    expect(local.status).toBe('idle')
+    expect(server.lists.l1.items.map((i) => i.name)).toEqual(['A'])
+    errors.mockRestore()
+  })
+
+  it('a sync finishing after a logout does not bring back the old data', async () => {
+    let releasePull: () => void = () => {}
+    const realPull = server.pull.getMockImplementation()!
+    server.pull.mockImplementationOnce(async (...args) => {
+      await new Promise<void>((resolve) => (releasePull = resolve))
+      return realPull(...args)
+    })
+    const pulled = vi.fn()
+    engine.onPull(pulled)
+    const running = engine.sync(SPACE)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await engine.clear()
+    releasePull()
+    await running
+
+    expect(engine.listsOf(SPACE)).toBeUndefined()
+    expect(pulled).not.toHaveBeenCalled()
+  })
+
   it('notifies subscribers about changes', () => {
     const listener = vi.fn()
     engine.subscribe(listener)

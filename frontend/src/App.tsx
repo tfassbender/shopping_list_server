@@ -1,4 +1,5 @@
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
+import { queryStorage } from './offline/queryStorage'
 import { QueryClient, useQueryClient } from '@tanstack/react-query'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { useEffect, useState } from 'react'
@@ -13,7 +14,6 @@ import { KeepScreenOn } from './device/keepScreenOn'
 import { syncEngine } from './offline/engine'
 import { startLiveUpdates } from './offline/liveUpdates'
 import { applyPullToCache } from './offline/pullToCache'
-import { defaultStorage } from './offline/storage'
 import { ListPage } from './lists/ListPage'
 import { ForgotPasswordPage, ResetPasswordPage, VerifyEmailPage } from './pages/auth/EmailTokenPages'
 import { LoginPage } from './pages/auth/LoginPage'
@@ -175,7 +175,6 @@ function createQueryClient() {
   })
 }
 
-const queryStorage = defaultStorage('queries')
 const persister = createAsyncStoragePersister({
   storage: {
     getItem: (key) => queryStorage.get<string>(key).then((value) => value ?? null),

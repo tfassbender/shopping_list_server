@@ -4,7 +4,7 @@ import { apiTokensApi, type ApiToken, type CreatedApiToken, type TokenScope } fr
 import { Page } from '../../components/AppBar'
 import { ConfirmDialog, Dialog, DialogActions } from '../../components/Dialog'
 import { Button, ErrorText, Fab, Hint, Loading, Row, Segmented, TextField } from '../../components/ui'
-import { t } from '../../i18n/messages'
+import { formatDateTime, t } from '../../i18n/messages'
 import { OnlineOnly, useOnline } from '../../offline/online'
 
 const tokensKey = ['apiTokens']
@@ -61,7 +61,7 @@ export function ApiTokensPage() {
   )
 }
 
-const formatDate = (iso: string) => new Date(iso).toLocaleDateString()
+const formatDate = (iso: string) => formatDateTime(iso, { dateStyle: 'medium' })
 const expiry = (token: ApiToken) => (token.expiresAt ? t('tokens.expires', { date: formatDate(token.expiresAt) }) : t('tokens.neverExpires'))
 const lastUse = (token: ApiToken) => (token.lastUsedAt ? t('tokens.lastUsed', { date: formatDate(token.lastUsedAt) }) : t('tokens.neverUsed'))
 

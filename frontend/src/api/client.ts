@@ -37,7 +37,9 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   }
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as ApiErrorBody | null
-    if (response.status === 401 && session) {
+    // Only if the token is still the current one: a request sent before a password change (new token)
+    // may come back with 401 and must not end the new session.
+    if (response.status === 401 && session && getSession()?.token === session.token) {
       clearSession()
     }
     throw new ApiError(response.status, body?.code ?? `HTTP_${response.status}`, body?.message)

@@ -69,3 +69,8 @@ export function errorMessage(code: string): string {
 export function tDynamic(key: string, params: Record<string, string | number> = {}): string {
   return key in en ? t(key as MessageKey, params) : key
 }
+
+/** Dates and times in the app language (not the browser's), e.g. "12.11.2026, 14:30" in German. */
+export function formatDateTime(iso: string, options: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' }): string {
+  return new Date(iso).toLocaleString(getLanguage(), options)
+}

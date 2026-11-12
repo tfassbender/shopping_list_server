@@ -9,7 +9,7 @@ import { SortableList } from '../../components/SortableList'
 import { Page, useBackTo } from '../../components/AppBar'
 import { ConfirmDialog } from '../../components/Dialog'
 import { Icon } from '../../components/Icon'
-import { Button, ErrorText, Fab, Hint, Loading, Row, SectionTitle, Switch } from '../../components/ui'
+import { Button, ErrorText, Fab, Hint, LoadError, Loading, Row, SectionTitle, Switch } from '../../components/ui'
 import { t, tDynamic } from '../../i18n/messages'
 import { OnlineOnly, useOnline } from '../../offline/online'
 import { normalizeName } from '../../lists/sortForLayout'
@@ -71,8 +71,8 @@ export function categoriesInLayoutOrder(layout: ShopLayout, categories: Category
 
 export function LayoutEditorPage() {
   const { spaceId = '', layoutId = '' } = useParams()
-  const { data: layouts } = useLayouts(spaceId)
-  const { data: catalog } = useCatalog(spaceId)
+  const { data: layouts, error: layoutsError, refetch: refetchLayouts } = useLayouts(spaceId)
+  const { data: catalog, error: catalogError, refetch: refetchCatalog } = useCatalog(spaceId)
   const layout = layouts?.find((l) => l.id === layoutId)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -80,7 +80,9 @@ export function LayoutEditorPage() {
   const [copying, setCopying] = useState(false)
 
   // Each call returns the updated layout; it replaces the cached one (instant UI update).
+  // `scope` runs the calls one after another, so an older response can never overwrite a newer order.
   const update = useMutation({
+    scope: { id: `layout-${layoutId}` },
     mutationFn: (call: () => Promise<ShopLayout>) => call(),
     onMutate: () => queryClient.cancelQueries({ queryKey: layoutKeys.all(spaceId) }),
     onSuccess: (updated) => replaceCached(updated),
@@ -106,8 +108,22 @@ export function LayoutEditorPage() {
     queryClient.setQueryData<ShopLayout[]>(layoutKeys.all(spaceId), (all) => all?.map((l) => (l.id === updated.id ? updated : l)))
   }
 
-  if (!layouts || !catalog) return <Loading />
-  if (!layout) return <p>{t('error.LAYOUT_NOT_FOUND')}</p>
+  const back = `/spaces/${spaceId}/layouts`
+  if (!layouts || !catalog) {
+    const error = layoutsError ?? catalogError
+    return (
+      <Page title={t('layouts.title')} back={back}>
+        {error ? <LoadError error={error} onRetry={() => void (refetchLayouts(), refetchCatalog())} /> : <Loading />}
+      </Page>
+    )
+  }
+  if (!layout) {
+    return (
+      <Page title={t('layouts.title')} back={back}>
+        <p>{t('error.LAYOUT_NOT_FOUND')}</p>
+      </Page>
+    )
+  }
 
   function setMode(mode: LayoutMode) {
     update.mutate(() => layoutsApi.update(spaceId, layoutId, layout!.name, mode))
@@ -259,7 +275,7 @@ function ItemOrderEditor({ spaceId, layout, onChange }: { spaceId: string; layou
               <button
                 aria-label={t('layouts.removeEntry', { name })}
                 onClick={() => onChange(layout.itemOrder.filter((n) => n !== name))}
-                className="flex size-10 items-center justify-center text-muted hover:text-red-600"
+                className="flex size-11 items-center justify-center text-muted hover:text-red-600"
               >
                 ✕
               </button>

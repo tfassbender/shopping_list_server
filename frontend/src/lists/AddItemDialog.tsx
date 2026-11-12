@@ -40,6 +40,9 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
   const [listening, setListening] = useState(false)
   const [voiceFailed, setVoiceFailed] = useState(false)
   const nameInput = useRef<HTMLInputElement>(null)
+  // Closing the dialog while listening must turn the microphone off.
+  const cancelVoice = useRef<() => void>(() => {})
+  useEffect(() => () => cancelVoice.current(), [])
   const query = useDebounced(name, 150)
   const { data } = useSuggestions(spaceId, query)
   // The dropdown shows while the name field (or the dropdown itself) has the focus.
@@ -104,7 +107,7 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
     setVoiceFailed(false)
     setListening(true)
     // The recognized text goes into the field; the user confirms with "Add" (speech is sometimes wrong).
-    listenOnce({ onText: setName, onError: () => setVoiceFailed(true), onEnd: () => setListening(false) })
+    cancelVoice.current = listenOnce({ onText: setName, onError: () => setVoiceFailed(true), onEnd: () => setListening(false) })
   }
 
   return (

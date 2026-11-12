@@ -44,7 +44,8 @@ export function useSpaceAccessLost(spaceId: string): number | undefined {
 export function useSyncStatus() {
   const status = useEngine(() => syncEngine.status)
   const pending = useEngine(() => syncEngine.pendingCount())
-  return { status, pending }
+  const storageFailed = useEngine(() => syncEngine.storageFailed)
+  return { status, pending, storageFailed }
 }
 
 export function useMergeWarnings() {

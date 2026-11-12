@@ -20,9 +20,13 @@ export function CatalogPage() {
   const { data: catalog, error } = useCatalog(spaceId)
   const queryClient = useQueryClient()
   // Every catalog call returns the new catalog: put it straight into the cache.
+  // `scope` runs the calls one after another, so an older response can never overwrite a newer one.
   const update = useMutation({
+    scope: { id: `catalog-${spaceId}` },
     mutationFn: (call: () => Promise<Catalog>) => call(),
     onSuccess: (updated) => queryClient.setQueryData(catalogKeys.catalog(spaceId), updated),
+    // An optimistic change (order, units) was refused: show the server state again.
+    onError: () => queryClient.invalidateQueries({ queryKey: catalogKeys.catalog(spaceId) }),
   })
 
   if (!catalog) {
@@ -31,6 +35,12 @@ export function CatalogPage() {
         {error ? <ErrorText error={error} /> : <Loading />}
       </Page>
     )
+  }
+
+  function setUnits(units: string[]) {
+    // Optimistic: a second quick tap must build on this change, not on the units before it.
+    queryClient.setQueryData(catalogKeys.catalog(spaceId), { ...catalog!, units })
+    update.mutate(() => catalogApi.setUnits(spaceId, units))
   }
 
   function reorder(ids: string[]) {
@@ -64,7 +74,7 @@ export function CatalogPage() {
         <NewCategoryForm onAdd={(name, color) => update.mutate(() => catalogApi.addCategory(spaceId, name, color))} />
       </div>
 
-      <UnitsEditor units={catalog.units} onChange={(units) => update.mutate(() => catalogApi.setUnits(spaceId, units))} />
+      <UnitsEditor units={catalog.units} onChange={setUnits} />
       </div>
       </OnlineOnly>
       {deleting && (
@@ -83,9 +93,17 @@ export function CatalogPage() {
 function CategoryRow(props: { category: Category; onSave: (name: string, color: string, onFailed?: () => void) => void; onDelete: () => void }) {
   const { category, onSave, onDelete } = props
   const [name, setName] = useState(category.name)
+  const [editing, setEditing] = useState(false)
+  // Renamed by someone else (live update): show the new name, unless the user is typing in the field.
+  const [shownName, setShownName] = useState(category.name)
+  if (shownName !== category.name && !editing) {
+    setShownName(category.name)
+    setName(category.name)
+  }
   // Blank or refused (e.g. the name exists already): show the saved name again instead of the edited one.
   const reset = () => setName(category.name)
   function save() {
+    setEditing(false)
     const trimmed = name.trim()
     if (!trimmed) reset()
     else if (trimmed !== category.name) onSave(trimmed, category.color, reset)
@@ -98,10 +116,11 @@ function CategoryRow(props: { category: Category; onSave: (name: string, color: 
         value={name}
         maxLength={40}
         onChange={(e) => setName(e.target.value)}
+        onFocus={() => setEditing(true)}
         onBlur={save}
         className="min-h-10 min-w-0 flex-1 rounded border border-transparent bg-transparent px-2 hover:border-line focus:border-accent focus:outline-none"
       />
-      <button onClick={onDelete} aria-label={t('catalog.deleteCategory', { name: category.name })} className="flex size-10 items-center justify-center text-muted hover:text-red-600">
+      <button onClick={onDelete} aria-label={t('catalog.deleteCategory', { name: category.name })} className="flex size-11 items-center justify-center text-muted hover:text-red-600">
         ✕
       </button>
     </div>
@@ -138,7 +157,7 @@ function UnitsEditor({ units, onChange }: { units: string[]; onChange: (units: s
         {units.map((unit) => (
           <li key={unit} className="flex items-center gap-1 rounded-full bg-raised py-1 pr-1 pl-3">
             {unit}
-            <button aria-label={t('catalog.removeUnit', { name: unit })} onClick={() => onChange(units.filter((u) => u !== unit))} className="flex size-8 items-center justify-center rounded-full hover:bg-raised">
+            <button aria-label={t('catalog.removeUnit', { name: unit })} onClick={() => onChange(units.filter((u) => u !== unit))} className="-my-1 flex size-10 items-center justify-center rounded-full hover:bg-raised">
               ✕
             </button>
           </li>
