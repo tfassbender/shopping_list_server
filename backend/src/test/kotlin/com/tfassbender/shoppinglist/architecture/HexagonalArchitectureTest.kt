@@ -56,6 +56,24 @@ class HexagonalArchitectureTest {
     }
 
     @Test
+    fun `JPA and transactions stay inside the persistence adapter`() {
+        noClasses().that().resideOutsideOfPackage("$BASE_PACKAGE.adapter.persistence..")
+            .should().dependOnClassesThat().resideInAnyPackage("jakarta.persistence..", "jakarta.transaction..", "io.quarkus.narayana..")
+            .because("the storage technology is a detail of the persistence adapter")
+            .check(productionClasses)
+    }
+
+    @Test
+    fun `JPA entities are used only by the JPA repositories`() {
+        // Entities are separate from the domain model (doc/tech_stack.md): they never leave the jpa package.
+        noClasses().that().resideOutsideOfPackage("$BASE_PACKAGE.adapter.persistence.jpa..")
+            .should().dependOnClassesThat().areAnnotatedWith("jakarta.persistence.Entity")
+            .orShould().dependOnClassesThat().areAnnotatedWith("jakarta.persistence.Embeddable")
+            .because("JPA entities are mapped to domain objects inside the JPA adapter")
+            .check(productionClasses)
+    }
+
+    @Test
     fun `adapters do not depend on each other`() {
         ADAPTERS.forEach { adapter ->
             val others = ADAPTERS.filter { it != adapter }.map { "$BASE_PACKAGE.adapter.$it.." }
