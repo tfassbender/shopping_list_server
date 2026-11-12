@@ -278,6 +278,7 @@ export const en = {
   'spaces.members.one': '1 member',
   'spaces.members.other': '{count} members',
   'space.usedByLists': 'Used by all lists in this space',
+  'space.lists': 'Lists',
   'space.categoryCount': '{count} categories',
   'space.onlyOwnerInvites': 'Only the owner can invite people.',
   'space.deleteTitle': 'Delete "{name}"?',

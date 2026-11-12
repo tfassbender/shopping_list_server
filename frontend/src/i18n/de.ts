@@ -277,6 +277,7 @@ export const de: Record<MessageKey, string> = {
   'spaces.members.one': '1 Mitglied',
   'spaces.members.other': '{count} Mitglieder',
   'space.usedByLists': 'Für alle Listen in diesem Bereich',
+  'space.lists': 'Listen',
   'space.categoryCount': '{count} Kategorien',
   'space.onlyOwnerInvites': 'Nur der Besitzer kann Leute einladen.',
   'space.deleteTitle': '"{name}" löschen?',

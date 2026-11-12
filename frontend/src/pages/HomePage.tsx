@@ -82,17 +82,17 @@ function SpaceLists(props: { space: Space; showName: boolean; lastListId?: strin
           <Link
             key={list.id}
             to={`/spaces/${props.space.id}/lists/${list.id}`}
-            className="flex min-h-16 items-center gap-3 border-b border-line px-2 py-3 hover:bg-raised"
+            className="flex min-h-12 items-center gap-3 border-b border-line px-2 py-2 hover:bg-raised"
           >
             {/* wrap-anywhere: a long name without spaces wraps instead of running under the count */}
             <span className="min-w-0 flex-1 wrap-anywhere">
-              <span className="text-xl font-semibold">{list.name}</span>
+              <span className="text-lg font-semibold">{list.name}</span>
               {/* only worth saying when there is more than one list to choose from */}
               {list.id === props.lastListId && (lists.length > 1 || props.showName) && <span className="text-sm font-semibold text-accent"> · {t('start.lastUsed')}</span>}
             </span>
             <span
               aria-hidden="true"
-              className={`flex h-8 min-w-8 items-center justify-center rounded-full bg-raised px-2.5 tabular-nums ${open.length ? 'font-semibold' : 'text-muted'}`}
+              className={`flex h-7 min-w-7 items-center justify-center rounded-full bg-raised px-2 text-sm tabular-nums ${open.length ? 'font-semibold' : 'text-muted'}`}
             >
               {open.length || '✓'}
             </span>

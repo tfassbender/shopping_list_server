@@ -5,7 +5,7 @@ import { useCatalog, type Category } from '../api/catalog'
 import { rememberedLayout, rememberLayout, useLayouts, type ShopLayout } from '../api/layouts'
 import { listsApi, newId, type Item } from '../api/lists'
 import { useSpace } from '../api/spaces'
-import { iconButtonClass, Page } from '../components/AppBar'
+import { iconButtonClass, Page, useBackTo } from '../components/AppBar'
 import { ConfirmDialog, Dialog } from '../components/Dialog'
 import { Icon } from '../components/Icon'
 import { ErrorText, Fab, Hint, Loading, SectionTitle } from '../components/ui'
@@ -30,6 +30,8 @@ type DialogName = 'add' | 'shop' | 'rename' | 'delete' | null
 export function ListPage() {
   const { spaceId = '', listId = '' } = useParams()
   const navigate = useNavigate()
+  // The start page, or the space page if the list was opened there.
+  const back = useBackTo('/')
   const { data: layouts } = useLayouts(spaceId)
   const [chosenLayoutId, setChosenLayoutId] = useState<string | null>(() => rememberedLayout(listId))
   // A remembered layout may have been deleted by someone else in the meantime.
@@ -45,7 +47,7 @@ export function ListPage() {
     mutationFn: () => listsApi.delete(spaceId, listId),
     onSuccess: () => {
       void syncEngine.sync(spaceId)
-      navigate('/')
+      navigate(back, { replace: true }) // browser back shouldn't lead to the deleted list
     },
   })
   const [dialog, setDialog] = useState<DialogName>(null)
@@ -69,10 +71,10 @@ export function ListPage() {
   }, [list])
 
   if (list === undefined && lostChanges !== undefined) return <SpaceGone lostChanges={lostChanges} />
-  if (list === undefined) return <Page title={t('appName')} back="/"><Loading /></Page>
+  if (list === undefined) return <Page title={t('appName')} back={back}><Loading /></Page>
   if (list === null) {
     return (
-      <Page title={t('appName')} back="/">
+      <Page title={t('appName')} back={back}>
         <Hint>{t('error.LIST_NOT_FOUND')}</Hint>
       </Page>
     )
@@ -113,7 +115,7 @@ export function ListPage() {
   return (
     <Page
       title={list.name}
-      back="/"
+      back={back}
       sub={shopLine}
       actions={
         <>

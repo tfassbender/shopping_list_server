@@ -11,8 +11,8 @@ import { ConfirmDialog, Dialog, DialogActions } from '../../components/Dialog'
 import { Icon } from '../../components/Icon'
 import { Avatar, Button, ErrorText, Hint, LoadError, Loading, Row, SectionTitle, Segmented } from '../../components/ui'
 import { formatDateTime, t, type MessageKey } from '../../i18n/messages'
-import { syncEngine } from '../../offline/engine'
-import { OnlineOnly } from '../../offline/online'
+import { syncEngine, useSpaceLists } from '../../offline/engine'
+import { OnlineOnly, useOnline } from '../../offline/online'
 import { NameDialog } from './SpaceDialogs'
 
 type Confirm = { title: string; text: string; confirmLabel: string; onConfirm: () => void }
@@ -182,6 +182,8 @@ export function SpacePage() {
           chevron
         />
       </OnlineOnly>
+      {/* Outside OnlineOnly: the lists come from the offline store and open without a connection too. */}
+      <SpaceLists spaceId={spaceId} />
 
       {dialog === 'rename' && (
         <NameDialog
@@ -216,6 +218,32 @@ export function SpacePage() {
       )}
       {confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}
     </Page>
+  )
+}
+
+/**
+ * The lists of the space. A list opened from here leads back here (not to the start page) via the
+ * `back` state, see `useBackTo`.
+ */
+function SpaceLists({ spaceId }: { spaceId: string }) {
+  const lists = useSpaceLists(spaceId)
+  const online = useOnline()
+  const navigate = useNavigate()
+  return (
+    <section aria-label={t('space.lists')}>
+      <SectionTitle>{t('space.lists')}</SectionTitle>
+      {lists === undefined && (online ? <Loading /> : <Hint>{t('start.notLoadedOffline')}</Hint>)}
+      {lists?.length === 0 && <Hint>{t('start.noLists')}</Hint>}
+      {lists?.map((list) => (
+        <Row
+          key={list.id}
+          onClick={() => navigate(`/spaces/${spaceId}/lists/${list.id}`, { state: { back: `/spaces/${spaceId}` } })}
+          title={list.name}
+          hint={t('lists.openCount', { count: list.items.filter((i) => !i.checked).length })}
+          chevron
+        />
+      ))}
+    </section>
   )
 }
 

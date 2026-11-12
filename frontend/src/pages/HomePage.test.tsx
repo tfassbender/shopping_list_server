@@ -63,6 +63,20 @@ describe('HomePage', () => {
     expect(await within(homeSection).findByRole('link', { name: /Groceries/ })).not.toHaveTextContent('last used')
   })
 
+  it('an opened list leads back to the start page', async () => {
+    setup([home], { s1: [list('l1', 's1', 'Groceries')] }, {
+      'GET /api/spaces/s1': home,
+      'GET /api/spaces/s1/catalog': { categories: [], units: [] },
+      'GET /api/spaces/s1/layouts': [],
+    })
+
+    await userEvent.click(await screen.findByRole('link', { name: /Groceries/ }))
+    expect(await screen.findByRole('heading', { name: 'Groceries' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('link', { name: 'Back' }))
+
+    expect(await screen.findByRole('heading', { name: 'Lists' })).toBeInTheDocument()
+  })
+
   it('without spaces asks to create the first one', async () => {
     let spaces: (typeof home)[] = []
     const { spy } = setup([], {}, {

@@ -3,6 +3,8 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import { AppRoutes } from '../../App'
+import type { ShoppingList } from '../../api/lists'
+import { fakeSyncServer } from '../../test/fakeSyncServer'
 import { mockApi, sentBodies, testUser } from '../../test/mockApi'
 import { loginForTest, renderWithProviders } from '../../test/render'
 
@@ -48,6 +50,21 @@ describe('SpacePage', () => {
     expect(await screen.findByRole('button', { name: /Categories & units.*1 categories/ })).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: /Items used before.*3 items/ })).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: /Shops.*Aldi, Lidl/ })).toBeInTheDocument()
+  })
+
+  it('lists the lists of the space; an opened list leads back to the space', async () => {
+    const groceries: ShoppingList = {
+      id: 'l1', spaceId: 's1', name: 'Groceries', createdAt: '', seq: 1,
+      items: [{ id: '1', name: 'Milk', quantity: null, unit: null, note: null, categoryId: null, checked: false, createdAt: '', seq: 1 }],
+    }
+    setup(fakeSyncServer('s1', [groceries]).routes)
+
+    const lists = await screen.findByRole('region', { name: 'Lists' })
+    await userEvent.click(await within(lists).findByRole('button', { name: /Groceries.*1 open/ }))
+    expect(await screen.findByRole('heading', { name: 'Groceries' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('link', { name: 'Back' }))
+    expect(await screen.findByRole('heading', { name: 'Home' })).toBeInTheDocument()
   })
 
   it('shows "no shops" and opens the shops page', async () => {
