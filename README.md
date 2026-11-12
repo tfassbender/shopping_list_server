@@ -8,6 +8,21 @@ A shopping list app with user accounts and lists shared between users.
 - **Android app:** native Kotlin, using the same REST API - its own repository:
   [shopping_list_android](https://github.com/tfassbender/shopping_list_android)
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="doc/screenshots/start.png" width="220" alt="Start page with the lists of all spaces"><br>All lists at a glance</td>
+    <td align="center"><img src="doc/screenshots/list.png" width="220" alt="A list sorted by the walking order of a shop"><br>Sorted for the shop</td>
+    <td align="center"><img src="doc/screenshots/add-item.png" width="220" alt="Adding an item with suggestions from the item history"><br>Suggestions while adding</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="doc/screenshots/space.png" width="220" alt="A shared space with members, shops and lists"><br>A space shared with others</td>
+    <td align="center"><img src="doc/screenshots/list-dark.png" width="220" alt="The list in dark mode"><br>Dark mode</td>
+    <td></td>
+  </tr>
+</table>
+
 ## Status
 
 Version 1.0.0 is live at https://shopping-list.tobias-fassbender.com. All phases of the
