@@ -4,8 +4,8 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–11, the UI rework, a code review round and smaller UI additions are done. Phase 12:
-image, Compose stack and docs are ready (version 1.0.0); the server setup is next.
+**Status:** Phases 0–12 are done: version 1.0.0 runs on the server (2026-11-12). Next: the Android app
+(see "Later").
 
 ## Guiding principles
 
@@ -412,9 +412,11 @@ Open from the review, deliberately not done yet:
       server with `./start.sh` (no sources there, as with the other projects) - tried locally
 - [x] `doc/deployment.md`: setup, cloudflared ingress, updates, backups and restore
 - [x] Ubuntu server: Docker Engine + Compose plugin (replaced the snap Docker)
-- [ ] Ubuntu server: `.env` and `config/`, first start, cloudflared ingress for
-      `shopping-list.tobias-fassbender.com`, cron for backups
-- [ ] Tag `v1.0.0` once it runs on the server
+- [x] Ubuntu server: `.env` and `config/`, first start, cloudflared ingress for
+      `shopping-list.tobias-fassbender.com`; started and stopped with the server's other apps by its
+      `start_all.sh` / `stop_all.sh` (they call `start.sh` / `stop.sh` where there is no `start-server.sh`)
+- [ ] Ubuntu server: cron for the daily backup (`backup.sh`), copy of `backups/` off the server
+- [x] Tag `v1.0.0`
 
 Decided: HTTPS through the existing cloudflared tunnel instead of a reverse proxy (as for the other
 projects on the server).

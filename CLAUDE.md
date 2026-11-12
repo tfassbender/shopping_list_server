@@ -12,7 +12,8 @@ A shopping list app with user management and list sharing between users.
 
 **Status:** Phases 0–11 of `doc/implementation_plan.md` are implemented (accounts, spaces, lists, catalog,
 shop layouts, API tokens, offline sync, live updates, i18n/PWA, PostgreSQL storage switchable to files)
-plus the UI rework from `doc/mockups/lists-mockup.html`. Next: Phase 12 (Docker & deployment).
+plus the UI rework from `doc/mockups/lists-mockup.html`, and Phase 12: version 1.0.0 runs on the server
+(Docker Compose behind cloudflared, `doc/deployment.md`). Next: the Android app (`Later` in the plan).
 
 ## Documentation (`doc/`)
 
