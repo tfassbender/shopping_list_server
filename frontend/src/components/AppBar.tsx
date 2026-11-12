@@ -18,31 +18,35 @@ export function AppBar(props: { title: string; back?: string; sub?: ReactNode; a
   const onStartPage = useLocation().pathname === '/'
   return (
     <header className="sticky top-0 z-20 bg-brand pt-[env(safe-area-inset-top)] text-brand-ink">
-      <div className={`relative mx-auto flex min-h-16 max-w-2xl items-center gap-1 pr-1 ${props.back ? 'pl-1' : 'pl-4'}`}>
-        {props.back && (
-          <Link to={props.back} aria-label={t('common.back')} className={iconButtonClass}>
-            <Icon name="back" className="text-[1.3rem]" />
-          </Link>
-        )}
-        <div className="flex min-w-0 flex-1 flex-col self-stretch">
+      <div className="relative mx-auto max-w-2xl">
+        <div className={`flex items-center gap-1 pr-1 ${props.sub ? 'min-h-14' : 'min-h-16'} ${props.back ? 'pl-1' : 'pl-4'}`}>
+          {props.back && (
+            <Link to={props.back} aria-label={t('common.back')} className={iconButtonClass}>
+              <Icon name="back" className="text-[1.3rem]" />
+            </Link>
+          )}
           {/*
            * On every page but the start page, a tap on the title row (including the empty space after the
-           * title) leads to the start page. The line below (e.g. the shop) keeps its own function.
+           * title) leads to the start page.
            */}
           {session && !onStartPage ? (
-            <Link to="/" title={t('nav.toStart')} className={`flex flex-1 items-center ${props.sub ? 'pt-2' : ''}`}>
+            <Link to="/" title={t('nav.toStart')} className="flex min-w-0 flex-1 items-center self-stretch">
               <h1 className="truncate text-[1.35rem] font-bold">{props.title}</h1>
             </Link>
           ) : (
-            <div className={`flex flex-1 items-center ${props.sub ? 'pt-2' : ''}`}>
+            <div className="flex min-w-0 flex-1 items-center self-stretch">
               <h1 className="truncate text-[1.35rem] font-bold">{props.title}</h1>
             </div>
           )}
-          {props.sub && <div className="pb-2">{props.sub}</div>}
+          {session ? <SyncIndicator /> : <LanguageToggle />}
+          {props.actions}
+          {props.menu && <Menu entries={props.menu} />}
         </div>
-        {session ? <SyncIndicator /> : <LanguageToggle />}
-        {props.actions}
-        {props.menu && <Menu entries={props.menu} />}
+        {/*
+         * The line below the title (e.g. the shop) gets a row of its own, so the badges and buttons next
+         * to the title don't squeeze it. Indented to line up with the title.
+         */}
+        {props.sub && <div className={`-mt-1 pr-4 pb-2 ${props.back ? 'pl-[3.25rem]' : 'pl-4'}`}>{props.sub}</div>}
       </div>
     </header>
   )

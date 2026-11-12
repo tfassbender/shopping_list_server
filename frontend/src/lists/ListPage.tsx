@@ -341,7 +341,8 @@ function ItemRow(props: { item: Item; barColor?: string; onToggle: () => void; o
         onClick={props.onToggle}
         className="flex min-h-14 min-w-0 flex-1 items-center px-2 py-3 text-left text-lg"
       >
-        <span className={`min-w-0 ${item.checked ? 'text-muted line-through' : ''}`}>
+        {/* wrap-anywhere: a long word without spaces wraps instead of widening the page */}
+        <span className={`min-w-0 wrap-anywhere ${item.checked ? 'text-muted line-through' : ''}`}>
           {amount && <span className={`mr-1.5 ${item.checked ? '' : 'font-semibold'}`}>{amount}</span>}
           <span className={item.checked ? '' : 'font-semibold'}>{item.name}</span>
           {item.note && <span className="block truncate text-[0.9rem] text-muted">{item.note}</span>}

@@ -20,11 +20,7 @@ export function SyncIndicator() {
 
   return (
     <div className="flex items-center gap-1">
-      {!online && (
-        <span className="rounded-full bg-brand-ink/10 px-2.5 py-0.5 text-sm font-medium whitespace-nowrap" role="status">
-          {pending > 0 ? t('offline.badgePending', { count: pending }) : t('offline.badge')}
-        </span>
-      )}
+      {!online && <OfflineBadge pending={pending} />}
       {online && status === 'syncing' && pending > 0 && (
         <span className="rounded-full bg-brand-ink/10 px-2.5 py-0.5 text-sm whitespace-nowrap" role="status">
           {t('offline.saving')}
@@ -41,6 +37,21 @@ export function SyncIndicator() {
       )}
       {open && <WarningsDialog warnings={warnings} onClose={() => setOpen(false)} />}
     </div>
+  )
+}
+
+/**
+ * Compact, so the page title next to it keeps its room on a phone: "Offline" plus the number of unsaved
+ * changes in a bubble. Screen readers (and the tooltip) get the full sentence.
+ */
+function OfflineBadge({ pending }: { pending: number }) {
+  const text = pending > 0 ? t('offline.badgePending', { count: pending }) : t('offline.badge')
+  return (
+    <span role="status" title={text} className="flex items-center gap-1 rounded-full bg-brand-ink/10 py-0.5 pr-1.5 pl-2.5 text-sm font-medium whitespace-nowrap">
+      <span aria-hidden="true">{t('offline.badge')}</span>
+      {pending > 0 && <span aria-hidden="true" className="min-w-5 rounded-full bg-brand-ink/20 px-1.5 text-center text-xs font-bold">{pending}</span>}
+      <span className="sr-only">{text}</span>
+    </span>
   )
 }
 

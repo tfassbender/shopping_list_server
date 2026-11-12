@@ -81,7 +81,8 @@ function SpaceLists(props: { space: Space; showName: boolean; lastListId?: strin
             to={`/spaces/${props.space.id}/lists/${list.id}`}
             className="flex min-h-16 items-center gap-3 border-b border-line px-2 py-3 hover:bg-raised"
           >
-            <span className="min-w-0 flex-1">
+            {/* wrap-anywhere: a long name without spaces wraps instead of running under the count */}
+            <span className="min-w-0 flex-1 wrap-anywhere">
               <span className="text-xl font-semibold">{list.name}</span>
               {list.id === props.lastListId && <span className="text-sm font-semibold text-accent"> · {t('start.lastUsed')}</span>}
             </span>

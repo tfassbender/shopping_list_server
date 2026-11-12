@@ -69,7 +69,7 @@ export function SettingsPage() {
         {notice && <SuccessText>{notice}</SuccessText>}
 
         <SectionTitle>{t('settings.profile')}</SectionTitle>
-        <Row onClick={() => setDialog('name')} title={t('auth.displayName')} hint={t('auth.displayNameHint')} end={<span className="text-muted">{user.displayName}</span>} chevron />
+        <Row onClick={() => setDialog('name')} title={t('auth.displayName')} hint={t('auth.displayNameHint')} end={<span className="min-w-0 truncate text-muted">{user.displayName}</span>} chevron />
         <Row title={t('auth.email')} end={<span className="min-w-0 truncate text-muted">{user.email}</span>} />
 
         <SectionTitle>{t('settings.appearance')}</SectionTitle>

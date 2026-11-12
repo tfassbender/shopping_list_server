@@ -137,7 +137,11 @@ export function Row(props: {
   const content = (
     <>
       {props.start}
-      <span className="min-w-0 flex-1">
+      {/*
+        * The text keeps at least 45% of the row, so a long value at the end (email, name) is cut off
+        * instead of squeezing the label word by word; long words wrap anywhere instead of overflowing.
+        */}
+      <span className={`flex-1 wrap-anywhere ${props.end ? 'min-w-[45%]' : 'min-w-0'}`}>
         <span className={`block ${props.danger ? 'text-danger' : ''}`}>{props.title}</span>
         {props.hint && <span className="block text-sm text-muted">{props.hint}</span>}
       </span>

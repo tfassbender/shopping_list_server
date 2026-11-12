@@ -146,7 +146,8 @@ describe('SyncIndicator', () => {
 
     await act(() => syncEngine.sync('s1'))
 
-    expect(screen.getByRole('status')).toHaveTextContent(/^Offline$/)
+    expect(screen.getByRole('status')).toHaveAttribute('title', 'Offline')
+    expect(screen.getByRole('status')).not.toHaveTextContent(/unsaved/)
   })
 
   it('shows "Saving..." while changes are being sent', async () => {
