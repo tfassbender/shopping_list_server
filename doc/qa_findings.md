@@ -36,13 +36,18 @@ Worked through in the session of 2026-11-12 (commits `e0a36aa`..`e99dab9`), each
 - **#21:** the header back arrow goes back in the history when the previous page is its target,
   otherwise it replaces the current entry (`components/backNavigation.ts`).
 
+**Decided (2026-11-12)**
+- **#18** keep the category header toggle as it is.
+- **#22** no undo/confirmation for "Remove checked" and deleting an item - fine as it is.
+- **#22** amount field: input is kept as typed ("1.2.3"), marked invalid and blocks saving - done.
+- **#23** a unit without an amount is not shown ("l Oat milk" → "Oat milk") - done.
+- **#19** a member re-opening an already used link getting "invalid" is OK.
+
 **Still open**
-- **#18** category header toggle without a shop - needs a decision.
-- **#22** undo/confirmation for "Remove checked" and deleting an item; favorite switch vs. Cancel;
-  the amount field dropping characters ("1.2.3" → "1.23"); duplicate items without hint; emoji
-  counting as two characters in name limits.
-- **#23** "l Oat milk" (unit without amount); history merge changing the spelling; the remaining
-  console noise is reduced (4xx are no longer retried, deleted spaces aren't refetched).
+- **#22** favorite switch vs. Cancel; duplicate items without hint; emoji counting as two characters
+  in name limits.
+- **#23** history merge changing the spelling; the remaining console noise is reduced (4xx are no
+  longer retried, deleted spaces aren't refetched).
 - **#24** ("offline status after logout" is fixed: `clear()` resets the status.) Start page offline without cached data now shows "Loading..." per space until the first
   pull (before it showed "no lists", which was wrong too); corrupt data files; data model points.
 
@@ -70,7 +75,7 @@ Worked through in the session of 2026-11-12 (commits `e0a36aa`..`e99dab9`), each
 | 16 | Long words without spaces overflow (items, list names) | 🟡 | Layout | ✅ fixed |
 | 17 | Suggestion dropdown: arrow keys don't scroll; Escape closes the whole dialog | 🟡 | Add dialog | ✅ fixed |
 | 18 | Category header toggle seems to do nothing without a shop | 🟡 | Lists | ❔ to decide |
-| 19 | Invalid invite link is a dead end; "already member" not recognised | 🟡 | Invites | ◐ partly (see note) |
+| 19 | Invalid invite link is a dead end; "already member" not recognised | 🟡 | Invites | ✅ fixed (rest OK as is) |
 | 20 | Missing translations for several backend error codes | 🟡 | i18n | ✅ fixed |
 | 21 | Back navigation: Shops page doesn't return to the list; in-app back adds history entries | 🟡 | Navigation | ✅ fixed |
 | 22 | Several smaller UX points | 🟡 | various | ◐ partly |
