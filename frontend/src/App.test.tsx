@@ -168,7 +168,7 @@ describe('App (background tasks)', () => {
     const spy = mockApi({
       'GET /api/users/me': testUser,
       'GET /api/spaces': [],
-      'GET /api/spaces/s1/changes': { seq: 1, fullResync: true, lists: [], listIds: [], catalog: null, historyChanges: [], layouts: null, layoutIds: [], favorites: {} },
+      'GET /api/spaces/s1/changes': { seq: 1, fullResync: true, lists: [], listIds: [], catalog: null, historyChanges: [], layouts: null, layoutIds: [] },
     })
     const answer = spy.getMockImplementation()!
     let authorization: string | null = null

@@ -70,7 +70,7 @@ class FileUserRepositoryTest {
     @Test
     fun `delete removes the whole user directory`() {
         repository.save(user)
-        Files.writeString(dataDir.resolve("users/u-1/favorites.json"), "{}")
+        Files.writeString(dataDir.resolve("users/u-1/api-tokens.json"), "{}")
         repository.delete(user.id)
         assertFalse(dataDir.resolve("users/u-1").exists())
         assertNull(repository.findById(user.id))

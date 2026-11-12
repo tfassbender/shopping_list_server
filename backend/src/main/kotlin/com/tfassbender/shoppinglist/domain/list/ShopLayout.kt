@@ -56,7 +56,6 @@ data class ShopLayout(
 
     /**
      * A new layout with the same mode, orders and connected lists (e.g. a second shop of the same chain).
-     * Favorites are personal and stored per layout id, so the copy starts without them.
      */
     fun copyAs(newId: LayoutId, newName: String, now: Instant): ShopLayout =
         copy(id = newId, name = newName.trim(), createdAt = now, seq = 0)

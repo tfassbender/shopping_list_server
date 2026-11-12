@@ -7,7 +7,6 @@ import com.tfassbender.shoppinglist.domain.list.CategoryId
 import com.tfassbender.shoppinglist.domain.list.Item
 import com.tfassbender.shoppinglist.domain.list.ItemField
 import com.tfassbender.shoppinglist.domain.list.ItemId
-import com.tfassbender.shoppinglist.domain.list.ItemSorter
 import com.tfassbender.shoppinglist.domain.list.LayoutId
 import com.tfassbender.shoppinglist.domain.list.ListChange
 import com.tfassbender.shoppinglist.domain.list.ListId
@@ -70,13 +69,11 @@ data class ItemDto(
     val checked: Boolean,
     val createdAt: Instant,
     val seq: Long,
-    @field:Schema(description = "Personal favorite in the layout given as `sort` (always false without `sort`)")
-    val favorite: Boolean = false,
 ) {
     companion object {
-        fun from(item: Item, favorite: Boolean = false) = ItemDto(
+        fun from(item: Item) = ItemDto(
             item.id.value, item.name, item.quantity, item.unit, item.note, item.categoryId?.value,
-            item.checked, item.createdAt, item.seq, favorite,
+            item.checked, item.createdAt, item.seq,
         )
     }
 }
@@ -92,9 +89,9 @@ data class ListDto(
     val sortedBy: String? = null,
 ) {
     companion object {
-        fun from(list: ShoppingList, sorted: List<ItemSorter.SortedItem>? = null, sortedBy: String? = null) = ListDto(
+        fun from(list: ShoppingList, sorted: List<Item>? = null, sortedBy: String? = null) = ListDto(
             list.id.value, list.spaceId.value, list.name, list.createdAt, list.seq,
-            sorted?.map { ItemDto.from(it.item, it.favorite) } ?: list.activeItems.map { ItemDto.from(it) },
+            (sorted ?: list.activeItems).map(ItemDto::from),
             sortedBy,
         )
     }
@@ -112,7 +109,7 @@ data class ListSummaryDto(val id: String, val name: String, val openItems: Int, 
  * Lists and items of a space. Every item mutation returns the complete updated list, so clients can
  * simply replace their copy. Deleted items are not included (they are tombstones for the sync).
  * The optional `sort=<layoutId>` parameter (on all endpoints returning a list) sorts the items for a
- * shop: layout order, the caller's favorites, most bought, name; checked items last if the caller wants.
+ * shop: layout order, most bought, name; checked items last if the caller wants.
  */
 @Path("/api/spaces/{spaceId}/lists")
 @Produces(MediaType.APPLICATION_JSON)

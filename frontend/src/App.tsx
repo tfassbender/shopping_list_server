@@ -113,7 +113,7 @@ function SessionRefresher() {
 function OfflineSync() {
   const session = useSession()
   const queryClient = useQueryClient()
-  // Catalog (incl. item history) and favorites from each pull go into the query cache.
+  // The catalog (incl. item history) from each pull goes into the query cache.
   useEffect(() => syncEngine.onPull((spaceId, pull) => applyPullToCache(queryClient, spaceId, pull)), [queryClient])
   useEffect(() => {
     if (!session) return

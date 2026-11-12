@@ -2,7 +2,6 @@ package com.tfassbender.shoppinglist.domain.list
 
 import com.tfassbender.shoppinglist.domain.DomainException
 import com.tfassbender.shoppinglist.domain.space.SpaceId
-import com.tfassbender.shoppinglist.domain.user.UserFavorites
 import com.tfassbender.shoppinglist.domain.user.UserId
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -45,18 +44,5 @@ class ShopLayoutTest {
         val connected = layout.connect(ListId("l1")).connect(ListId("l2")).connect(ListId("l1"))
         assertEquals(setOf(ListId("l1"), ListId("l2")), connected.listIds)
         assertEquals(setOf(ListId("l2")), connected.disconnect(ListId("l1")).listIds)
-    }
-
-    @Test
-    fun `favorites are per layout and case-insensitive`() {
-        val favorites = UserFavorites(UserId("u")).add(layout.id, " Milk ").add(LayoutId("rewe"), "Bread")
-        assertTrue(favorites.isFavorite(layout.id, "MILK"))
-        assertFalse(favorites.isFavorite(layout.id, "Bread"))
-        assertEquals(setOf("milk"), favorites.favoritesOf(layout.id))
-
-        val removed = favorites.remove(layout.id, "milk")
-        assertFalse(removed.isFavorite(layout.id, "Milk"))
-        assertFalse(layout.id in removed.byLayout)
-        assertThrows<DomainException> { favorites.add(layout.id, "  ") }
     }
 }

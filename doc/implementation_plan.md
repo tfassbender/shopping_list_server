@@ -193,6 +193,11 @@ layout. The shop selector offers connected layouts first, then the other shops o
 
 Tests: sort logic (unit, incl. checked-to-end interaction), REST tests.
 
+**Removed on 2026-11-12:** personal favorites per shop (`UserFavorites`, the favorites endpoints, the
+`favorite` flag on items, `favorites` in the sync pull, the switch in the item editor). Their only effect
+was "first within the same category", too small to be worth it; "most bought first" covers most of it.
+Sorting is now checked-to-end → layout position → most bought → name.
+
 ## Phase 6 – API tokens for AI agents
 
 Goal: users let AI agents use the API.
@@ -334,7 +339,7 @@ Decided while implementing:
   configuration, separately for release and debug app (`shoppinglist.android.{release,debug}.*`, empty by
   default, so the release package never trusts the debug key); stable link paths
   documented in `tech_stack.md` and the OpenAPI description.
-- [x] #3 Favorites in the sync pull: `favorites` (layout id -> names) is always sent complete - it is small
+- [x] #3 *(favorites removed on 2026-11-12)* Favorites in the sync pull: `favorites` (layout id -> names) is always sent complete - it is small
   and personal, so no seq per favorite. Changing a favorite now runs under the space lock and takes a new
   seq, so it is announced via SSE and the user's other devices pull (other members get an empty pull).
   User settings stay on `GET /api/users/me`.
@@ -356,7 +361,7 @@ Design in `doc/tech_stack.md` -> Persistence. Mainly a portfolio decision, not a
 - [ ] Flyway `V1` migration with the normalized schema; Hibernate only validates
 - [ ] JPA entities in `adapter.persistence.jpa`, **separate from the domain model**, with mapping
       entity <-> domain; ArchUnit rule: no `jakarta.persistence` outside `adapter.persistence`
-- [ ] JPA repositories for all ports (users, favorites, API tokens, spaces, catalog, lists + items,
+- [ ] JPA repositories for all ports (users, API tokens, spaces, catalog, lists + items,
       layouts, sequence counter, sync state)
 - [ ] `TransactionRunner` port: one transaction per `SpaceLocks` operation (no-op for files)
 - [ ] Shared repository contract tests, run against the file and the Postgres adapter

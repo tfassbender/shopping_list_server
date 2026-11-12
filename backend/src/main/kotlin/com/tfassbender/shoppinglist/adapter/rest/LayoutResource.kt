@@ -16,12 +16,10 @@ import jakarta.ws.rs.PUT
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
-import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.core.MediaType
 import org.eclipse.microprofile.openapi.annotations.Operation
 import org.eclipse.microprofile.openapi.annotations.media.Content
 import org.eclipse.microprofile.openapi.annotations.media.Schema
-import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import org.jboss.resteasy.reactive.ResponseStatus
@@ -46,8 +44,6 @@ data class UpdateLayoutRequest(val name: String = "", val mode: LayoutMode = Lay
 @Schema(description = "Complete new order. CATEGORIES: category ids; ITEMS: item names (case-insensitive)")
 data class EntriesRequest(val entries: List<String> = emptyList())
 
-data class FavoriteRequest(val name: String = "")
-
 data class LayoutDto(
     val id: String,
     val name: String,
@@ -70,17 +66,15 @@ data class LayoutDto(
     }
 }
 
-data class FavoritesDto(val names: List<String>)
-
 /**
  * Shop layouts: the walking order through a shop, by categories or by single items. Used to sort lists
- * (`GET .../lists/{listId}?sort=<layoutId>`). Favorites are personal per user and layout.
+ * (`GET .../lists/{listId}?sort=<layoutId>`).
  */
 @Path("/api/spaces/{spaceId}/layouts")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @RolesAllowed(USER_ROLE)
-@Tag(name = "Layouts", description = "Shop layouts for sorting lists, and personal favorites")
+@Tag(name = "Layouts", description = "Shop layouts for sorting lists")
 class LayoutResource(
     private val layoutService: LayoutService,
     private val currentUser: CurrentUser,
@@ -104,7 +98,7 @@ class LayoutResource(
     @Path("/{layoutId}/copy")
     @Operation(
         operationId = "copyLayout",
-        summary = "Copy a layout: same mode, category and item order and connected lists; personal favorites are not copied",
+        summary = "Copy a layout: same mode, category and item order and connected lists",
     )
     @ResponseStatus(201)
     @APIResponse(responseCode = "201", description = "Created", content = [Content(schema = Schema(implementation = LayoutDto::class))])
@@ -155,26 +149,4 @@ class LayoutResource(
     @Operation(operationId = "disconnectLayoutFromList", summary = "Disconnect a list")
     fun disconnect(@PathParam("spaceId") spaceId: String, @PathParam("layoutId") layoutId: String, @PathParam("listId") listId: String) =
         LayoutDto.from(layoutService.disconnectList(currentUser.id(), SpaceId(spaceId), LayoutId(layoutId), ListId(listId)))
-
-    @GET
-    @Path("/{layoutId}/favorites")
-    @Operation(operationId = "getFavorites", summary = "The caller's favorite item names in this layout")
-    fun favorites(@PathParam("spaceId") spaceId: String, @PathParam("layoutId") layoutId: String) =
-        FavoritesDto(layoutService.favorites(currentUser.id(), SpaceId(spaceId), LayoutId(layoutId)).sorted())
-
-    @POST
-    @Path("/{layoutId}/favorites")
-    @Operation(operationId = "addFavorite", summary = "Mark an item name as personal favorite in this layout")
-    fun addFavorite(@PathParam("spaceId") spaceId: String, @PathParam("layoutId") layoutId: String, request: FavoriteRequest) =
-        FavoritesDto(layoutService.addFavorite(currentUser.id(), SpaceId(spaceId), LayoutId(layoutId), request.name).sorted())
-
-    @DELETE
-    @Path("/{layoutId}/favorites")
-    @Operation(operationId = "removeFavorite", summary = "Remove a personal favorite (name as query parameter)")
-    fun removeFavorite(
-        @PathParam("spaceId") spaceId: String,
-        @PathParam("layoutId") layoutId: String,
-        @QueryParam("name") @Parameter(required = true, description = ITEM_NAME_DESCRIPTION) name: String?,
-    ) =
-        FavoritesDto(layoutService.removeFavorite(currentUser.id(), SpaceId(spaceId), LayoutId(layoutId), name ?: "").sorted())
 }

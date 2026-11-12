@@ -1,6 +1,5 @@
 import { QueryClient } from '@tanstack/react-query'
 import { catalogKeys, type Catalog, type HistoryEntry } from '../api/catalog'
-import { layoutKeys } from '../api/layouts'
 import type { PullResponse } from '../api/sync'
 import { applyPullToCache, mergeHistory } from './pullToCache'
 
@@ -14,7 +13,7 @@ const catalog: Catalog = {
   history: [entry('Milk', 3), entry('Bread', 1), entry('Hummus', 0)],
 }
 const pull = (overrides: Partial<PullResponse>): PullResponse => ({
-  seq: 7, fullResync: false, lists: [], listIds: [], catalog: null, historyChanges: [], layouts: null, layoutIds: [], favorites: {},
+  seq: 7, fullResync: false, lists: [], listIds: [], catalog: null, historyChanges: [], layouts: null, layoutIds: [],
   ...overrides,
 })
 
@@ -60,14 +59,5 @@ describe('applyPullToCache', () => {
     const queryClient = cacheWith()
     applyPullToCache(queryClient, 's1', pull({ historyChanges: [entry('Hummus', 1)] }))
     expect(cachedCatalog(queryClient)).toBeUndefined()
-  })
-
-  it('sets the favorites of every layout of the space, empty for layouts without favorites', () => {
-    const queryClient = cacheWith()
-    queryClient.setQueryData(layoutKeys.favorites('s1', 'lidl'), ['old'])
-    applyPullToCache(queryClient, 's1', pull({ layoutIds: ['aldi', 'lidl'], favorites: { aldi: ['milk'] } }))
-
-    expect(queryClient.getQueryData(layoutKeys.favorites('s1', 'aldi'))).toEqual(['milk'])
-    expect(queryClient.getQueryData(layoutKeys.favorites('s1', 'lidl'))).toEqual([])
   })
 })

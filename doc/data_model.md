@@ -49,9 +49,6 @@ classDiagram
         class UserApiTokens {
             <<aggregate root>>
         }
-        class UserFavorites {
-            <<aggregate root>>
-        }
     }
 
     SpaceCatalog "1" ..> "1" Space : spaceId
@@ -63,8 +60,6 @@ classDiagram
     ShopLayout ..> SpaceCatalog : categoryOrder
     Space "0..*" ..> "1..*" User : members[].userId
     UserApiTokens "1" ..> "1" User : userId
-    UserFavorites "1" ..> "1" User : userId
-    UserFavorites ..> ShopLayout : byLayout keys
 ```
 
 | Aggregate root | Responsibility | Scope | File (under the data dir) |
@@ -76,7 +71,6 @@ classDiagram
 | `SyncState` | Idempotency of change ids, tombstone purge horizon | shared, 1 per space | `spaces/<spaceId>/sync.json` |
 | `User` | Account, credentials, settings | personal | `users/<userId>/user.json` |
 | `UserApiTokens` | The user's API tokens for AI agents/scripts | personal, 1 per user | `users/<userId>/api-tokens.json` |
-| `UserFavorites` | Favorite item names per shop layout | personal, 1 per user | `users/<userId>/favorites.json` |
 
 Not an aggregate but part of the stored state: the **space sequence counter**
 (`spaces/<spaceId>/sequence.json`). It sits behind the application port `SequenceCounter`, not in the
@@ -153,18 +147,6 @@ classDiagram
         }
     }
 
-    namespace FavoritesAggregate {
-        class UserFavorites {
-            <<aggregate root>>
-            UserId userId
-            Map~LayoutId, Set~String~~ byLayout
-        }
-    }
-
-    class ShopLayout {
-        <<aggregate root>>
-    }
-
     User "1" *-- "1" UserSettings : settings
     User "1" *-- "0..1" PendingToken : emailVerification
     User "1" *-- "0..1" PendingToken : passwordReset
@@ -173,8 +155,6 @@ classDiagram
     UserApiTokens "1" *-- "0..20" ApiToken : tokens
     ApiToken --> TokenScope
     UserApiTokens ..> User : userId
-    UserFavorites ..> User : userId
-    UserFavorites ..> ShopLayout : byLayout keys (LayoutId)
 ```
 
 **`User`** – a registered account.
@@ -193,11 +173,6 @@ classDiagram
 - Only the hash of the random token is stored. `expiresAt = null` means "never expires".
 - `READ` scope allows only reading requests; `FULL` allows everything the user may do except managing
   the account and tokens.
-
-**`UserFavorites`** – favorite item names per shop layout, personal.
-- Names are stored normalized (trimmed, lowercase, single spaces), so "Milk" stays a favorite at that shop
-  on every list.
-- At most 500 favorites per layout. An empty set removes the layout key.
 
 ## 3. Spaces and catalog (shared per space)
 
@@ -425,14 +400,12 @@ Other rules:
   - `categoryOrder` for mode `CATEGORIES`, the default: new items are placed automatically.
   - `itemOrder` for mode `ITEMS`: item names matched case-insensitively, unique, at most 1000.
 - Lists and layouts are many-to-many. Only the layout side stores the link (`listIds`).
-- `copyAs` creates a second shop of the same chain with the same orders and lists. Personal favorites
-  aren't copied.
+- `copyAs` creates a second shop of the same chain with the same orders and lists.
 - `ItemSorter` is a pure domain function that sorts a list's items for a layout, in this order:
   1. checked items last, if the user wants that,
   2. position in the layout,
-  3. the user's favorites for that layout,
-  4. usage count from the history,
-  5. name, then creation time.
+  3. usage count from the history,
+  4. name, then creation time.
 
 **`SyncState`** – sync bookkeeping of a space, explained in the next sections.
 
@@ -592,27 +565,23 @@ Things in the model that look inconsistent or surprising. They are recorded here
    `SpaceCatalog`, not an aggregate root. That is fine with id-only references, but these ids can dangle:
    deleting a category clears only the history. Items and layouts keep the id, and readers have to filter
    it out (as `ItemSorter` does).
-4. **Several links are by name instead of by id.** `ShopLayout.itemOrder`, `UserFavorites.byLayout` values
-   and the `SpaceCatalog.history` keys all use the normalized item name. Renaming an item, or renaming a
-   history entry, doesn't carry over to layouts or favorites.
+4. **Several links are by name instead of by id.** `ShopLayout.itemOrder` and the `SpaceCatalog.history`
+   keys use the normalized item name. Renaming an item, or renaming a history entry, doesn't carry over
+   to layouts.
 5. **Deleted lists and layouts are handled differently.**
    - A deleted list stays as a tombstone with `seq`. `purgeTombstones` drops only item tombstones, so a
      deleted list file seems to stay forever.
    - A deleted layout file is removed right away and leaves no tombstone. Only the advanced sequence
      counter tells clients about it.
 6. **Stale references after a deletion.**
-   - Deleting a list doesn't remove its id from `ShopLayout.listIds`.
-   - Deleting a layout doesn't remove its key from the users' `UserFavorites.byLayout`.
-
-   In both cases no cleanup is visible in the domain or the layout/list services.
+   - Deleting a list doesn't remove its id from `ShopLayout.listIds`; no cleanup is visible in the
+     domain or the layout/list services.
 7. **`Space` has no `seq`.** The space's own data (name, members, invites) isn't part of the
    sequence-based pull, unlike every other space-level aggregate.
 8. **Only some ids are validated.** `UserId`, `SpaceId`, `InviteId` and `ApiTokenId` have no format check;
    the client-generated ids do. Server-generated ids make this reasonable, but `SpaceId` and `UserId`
    also become directory names. The persistence adapter guards path segments (`JsonFiles.safeSegment`),
    so this is a consistency point, not a hole.
-9. **Favorites are keyed by `LayoutId` alone.** A layout id is unique only inside its space directory.
-   With client UUIDs a collision across spaces is practically impossible, but nothing enforces it.
 10. **`HistoryEntry.seq` is lost on rename.** `SpaceCatalog.renameHistory` builds the merged entry without
     `seq` (back to 0). This is harmless only because `stampHistoryChanges` and the catalog-wide `seq`
     restamp it afterwards.

@@ -14,7 +14,7 @@ describe('spaces', () => {
   beforeEach(() => loginForTest())
 
   it('summarises each space with correct singular and plural', async () => {
-    const pull = (lists: unknown[]) => ({ seq: 1, fullResync: true, lists, listIds: lists.map((l) => (l as { id: string }).id), catalog: null, historyChanges: [], layouts: null, layoutIds: [], favorites: {} })
+    const pull = (lists: unknown[]) => ({ seq: 1, fullResync: true, lists, listIds: lists.map((l) => (l as { id: string }).id), catalog: null, historyChanges: [], layouts: null, layoutIds: [] })
     mockApi({
       'GET /api/users/me': testUser,
       'GET /api/spaces': [{ ...space, memberCount: 1 }, { ...space, id: 's2', name: '\u{1F34E} Fruit', memberCount: 3 }],

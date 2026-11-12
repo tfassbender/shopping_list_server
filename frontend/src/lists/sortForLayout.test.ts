@@ -16,8 +16,8 @@ const item = (name: string, categoryId: string | null = null, checked = false): 
 const layout = (overrides: Partial<ShopLayout> = {}): ShopLayout => ({
   id: 'shop', name: 'Shop', mode: 'CATEGORIES', categoryOrder: [], itemOrder: [], listIds: [], createdAt: '', ...overrides,
 })
-const sorted = (items: Item[], l: ShopLayout, opts: { favorites?: string[]; usage?: Record<string, number>; checkedToEnd?: boolean } = {}) =>
-  sortForLayout(items, l, categories, new Set(opts.favorites ?? []), opts.usage ?? {}, opts.checkedToEnd ?? false).map((i) => i.name)
+const sorted = (items: Item[], l: ShopLayout, opts: { usage?: Record<string, number>; checkedToEnd?: boolean } = {}) =>
+  sortForLayout(items, l, categories, opts.usage ?? {}, opts.checkedToEnd ?? false).map((i) => i.name)
 
 describe('sortForLayout', () => {
   it('follows the category order of the layout', () => {
@@ -41,26 +41,18 @@ describe('sortForLayout', () => {
       .toEqual(['Bread', 'Avocado', 'Zucchini'])
   })
 
-  it('favorites first within the same position, but never across the layout order', () => {
-    expect(sorted([item('Butter', 'dairy'), item('Yogurt', 'dairy'), item('Bread', 'bakery')], layout({ categoryOrder: ['dairy', 'bakery'] }), { favorites: ['yogurt'] }))
-      .toEqual(['Yogurt', 'Butter', 'Bread'])
-    expect(sorted([item('Bread', 'bakery'), item('Milk', 'dairy')], layout({ categoryOrder: ['dairy', 'bakery'] }), { favorites: ['bread'] }))
-      .toEqual(['Milk', 'Bread'])
-  })
-
-  it('most bought after favorites, then name', () => {
+  it('most bought first within the same position, then name', () => {
     const items = [item('Cheese', 'dairy'), item('Butter', 'dairy'), item('Ayran', 'dairy'), item('Quark', 'dairy')]
-    expect(sorted(items, layout({ categoryOrder: ['dairy'] }), { favorites: ['quark'], usage: { cheese: 1, butter: 2 } }))
-      .toEqual(['Quark', 'Butter', 'Cheese', 'Ayran'])
+    expect(sorted(items, layout({ categoryOrder: ['dairy'] }), { usage: { cheese: 1, butter: 2 } }))
+      .toEqual(['Butter', 'Cheese', 'Ayran', 'Quark'])
     expect(sorted([item('banana'), item('Apple'), item('cherry')], layout())).toEqual(['Apple', 'banana', 'cherry'])
   })
 
-  it('checked items to the end when wanted, also checked favorites', () => {
+  it('checked items to the end when wanted', () => {
     const items = [item('Bread', 'bakery', true), item('Milk', 'dairy'), item('Carrots', 'veg', true), item('Cheese', 'dairy')]
     const l = layout({ categoryOrder: ['bakery', 'dairy', 'veg'] })
     expect(sorted(items, l, { checkedToEnd: true })).toEqual(['Cheese', 'Milk', 'Bread', 'Carrots'])
     expect(sorted(items, l, { checkedToEnd: false })).toEqual(['Bread', 'Cheese', 'Milk', 'Carrots'])
-    expect(sorted(items, l, { checkedToEnd: true, favorites: ['bread'] })[2]).toBe('Bread')
   })
 
   it('normalizes names like the server', () => {

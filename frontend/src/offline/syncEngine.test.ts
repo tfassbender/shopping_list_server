@@ -41,7 +41,7 @@ class FakeServer implements SyncApi {
       deleted: false,
       items: l.items.map((i) => ({ ...i, deleted: false })),
     }))
-    return { seq: this.seq, fullResync: true, lists, listIds: Object.keys(this.lists), catalog: null, historyChanges: [], layouts: null, layoutIds: [], favorites: {} }
+    return { seq: this.seq, fullResync: true, lists, listIds: Object.keys(this.lists), catalog: null, historyChanges: [], layouts: null, layoutIds: [] }
   })
 }
 
@@ -194,7 +194,6 @@ describe('SyncEngine', () => {
       catalog: null, historyChanges: [],
       layouts: null,
       layoutIds: [],
-      favorites: {},
     })
     await engine.sync(SPACE)
 
@@ -208,7 +207,7 @@ describe('SyncEngine', () => {
     await engine.sync(SPACE)
     server.pullOverride = () => ({
       seq: 50, fullResync: true, lists: [{ id: 'l9', name: 'Fresh', createdAt: '', seq: 50, deleted: false, items: [] }],
-      listIds: ['l9'], catalog: null, historyChanges: [], layouts: null, layoutIds: [], favorites: {},
+      listIds: ['l9'], catalog: null, historyChanges: [], layouts: null, layoutIds: [],
     })
     await engine.sync(SPACE)
     expect(Object.keys(engine.listsOf(SPACE)!)).toEqual(['l9'])
@@ -265,7 +264,7 @@ describe('SyncEngine', () => {
     let resolvePull: () => void = () => {}
     server.pull.mockImplementationOnce(async () => {
       await new Promise<void>((resolve) => (resolvePull = resolve))
-      return { seq: 1, fullResync: true, lists: [], listIds: [], catalog: null, historyChanges: [], layouts: null, layoutIds: [], favorites: {} }
+      return { seq: 1, fullResync: true, lists: [], listIds: [], catalog: null, historyChanges: [], layouts: null, layoutIds: [] }
     })
     const opening = fresh.open(SPACE)
     await new Promise((resolve) => setTimeout(resolve, 0))

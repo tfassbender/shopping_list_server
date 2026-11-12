@@ -66,7 +66,7 @@ function syncRoutes(warnings: MergeWarningDto[]) {
       results: body.changes.map((c) => ({ changeId: c.changeId, status: 'APPLIED', code: null })),
       warnings,
     }),
-    'GET /api/spaces/s1/changes': { seq: 2, fullResync: true, lists: [], listIds: [], catalog: null, historyChanges: [], layouts: null, layoutIds: [], favorites: {} },
+    'GET /api/spaces/s1/changes': { seq: 2, fullResync: true, lists: [], listIds: [], catalog: null, historyChanges: [], layouts: null, layoutIds: [] },
   }
 }
 

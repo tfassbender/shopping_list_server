@@ -36,9 +36,9 @@ Workflow: tech stack → feature analysis → implementation plan → implementa
   - Layers `domain` → `application` → `adapter`; dependencies point inward only.
   - `domain` is pure Kotlin: no Quarkus, Jakarta or Jackson imports.
   - **The space is the unit of sharing**: lists, shop layouts, categories, units and item history belong
-    to a space; only favorites and API tokens are personal. Roles: owner + member.
+    to a space; only API tokens (and the account) are personal. Roles: owner + member.
   - Aggregates (diagrams in `doc/data_model.md`): `Space`, `SpaceCatalog`, `ShoppingList`, `ShopLayout`,
-    `SyncState`, `User`, `UserApiTokens`, `UserFavorites`. Cross-aggregate references by id only. Invariants inside the aggregate,
+    `SyncState`, `User`, `UserApiTokens`. Cross-aggregate references by id only. Invariants inside the aggregate,
     permission checks in application services.
   - Typed ids as `@JvmInline value class`; immutable `data class`es, mutations via `copy`.
   - Repository/driven ports in `application.port`; REST DTOs and persistence DTOs live in their adapters

@@ -8,32 +8,26 @@ import com.tfassbender.shoppinglist.domain.space.SpaceCatalog
  * 2. position in the layout – the item's category (mode CATEGORIES) or the item itself (mode ITEMS);
  *    categories missing in the layout follow in the space's category order, items without category
  *    or unknown to the layout come last,
- * 3. personal favorites of this layout first,
- * 4. most bought first (item history),
- * 5. name (case-insensitive), then creation time for a stable order.
+ * 3. most bought first (item history),
+ * 4. name (case-insensitive), then creation time for a stable order.
  *
  * Pure function in the domain, so every client (web, Android, AI agents) gets the same order.
  */
 object ItemSorter {
 
-    data class SortedItem(val item: Item, val favorite: Boolean)
-
     fun sort(
         items: List<Item>,
         layout: ShopLayout,
         catalog: SpaceCatalog,
-        favorites: Set<String>,
         checkedToEnd: Boolean,
-    ): List<SortedItem> {
+    ): List<Item> {
         val position = positionFunction(layout, catalog)
-        val isFavorite = { item: Item -> SpaceCatalog.normalize(item.name) in favorites }
         val comparator = compareBy<Item> { if (checkedToEnd && it.checked) 1 else 0 }
             .thenBy(position)
-            .thenBy { if (isFavorite(it)) 0 else 1 }
             .thenByDescending { catalog.historyFor(it.name)?.usageCount ?: 0 }
             .thenBy { it.name.lowercase() }
             .thenBy { it.createdAt }
-        return items.sortedWith(comparator).map { SortedItem(it, isFavorite(it)) }
+        return items.sortedWith(comparator)
     }
 
     private fun positionFunction(layout: ShopLayout, catalog: SpaceCatalog): (Item) -> Int = when (layout.mode) {

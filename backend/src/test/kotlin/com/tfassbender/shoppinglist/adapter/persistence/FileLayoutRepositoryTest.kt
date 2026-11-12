@@ -6,7 +6,6 @@ import com.tfassbender.shoppinglist.domain.list.LayoutMode
 import com.tfassbender.shoppinglist.domain.list.ListId
 import com.tfassbender.shoppinglist.domain.list.ShopLayout
 import com.tfassbender.shoppinglist.domain.space.SpaceId
-import com.tfassbender.shoppinglist.domain.user.UserFavorites
 import com.tfassbender.shoppinglist.domain.user.UserId
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -40,18 +39,5 @@ class FileLayoutRepositoryTest {
 
         repository.delete(spaceId, layout.id)
         assertNull(repository.findById(spaceId, layout.id))
-    }
-
-    @Test
-    fun `round-trips favorites in the user directory`() {
-        val repository = FileFavoritesRepository(files)
-        val user = UserId("u1")
-        assertEquals(UserFavorites(user), repository.find(user))
-
-        val favorites = UserFavorites(user).add(LayoutId("aldi"), "Milk").add(LayoutId("aldi"), "Bread").add(LayoutId("rewe"), "Wine")
-        repository.save(favorites)
-
-        assertEquals(favorites, repository.find(user))
-        assertTrue(dataDir.resolve("users/u1/favorites.json").exists())
     }
 }

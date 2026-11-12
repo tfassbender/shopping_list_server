@@ -34,9 +34,8 @@ class ItemSorterTest {
         items: List<Item>,
         layout: ShopLayout,
         catalog: SpaceCatalog = this.catalog,
-        favorites: Set<String> = emptySet(),
         checkedToEnd: Boolean = false,
-    ) = ItemSorter.sort(items, layout, catalog, favorites, checkedToEnd).map { it.item.name }
+    ) = ItemSorter.sort(items, layout, catalog, checkedToEnd).map { it.name }
 
     @Nested
     inner class CategoryMode {
@@ -93,28 +92,14 @@ class ItemSorterTest {
     @Nested
     inner class TieBreakers {
         @Test
-        fun `favorites come first within the same layout position`() {
-            val items = listOf(item("Butter", dairy), item("Yogurt", dairy), item("Bread", bakery))
-            val result = ItemSorter.sort(items, layout(categories = listOf(dairy, bakery)), catalog, setOf("yogurt"), false)
-            assertEquals(listOf("Yogurt", "Butter", "Bread"), result.map { it.item.name })
-            assertEquals(listOf(true, false, false), result.map { it.favorite })
-        }
-
-        @Test
-        fun `favorites don't jump over the layout order`() {
-            val items = listOf(item("Bread", bakery), item("Milk", dairy))
-            assertEquals(listOf("Milk", "Bread"), sortedNames(items, layout(categories = listOf(dairy, bakery)), favorites = setOf("bread")))
-        }
-
-        @Test
-        fun `most bought first after favorites`() {
+        fun `most bought first within the same layout position`() {
             val history = catalog
                 .countUsage("Cheese", dairy, null, t0)
                 .countUsage("Butter", dairy, null, t0).countUsage("Butter", dairy, null, t0)
             val items = listOf(item("Cheese", dairy), item("Butter", dairy), item("Ayran", dairy), item("Quark", dairy))
             assertEquals(
-                listOf("Quark", "Butter", "Cheese", "Ayran"),
-                sortedNames(items, layout(categories = listOf(dairy)), history, favorites = setOf("quark")),
+                listOf("Butter", "Cheese", "Ayran", "Quark"),
+                sortedNames(items, layout(categories = listOf(dairy)), history),
             )
         }
 
@@ -128,8 +113,8 @@ class ItemSorterTest {
         fun `same name keeps creation order (stable)`() {
             val first = item("Milk", dairy)
             val second = item("Milk", dairy)
-            val result = ItemSorter.sort(listOf(second, first), layout(), catalog, emptySet(), false)
-            assertEquals(listOf(first.id, second.id), result.map { it.item.id })
+            val result = ItemSorter.sort(listOf(second, first), layout(), catalog, false)
+            assertEquals(listOf(first.id, second.id), result.map { it.id })
         }
     }
 
@@ -147,15 +132,10 @@ class ItemSorterTest {
         fun `without the setting checked items stay in place`() {
             assertEquals(listOf("Bread", "Cheese", "Milk", "Carrots"), sortedNames(items, layout, checkedToEnd = false))
         }
-
-        @Test
-        fun `a checked favorite still goes to the end`() {
-            assertEquals("Bread", sortedNames(items, layout, favorites = setOf("bread"), checkedToEnd = true)[2])
-        }
     }
 
     @Test
     fun `empty list sorts to empty`() {
-        assertTrue(ItemSorter.sort(emptyList(), layout(), catalog, emptySet(), true).isEmpty())
+        assertTrue(ItemSorter.sort(emptyList(), layout(), catalog, true).isEmpty())
     }
 }

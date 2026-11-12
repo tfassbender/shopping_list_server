@@ -11,8 +11,6 @@ export interface Item {
   checked: boolean
   createdAt: string
   seq: number
-  /** Personal favorite in the shop layout the list is sorted by. */
-  favorite?: boolean
 }
 
 export interface ShoppingList {

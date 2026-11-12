@@ -49,19 +49,13 @@ class LayoutResourceTest {
     }
 
     @Test
-    fun `item layout, favorites and sorted mutation responses`() {
+    fun `item layout and sorted mutation responses`() {
         val layoutId = createLayout("ITEMS")
         user.request().body(mapOf("entries" to listOf("Apples", "Milk", "Bread"))).put("${layouts()}/$layoutId/item-order").then().statusCode(200)
-        user.request().body(mapOf("name" to "Cheese")).post("${layouts()}/$layoutId/favorites")
-            .then().statusCode(200).body("names", contains("cheese"))
 
-        // Cheese is unknown to the item order -> last, even as a favorite
+        // Cheese is unknown to the item order -> last
         user.request().queryParam("sort", layoutId).post("${list()}/items/apples/check").then().statusCode(200)
             .body("items.name", contains("Milk", "Bread", "Cheese", "Apples")) // checked Apples to the end
-            .body("items.find { it.name == 'Cheese' }.favorite", equalTo(true))
-
-        user.request().queryParam("name", "cheese").delete("${layouts()}/$layoutId/favorites")
-            .then().statusCode(200).body("names", hasSize<Any>(0))
     }
 
     @Test

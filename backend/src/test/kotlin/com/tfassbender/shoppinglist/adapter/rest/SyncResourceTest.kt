@@ -173,16 +173,14 @@ class SyncResourceTest {
     }
 
     @Test
-    fun `full pull contains catalog, layouts and own favorites, strangers get 404`() {
+    fun `full pull contains catalog and layouts, strangers get 404`() {
         val layoutId: String = anna.request().body(mapOf("name" to "Aldi")).post("/api/spaces/$spaceId/layouts").then().statusCode(201)
             .extract().path("id")
-        anna.request().body(mapOf("name" to "Milk")).post("/api/spaces/$spaceId/layouts/$layoutId/favorites").then().statusCode(200)
         anna.request().get(changes()).then().statusCode(200)
             .body("fullResync", equalTo(true))
             .body("catalog.categories", notNullValue())
             .body("layouts.name", containsInAnyOrder("Aldi"))
-            .body("favorites['$layoutId']", contains("milk"))
-        bob.request().get(changes()).then().statusCode(200).body("favorites.size()", equalTo(0))
+            .body("layoutIds", contains(layoutId))
         TestUsers.register().request().get(changes()).then().statusCode(404)
     }
 }

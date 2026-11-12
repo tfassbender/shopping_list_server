@@ -78,8 +78,6 @@ export interface PullResponse {
   historyChanges: HistoryEntry[]
   layouts: ShopLayout[] | null
   layoutIds: string[]
-  /** The caller's favorites (layout id -> normalized names), always complete; put into the query cache. */
-  favorites: Record<string, string[]>
 }
 
 export const syncApi = {

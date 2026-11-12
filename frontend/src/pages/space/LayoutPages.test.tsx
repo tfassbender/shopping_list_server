@@ -61,24 +61,20 @@ describe('shop selection on the list screen', () => {
       id: 'l1', spaceId: 's1', name: 'Groceries', createdAt: '', seq: 1,
       items: [item('1', 'Milk', { categoryId: 'dairy' }), item('2', 'Bread', { categoryId: 'bakery' })],
     }
-    let favorites = ['milk']
     return mockApi({
       'GET /api/users/me': testUser,
       'GET /api/spaces/s1': { id: 's1', name: 'Home', myRole: 'MEMBER', memberCount: 1, createdAt: '' },
       'GET /api/spaces/s1/catalog': catalog,
       'GET /api/spaces/s1/layouts': [layout],
-      'GET /api/spaces/s1/layouts/aldi/favorites': () => ({ names: favorites }),
-      'POST /api/spaces/s1/layouts/aldi/favorites': (body) => ({ names: (favorites = [...favorites, (body as { name: string }).name.toLowerCase()]) }),
       ...fakeSyncServer('s1', [list]).routes,
     })
   }
 
-  it('sorts by the chosen shop (on the device), remembers it and offers favorites', async () => {
-    const spy = setup()
+  it('sorts by the chosen shop (on the device) and remembers it', async () => {
+    setup()
     renderWithProviders(<AppRoutes />, '/spaces/s1/lists/l1')
 
     await screen.findByRole('checkbox', { name: 'Milk' })
-    expect(screen.queryByRole('button', { name: 'Favorite Milk' })).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: /Order of adding/ }))
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Aldi/ }))
@@ -87,17 +83,6 @@ describe('shop selection on the list screen', () => {
     await waitFor(() => expect(screen.getAllByRole('list').map((l) => l.getAttribute('aria-label'))).toEqual(['Bakery', 'Dairy']))
     expect(localStorage.getItem('shoppinglist.listLayout')).toBe('{"l1":"aldi"}')
     expect(screen.getByRole('button', { name: /Sorted for Aldi/ })).toBeInTheDocument()
-
-    // favorites are toggled in the item details
-    await userEvent.click(screen.getByRole('button', { name: 'Edit Milk' }))
-    await waitFor(() => expect(within(screen.getByRole('dialog')).getByRole('switch', { name: 'Favorite at Aldi' })).toBeChecked())
-    await userEvent.keyboard('{Escape}')
-    await userEvent.click(screen.getByRole('button', { name: 'Edit Bread' }))
-    const favorite = within(screen.getByRole('dialog')).getByRole('switch', { name: 'Favorite at Aldi' })
-    expect(favorite).not.toBeChecked()
-    await userEvent.click(favorite)
-    await waitFor(() => expect(favorite).toBeChecked())
-    await waitFor(() => expect(sentBodies(spy, 'POST', '/api/spaces/s1/layouts/aldi/favorites')).toEqual([{ name: 'Bread' }]))
   })
 
   it('hides the category headers with the header button and shows a color bar per item instead', async () => {

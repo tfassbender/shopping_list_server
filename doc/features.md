@@ -58,7 +58,7 @@ Reviewed and prioritized. Details in the sections below the table.
 | Quantity / unit / note per item                                  | Common          | Must          |
 | Categories for items (e.g. dairy, vegetables)                    | Reference app   | Must          |
 | Colors for categories                                            | Reference (Pro) | Must          |
-| Sort items by shop layout, "most used first", favorites          | Reference (Pro) | Must ([3.2](#32-shops-and-sorting)) |
+| Sort items by shop layout, "most used first"                     | Reference (Pro) | Must ([3.2](#32-shops-and-sorting)) |
 | Option: checked items move to the end of the list                | Idea            | Must ([3.2](#32-shops-and-sorting)) |
 | Autocomplete from item history                                   | Common          | Must          |
 | "Remove all checked items"                                       | Common          | Must          |
@@ -82,7 +82,7 @@ members only see the display name.
 
 **Space**: the only thing that can be shared.
 - Contains everything: lists, shop layouts, categories, units, item history, ...
-- **Exception: favorites** are personal (per user), never shared.
+- **Exception:** API tokens and the account settings are personal (per user), never shared.
 - A user can own and be member of several spaces.
 
 **Roles:** exactly two per space – **owner** (exactly one) and **member**.
@@ -117,7 +117,8 @@ members only see the display name.
 - **Shop layouts** define the sort order of a list for a specific shop (e.g. grocery list sorted by the
   supermarket layout, not by the hardware store layout).
 - Layouts are created by a user, belong to the space and can be **connected to several lists**.
-- Per shop: sort by **"most used first"** and **favorites** (favorites are personal).
+- Per shop: sort by **"most used first"**. (Personal favorites per shop existed until 2026-11-12 and
+  were removed: their effect - first within a category - was too small to be worth the switch.)
 - **Config option: checked items move to the end** of the list (no scrolling past checked items).
 
 Decided:

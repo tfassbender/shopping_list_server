@@ -76,7 +76,7 @@ describe('applyOp (optimistic local view)', () => {
 
   it('applyPull keeps unchanged items and lists of a delta', () => {
     const result = applyPull({ l: list }, {
-      seq: 5, fullResync: false, lists: [], listIds: ['l'], catalog: null, historyChanges: [], layouts: null, layoutIds: [], favorites: {},
+      seq: 5, fullResync: false, lists: [], listIds: ['l'], catalog: null, historyChanges: [], layouts: null, layoutIds: [],
     }, 's')
     expect(result.l).toEqual(list)
   })

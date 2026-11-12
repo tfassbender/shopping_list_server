@@ -67,7 +67,7 @@ com.tfassbender.shoppinglist
 ├── domain/          pure Kotlin, no Quarkus/Jackson/Jakarta imports
 │   ├── space/       Space (members, roles, invites), SpaceCatalog (categories, units, item history)
 │   ├── list/        ShoppingList (items), ShopLayout
-│   └── user/        User, ApiToken, UserFavorites
+│   └── user/        User, ApiToken
 ├── application/     use-case services + ports
 │   ├── port/        repositories, TokenIssuer, EmailSender, Clock
 │   ├── space/       SpaceService (create, invite, join, remove member, transfer ownership, ...)
@@ -89,7 +89,7 @@ Rules:
   - `SpaceCatalog` – categories (with colors), units, item history of a space.
   - `ShoppingList` – items of one list; references its `SpaceId`.
   - `ShopLayout` – sort order for one shop, part of the space, usable by several lists.
-  - `User`, `ApiToken`, `UserFavorites` – personal, never shared.
+  - `User`, `ApiToken` – personal, never shared.
   - Aggregates reference each other **by id only**. Permission checks ("is this user a member/owner of
     the space that contains this list?") happen in the application services using the `Space`.
 - **Value objects:** typed ids as Kotlin `@JvmInline value class` (`ListId`, `ItemId`, `UserId`), `Email`
@@ -124,7 +124,7 @@ adapter stays, which also demonstrates that the hexagonal ports really make stor
 
 - **Hibernate ORM with plain JPA** (`EntityManager`), no Panache: plain JPA skills carry over to other
   stacks, and Panache's active-record style would pull persistence concerns towards the domain.
-- **Normalized schema** (tables for users, favorites, API tokens, spaces, members, invites, categories,
+- **Normalized schema** (tables for users, API tokens, spaces, members, invites, categories,
   units, item history, lists, items, item stamps, layouts, layout entries, sequence counter, sync state).
 - **JPA entities are separate from the domain model - a firm rule.** Entities live only in
   `adapter.persistence.jpa`; the domain stays immutable Kotlin `data class`es with value-class ids and no
@@ -153,7 +153,6 @@ files are sufficient; it needs no database at all.
   data/
   ├── users/<userId>/
   │   ├── user.json
-  │   ├── favorites.json
   │   └── api-tokens.json
   └── spaces/<spaceId>/
       ├── space.json            members, roles, invites

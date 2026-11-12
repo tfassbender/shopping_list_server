@@ -129,11 +129,6 @@ data class PullResponse(
     @field:Schema(description = "All layouts, only if one changed")
     val layouts: List<LayoutDto>?,
     val layoutIds: List<String>,
-    @field:Schema(
-        description = "The caller's personal favorites (layout id -> normalized item names, sorted), always complete; " +
-            "layouts without favorites are left out",
-    )
-    val favorites: Map<String, List<String>>,
 )
 
 /**
@@ -189,7 +184,6 @@ class SyncResource(
             historyChanges = result.historyChanges.map(HistoryEntryDto::from),
             layouts = result.layouts?.map(LayoutDto::from),
             layoutIds = result.layoutIds,
-            favorites = result.favorites.entries.associate { (layoutId, names) -> layoutId.value to names.sorted() },
         )
     }
 

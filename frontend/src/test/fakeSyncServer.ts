@@ -34,7 +34,6 @@ export function fakeSyncServer(spaceId: string, initial: ShoppingList[]) {
           historyChanges: [],
           layouts: null,
           layoutIds: [],
-          favorites: {},
         }
       },
     },

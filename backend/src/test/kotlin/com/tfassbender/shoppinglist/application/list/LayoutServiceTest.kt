@@ -1,7 +1,6 @@
 package com.tfassbender.shoppinglist.application.list
 
 import com.tfassbender.shoppinglist.application.InMemoryCatalogRepository
-import com.tfassbender.shoppinglist.application.InMemoryFavoritesRepository
 import com.tfassbender.shoppinglist.application.InMemoryLayoutRepository
 import com.tfassbender.shoppinglist.application.InMemoryListRepository
 import com.tfassbender.shoppinglist.application.InMemorySequenceCounter
@@ -45,7 +44,7 @@ class LayoutServiceTest {
     private val sequence = InMemorySequenceCounter()
     private val catalog = CatalogService(catalogs, sequence, access, locks, clock)
     private val lists = ShoppingListService(listRepo, ListStore(listRepo, InMemorySyncStateRepository(), clock), sequence, access, locks, clock, catalog)
-    private val service = LayoutService(InMemoryLayoutRepository(), InMemoryFavoritesRepository(), catalogs, listRepo, users, sequence, access, locks, clock)
+    private val service = LayoutService(InMemoryLayoutRepository(), catalogs, listRepo, users, sequence, access, locks, clock)
 
     private val anna = UserId("anna")
     private val bob = UserId("bob")
@@ -71,7 +70,7 @@ class LayoutServiceTest {
     }
 
     @Test
-    fun `sorting uses layout, personal favorites and personal checked-to-end setting`() {
+    fun `sorting uses the layout and the personal checked-to-end setting`() {
         val layout = service.create(anna, spaceId, "Aldi", LayoutMode.CATEGORIES)
         service.setCategoryOrder(anna, spaceId, layout.id, listOf(bakery, dairy, veg))
         lists.applyChanges(
@@ -84,15 +83,13 @@ class LayoutServiceTest {
                 ListChange.CheckItem(ItemId("bread")),
             ),
         )
-        service.addFavorite(anna, spaceId, layout.id, "milk")
         val list = lists.get(anna, spaceId, listId)
 
         val forAnna = service.sort(anna, list, layout.id)
-        assertEquals(listOf("Milk", "Cheese", "Apples", "Bread"), forAnna.map { it.item.name })
-        assertTrue(forAnna.first().favorite)
+        assertEquals(listOf("Cheese", "Milk", "Apples", "Bread"), forAnna.map { it.name })
 
-        // Bob: no favorites, checked items stay in place
-        assertEquals(listOf("Bread", "Cheese", "Milk", "Apples"), service.sort(bob, list, layout.id).map { it.item.name })
+        // Bob: checked items stay in place
+        assertEquals(listOf("Bread", "Cheese", "Milk", "Apples"), service.sort(bob, list, layout.id).map { it.name })
     }
 
     @Test
@@ -110,12 +107,11 @@ class LayoutServiceTest {
     }
 
     @Test
-    fun `a copy takes mode, orders and connected lists, but no favorites`() {
+    fun `a copy takes mode, orders and connected lists`() {
         val aldi = service.create(anna, spaceId, "Aldi Nord", LayoutMode.ITEMS)
         service.setCategoryOrder(anna, spaceId, aldi.id, listOf(bakery, dairy))
         service.setItemOrder(anna, spaceId, aldi.id, listOf("Bread", "Milk"))
         service.connectList(anna, spaceId, aldi.id, listId)
-        service.addFavorite(anna, spaceId, aldi.id, "Milk")
 
         val copy = service.copy(bob, spaceId, aldi.id, " Aldi Süd ")
 
@@ -126,7 +122,6 @@ class LayoutServiceTest {
         assertEquals(listOf("Bread", "Milk"), copy.itemOrder)
         assertEquals(setOf(listId), copy.listIds)
         assertTrue(copy.seq > service.get(anna, spaceId, aldi.id).seq) // new seq, so other clients pull it
-        assertTrue(service.favorites(anna, spaceId, copy.id).isEmpty())
         assertEquals(listOf("Aldi Nord", "Aldi Süd"), service.layouts(anna, spaceId).map { it.name }) // the original is unchanged
     }
 
@@ -137,15 +132,6 @@ class LayoutServiceTest {
         assertEquals("LAYOUT_EXISTS", assertThrows<DomainException> { service.copy(anna, spaceId, aldi.id, "Copy", aldi.id) }.code)
         assertEquals("LAYOUT_NOT_FOUND", assertThrows<DomainException> { service.copy(anna, spaceId, LayoutId("missing"), "Copy") }.code)
         assertEquals("SPACE_NOT_FOUND", assertThrows<DomainException> { service.copy(UserId("x"), spaceId, aldi.id, "Copy") }.code)
-    }
-
-    @Test
-    fun `favorites are personal`() {
-        val layout = service.create(anna, spaceId, "Aldi", LayoutMode.CATEGORIES)
-        service.addFavorite(anna, spaceId, layout.id, "Milk")
-        assertEquals(setOf("milk"), service.favorites(anna, spaceId, layout.id))
-        assertTrue(service.favorites(bob, spaceId, layout.id).isEmpty())
-        assertTrue(service.removeFavorite(anna, spaceId, layout.id, "MILK").isEmpty())
     }
 
     @Test
@@ -194,13 +180,6 @@ class LayoutServiceTest {
         val layout = service.create(anna, spaceId, "Aldi", LayoutMode.CATEGORIES)
         lists.delete(anna, spaceId, listId)
         assertEquals("LIST_NOT_FOUND", assertThrows<DomainException> { service.connectList(anna, spaceId, layout.id, listId) }.code)
-    }
-
-    @Test
-    fun `favorites need an existing layout`() {
-        val missing = com.tfassbender.shoppinglist.domain.list.LayoutId("missing")
-        assertEquals("LAYOUT_NOT_FOUND", assertThrows<DomainException> { service.addFavorite(anna, spaceId, missing, "Milk") }.code)
-        assertEquals("LAYOUT_NOT_FOUND", assertThrows<DomainException> { service.favorites(anna, spaceId, missing) }.code)
     }
 
     @Test

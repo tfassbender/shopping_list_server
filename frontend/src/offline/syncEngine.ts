@@ -58,7 +58,7 @@ export class SyncEngine {
 
   /**
    * Called after every successful pull. The engine itself only keeps lists; the pull also carries the
-   * catalog (incl. item history) and the user's favorites, which the app puts into its query cache.
+   * catalog (incl. item history), which the app puts into its query cache.
    */
   onPull = (listener: (spaceId: string, pull: PullResponse) => void) => {
     this.pullListeners.add(listener)

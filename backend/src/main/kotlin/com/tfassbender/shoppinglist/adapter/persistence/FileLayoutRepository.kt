@@ -1,6 +1,5 @@
 package com.tfassbender.shoppinglist.adapter.persistence
 
-import com.tfassbender.shoppinglist.application.port.FavoritesRepository
 import com.tfassbender.shoppinglist.application.port.LayoutRepository
 import com.tfassbender.shoppinglist.domain.list.CategoryId
 import com.tfassbender.shoppinglist.domain.list.LayoutId
@@ -8,8 +7,6 @@ import com.tfassbender.shoppinglist.domain.list.LayoutMode
 import com.tfassbender.shoppinglist.domain.list.ListId
 import com.tfassbender.shoppinglist.domain.list.ShopLayout
 import com.tfassbender.shoppinglist.domain.space.SpaceId
-import com.tfassbender.shoppinglist.domain.user.UserFavorites
-import com.tfassbender.shoppinglist.domain.user.UserId
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
@@ -72,22 +69,4 @@ data class LayoutFile(
             seq = layout.seq,
         )
     }
-}
-
-/** Stores `users/<userId>/favorites.json` (personal, deleted with the account). */
-class FileFavoritesRepository(private val files: JsonFiles) : FavoritesRepository {
-
-    data class FavoritesFile(val schemaVersion: Int = 1, val layouts: Map<String, List<String>> = emptyMap())
-
-    override fun find(userId: UserId): UserFavorites {
-        val file = files.read(file(userId), FavoritesFile::class.java) ?: return UserFavorites(userId)
-        return UserFavorites(userId, file.layouts.map { (layout, names) -> LayoutId(layout) to names.toSet() }.toMap())
-    }
-
-    override fun save(favorites: UserFavorites) {
-        val content = FavoritesFile(layouts = favorites.byLayout.map { (layout, names) -> layout.value to names.sorted() }.toMap())
-        files.write(file(favorites.userId), content)
-    }
-
-    private fun file(userId: UserId): Path = files.userDir(userId.value).resolve("favorites.json")
 }

@@ -12,6 +12,6 @@ interface UserRepository {
     fun findAllByIds(ids: Collection<UserId>): List<User> = ids.mapNotNull { findById(it) }
     fun save(user: User)
 
-    /** Deletes the user including all personal data (favorites, API tokens). */
+    /** Deletes the user including all personal data (API tokens). */
     fun delete(id: UserId)
 }

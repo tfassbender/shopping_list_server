@@ -13,14 +13,13 @@ export function normalizeName(name: string): string {
  * 1. checked items to the end (if the user wants that),
  * 2. position in the layout (category order in mode CATEGORIES – then the remaining categories in the
  *    space order, uncategorized last; item names in mode ITEMS – unknown items last),
- * 3. personal favorites, 4. most bought, 5. name, 6. creation time.
+ * 3. most bought, 4. name, 5. creation time.
  * The test cases mirror the server's `ItemSorterTest`; keep both in sync.
  */
 export function sortForLayout(
   items: Item[],
   layout: ShopLayout,
   categories: Category[],
-  favorites: Set<string>,
   usage: Record<string, number>,
   checkedToEnd: boolean,
 ): Item[] {
@@ -29,7 +28,6 @@ export function sortForLayout(
     item,
     checked: checkedToEnd && item.checked ? 1 : 0,
     position: position(item),
-    favorite: favorites.has(normalizeName(item.name)) ? 0 : 1,
     usage: usage[normalizeName(item.name)] ?? 0,
     name: item.name.toLowerCase(),
   }))
@@ -37,7 +35,6 @@ export function sortForLayout(
     (a, b) =>
       a.checked - b.checked ||
       a.position - b.position ||
-      a.favorite - b.favorite ||
       b.usage - a.usage ||
       compareText(a.name, b.name) ||
       compareInstants(a.item.createdAt, b.item.createdAt),

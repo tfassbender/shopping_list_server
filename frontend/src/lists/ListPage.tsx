@@ -1,8 +1,8 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useCatalog, type Category } from '../api/catalog'
-import { layoutKeys, layoutsApi, rememberedLayout, rememberLayout, useFavorites, useLayouts, type ShopLayout } from '../api/layouts'
+import { rememberedLayout, rememberLayout, useLayouts, type ShopLayout } from '../api/layouts'
 import { listsApi, newId, type Item } from '../api/lists'
 import { useSpace } from '../api/spaces'
 import { iconButtonClass, Page } from '../components/AppBar'
@@ -16,7 +16,7 @@ import { AddItemDialog } from './AddItemDialog'
 import { ItemEditor } from './ItemEditor'
 import { setLastList } from './lastList'
 import { useListActions } from './listChanges'
-import { normalizeName, sortForLayout } from './sortForLayout'
+import { sortForLayout } from './sortForLayout'
 import { categoryHeadersShown, rememberCategoryHeaders } from './categoryHeaders'
 import { amountText, groupSorted, sortItems, withoutCategoryHeaders, type ItemSection } from './sortItems'
 
@@ -40,9 +40,7 @@ export function ListPage() {
   const lostChanges = useSpaceAccessLost(spaceId)
   const { data: space } = useSpace(spaceId)
   const { data: catalog } = useCatalog(spaceId)
-  const { data: favoriteNames } = useFavorites(spaceId, layout?.id ?? null)
   const { apply } = useListActions(spaceId, listId)
-  const toggleFavorite = useToggleFavorite(spaceId, layout?.id ?? null)
   const deleteList = useMutation({
     mutationFn: () => listsApi.delete(spaceId, listId),
     onSuccess: () => {
@@ -81,12 +79,10 @@ export function ListPage() {
   }
 
   const categories = catalog?.categories ?? []
-  const favorites = new Set(favoriteNames ?? [])
-  const isFavorite = (item: Item) => favorites.has(normalizeName(item.name))
   // Without a shop the list is exactly in the order of adding - no category groups, which would look like
   // a shop's sorting.
   const grouped = layout
-    ? groupSorted(sortForLayout(list.items, layout, categories, favorites, catalog?.usage ?? {}, false), categories, layout.mode, movedToEnd)
+    ? groupSorted(sortForLayout(list.items, layout, categories, catalog?.usage ?? {}, false), categories, layout.mode, movedToEnd)
     : groupSorted(sortItems(list.items), categories, 'ITEMS', movedToEnd)
   // Headers off: same order, the category shows as a colored bar at each item instead.
   const sections = showHeaders ? grouped : withoutCategoryHeaders(grouped)
@@ -155,7 +151,7 @@ export function ListPage() {
         ...(space?.myRole === 'OWNER' ? ['divider' as const, { label: t('list.delete'), icon: 'delete' as const, danger: true, onSelect: () => setDialog('delete') }] : []),
       ]}
     >
-      <ErrorText error={toggleFavorite.error ?? deleteList.error} />
+      <ErrorText error={deleteList.error} />
       {list.items.length === 0 && <p className="py-10 text-center text-lg text-muted">{t('list.empty')}</p>}
       {sections.map((section) => (
         <ItemSectionView key={section.key} section={section} categories={categories} colorBars={!showHeaders} onToggle={toggle} onEdit={setEditing} />
@@ -199,9 +195,6 @@ export function ListPage() {
         <ItemEditor
           item={editing}
           catalog={catalog}
-          shopName={layout?.name}
-          favorite={isFavorite(editing)}
-          onToggleFavorite={layout ? () => toggleFavorite.mutate({ name: editing.name, favorite: isFavorite(editing) }) : undefined}
           onSave={(fields) => apply({ type: 'editItem', itemId: editing.id, fields })}
           onDelete={() => apply({ type: 'deleteItem', itemId: editing.id })}
           onClose={() => setEditing(null)}
@@ -271,26 +264,6 @@ function ShopDialog(props: {
       </Link>
     </Dialog>
   )
-}
-
-/** Toggles a personal favorite in the current shop; the order updates at once (needs a connection). */
-function useToggleFavorite(spaceId: string, layoutId: string | null) {
-  const queryClient = useQueryClient()
-  const key = layoutKeys.favorites(spaceId, layoutId ?? '')
-  return useMutation({
-    mutationFn: ({ name, favorite }: { name: string; favorite: boolean }) =>
-      favorite ? layoutsApi.removeFavorite(spaceId, layoutId!, name) : layoutsApi.addFavorite(spaceId, layoutId!, name),
-    onMutate: ({ name, favorite }) => {
-      const previous = queryClient.getQueryData<string[]>(key)
-      queryClient.setQueryData<string[]>(key, (names = []) =>
-        favorite ? names.filter((n) => n !== normalizeName(name)) : [...names, normalizeName(name)],
-      )
-      return { previous }
-    },
-    // Not saved: show the old state again instead of a favorite that only exists on this device.
-    onError: (_error, _variables, context) => queryClient.setQueryData(key, context?.previous),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
-  })
 }
 
 /** A block of items under a header: category name with its color, "Other" or "Checked" (none in item mode). */

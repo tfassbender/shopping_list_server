@@ -2,7 +2,6 @@ package com.tfassbender.shoppinglist.adapter.persistence
 
 import com.tfassbender.shoppinglist.application.port.ApiTokenRepository
 import com.tfassbender.shoppinglist.application.port.CatalogRepository
-import com.tfassbender.shoppinglist.application.port.FavoritesRepository
 import com.tfassbender.shoppinglist.application.port.LayoutRepository
 import com.tfassbender.shoppinglist.application.port.SequenceCounter
 import com.tfassbender.shoppinglist.application.port.ShoppingListRepository
@@ -48,10 +47,6 @@ class PersistenceProducers(
     @Produces
     @ApplicationScoped
     fun layoutRepository(): LayoutRepository = FileLayoutRepository(files)
-
-    @Produces
-    @ApplicationScoped
-    fun favoritesRepository(): FavoritesRepository = FileFavoritesRepository(files)
 
     @Produces
     @ApplicationScoped

@@ -90,11 +90,10 @@ class OpenApiContractTest {
     }
 
     @Test
-    fun `the item name of history and favorite operations is required`() {
+    fun `the item name of history operations is required`() {
         val required = listOf(
             "/api/spaces/{spaceId}/catalog/history" to "put",
             "/api/spaces/{spaceId}/catalog/history" to "delete",
-            "/api/spaces/{spaceId}/layouts/{layoutId}/favorites" to "delete",
         )
         required.forEach { (path, method) ->
             val flag = spec.get<Boolean?>("paths.'$path'.$method.parameters.find { it.name == 'name' }.required")

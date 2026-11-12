@@ -2,22 +2,18 @@ import { useState } from 'react'
 import type { Catalog } from '../api/catalog'
 import type { EditableField, Item } from '../api/lists'
 import { Dialog, DialogActions } from '../components/Dialog'
-import { Button, SelectField, Switch, TextField } from '../components/ui'
+import { Button, SelectField, TextField } from '../components/ui'
 import { t } from '../i18n/messages'
-import { useOnline } from '../offline/online'
 import { isValidAmount } from './amount'
 import { AmountUnitFields } from './AmountUnitFields'
 
 /**
  * Details of one item (opened with ⋯). Only changed fields are sent, so concurrent edits of other fields
- * by others are not overwritten. With a shop selected, the item can be marked as personal favorite there.
+ * by others are not overwritten.
  */
 export function ItemEditor(props: {
   item: Item
   catalog?: Catalog
-  shopName?: string
-  favorite?: boolean
-  onToggleFavorite?: () => void
   onSave: (changed: Partial<Record<EditableField, string | null>>) => void
   onDelete: () => void
   onClose: () => void
@@ -28,8 +24,6 @@ export function ItemEditor(props: {
   const [unit, setUnit] = useState(item.unit ?? '')
   const [categoryId, setCategoryId] = useState(item.categoryId ?? '')
   const [note, setNote] = useState(item.note ?? '')
-  // Favorites are saved on the server right away (not via the offline sync), so they need a connection.
-  const online = useOnline()
 
   function save() {
     if (!name.trim() || !isValidAmount(quantity)) return // only spaces / a marked invalid amount
@@ -55,15 +49,6 @@ export function ItemEditor(props: {
         ))}
       </SelectField>
       <TextField label={t('item.note')} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
-      {props.shopName && props.onToggleFavorite && (
-        <label className="flex min-h-12 items-center justify-between gap-3">
-          <span>
-            {t('item.favoriteAt', { shop: props.shopName })}
-            {!online && <span className="block text-sm text-muted">{t('item.favoriteOffline')}</span>}
-          </span>
-          <Switch checked={!!props.favorite} disabled={!online} onChange={props.onToggleFavorite} label={t('item.favoriteAt', { shop: props.shopName })} />
-        </label>
-      )}
       <DialogActions>
         <Button
           variant="ghost"

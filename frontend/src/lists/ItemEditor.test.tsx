@@ -96,21 +96,6 @@ describe('ItemEditor', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('offers the favorite switch only with a selected shop', async () => {
-    const onToggleFavorite = vi.fn()
-    const { dialog } = setup({ shopName: 'Aldi', favorite: true, onToggleFavorite })
-
-    const favorite = within(dialog).getByRole('switch', { name: 'Favorite at Aldi' })
-    expect(favorite).toBeChecked()
-    await userEvent.click(favorite)
-    expect(onToggleFavorite).toHaveBeenCalled()
-  })
-
-  it('has no favorite switch without a shop', () => {
-    const { dialog } = setup({ onToggleFavorite: vi.fn() })
-    expect(within(dialog).queryByRole('switch')).not.toBeInTheDocument()
-  })
-
   it('cannot save a name of only spaces', async () => {
     const { dialog, onSave } = setup()
 
@@ -121,15 +106,6 @@ describe('ItemEditor', () => {
     await userEvent.type(within(dialog).getByLabelText('Name'), '{Enter}')
     expect(onSave).not.toHaveBeenCalled()
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-  })
-
-  it('disables the favorite switch while offline (favorites are not part of the offline sync)', () => {
-    const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
-    const { dialog } = setup({ shopName: 'Aldi', favorite: false, onToggleFavorite: vi.fn() })
-
-    expect(within(dialog).getByRole('switch', { name: 'Favorite at Aldi' })).toBeDisabled()
-    expect(within(dialog).getByText('Only possible with a connection.')).toBeInTheDocument()
-    onLine.mockRestore()
   })
 
   it('keeps an amount with two separators as typed, marks it and blocks saving', async () => {

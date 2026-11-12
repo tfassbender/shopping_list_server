@@ -127,15 +127,6 @@ class InMemoryLayoutRepository : com.tfassbender.shoppinglist.application.port.L
     }
 }
 
-class InMemoryFavoritesRepository : com.tfassbender.shoppinglist.application.port.FavoritesRepository {
-    private val favorites = linkedMapOf<UserId, com.tfassbender.shoppinglist.domain.user.UserFavorites>()
-
-    override fun find(userId: UserId) = favorites[userId] ?: com.tfassbender.shoppinglist.domain.user.UserFavorites(userId)
-    override fun save(favorites: com.tfassbender.shoppinglist.domain.user.UserFavorites) {
-        this.favorites[favorites.userId] = favorites
-    }
-}
-
 class InMemoryApiTokenRepository : com.tfassbender.shoppinglist.application.port.ApiTokenRepository {
     private val tokens = linkedMapOf<UserId, com.tfassbender.shoppinglist.domain.user.UserApiTokens>()
     var saves = 0
