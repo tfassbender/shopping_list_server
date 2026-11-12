@@ -78,7 +78,8 @@ domain; see [Sync fields](#6-how-the-sync-fields-fit-together).
 
 Which storage is used is set by `shoppinglist.storage` (`postgres` or `file`, see `doc/tech_stack.md` →
 Persistence). All changes to a space's data run under one in-process lock per space, and with Postgres in
-one transaction per locked operation. The schema is `backend/src/main/resources/db/migration/V1__initial_schema.sql`;
+one transaction per locked operation. The schema is defined by the Flyway migrations in
+`backend/src/main/resources/db/migration/` (`V1__initial_schema.sql`, `V2__user_space_order.sql`, ...);
 JPA entities live in `adapter/persistence/jpa/`, file DTOs (with a `schemaVersion`) in `adapter/persistence/`.
 Files are written atomically (temp file + move).
 
@@ -276,7 +277,9 @@ classDiagram
 - Units: at most 50, each 1–20 characters, deduplicated ignoring case.
 - History: keyed by normalized item name. It remembers the last category and unit (for automatic placement
   and autocomplete) and a usage count (incremented on check, for "most used first"). At most 2000 entries;
-  beyond that the least used are forgotten. Renaming onto an existing name merges both entries.
+  beyond that the least used (then least recently used) are forgotten. The entry being added or updated is
+  always kept, even though a new entry starts with usage 0. Renaming onto an existing name merges both
+  entries.
 - New spaces start with default categories and units in the creator's language (`CatalogDefaults`). The
   category ids are readable keys such as `dairy`.
 
@@ -556,41 +559,34 @@ classDiagram
 
 Things in the model that look inconsistent or surprising. They are recorded here, not fixed.
 
-1. **The docs are behind the code.**
-   - `CLAUDE.md` and `doc/tech_stack.md` name the aggregate `ApiToken`; in the code the root is
-     `UserApiTokens`.
-   - The docs don't mention the `SyncState` aggregate, `sync.json` or `sequence.json`.
-   - `tech_stack.md` mentions a `version` field on the list for optimistic checks. It doesn't exist;
-     `seq` covers that role.
-2. **The `space` and `list` packages depend on each other.**
-   - `CategoryId` is defined in `domain/list/ShoppingList.kt`, but categories belong to `SpaceCatalog` in
-     `domain.space`, so `space` imports `list`.
-   - `list` imports `space` (`SpaceId`, `SpaceCatalog.normalize`).
-   - `ShopLayout` and `SyncState` are space-level aggregates but live in the `list` package.
-3. **Some references point at an entity inside another aggregate.** `Item.categoryId`,
+1. **`ShopLayout` and `SyncState` live in the `list` package**, although they are space-level
+   aggregates. The packages depend in one direction only: `list` imports `space` (`SpaceId`, `CategoryId`,
+   `SpaceCatalog.normalize`) and `user`, `space` imports `user` (`UserId`). `HexagonalArchitectureTest` forbids
+   cycles between the domain packages.
+2. **Some references point at an entity inside another aggregate.** `Item.categoryId`,
    `HistoryEntry.categoryId` and `ShopLayout.categoryOrder` reference `Category`, an entity inside
    `SpaceCatalog`, not an aggregate root. That is fine with id-only references, but these ids can dangle:
    deleting a category clears only the history. Items and layouts keep the id, and readers have to filter
    it out (as `ItemSorter` does).
-4. **Several links are by name instead of by id.** `ShopLayout.itemOrder` and the `SpaceCatalog.history`
+3. **Several links are by name instead of by id.** `ShopLayout.itemOrder` and the `SpaceCatalog.history`
    keys use the normalized item name. Renaming an item, or renaming a history entry, doesn't carry over
    to layouts.
-5. **Deleted lists and layouts are handled differently.**
+4. **Deleted lists and layouts are handled differently.**
    - A deleted list stays as a tombstone with `seq`. `purgeTombstones` drops only item tombstones, so a
      deleted list file seems to stay forever.
    - A deleted layout file is removed right away and leaves no tombstone. Only the advanced sequence
      counter tells clients about it.
-6. **Stale references after a deletion.**
+5. **Stale references after a deletion.**
    - Deleting a list doesn't remove its id from `ShopLayout.listIds`; no cleanup is visible in the
      domain or the layout/list services.
-7. **`Space` has no `seq`.** The space's own data (name, members, invites) isn't part of the
+6. **`Space` has no `seq`.** The space's own data (name, members, invites) isn't part of the
    sequence-based pull, unlike every other space-level aggregate.
-8. **Only some ids are validated.** `UserId`, `SpaceId`, `InviteId` and `ApiTokenId` have no format check;
+7. **Only some ids are validated.** `UserId`, `SpaceId`, `InviteId` and `ApiTokenId` have no format check;
    the client-generated ids do. Server-generated ids make this reasonable, but `SpaceId` and `UserId`
    also become directory names. The persistence adapter guards path segments (`JsonFiles.safeSegment`),
    so this is a consistency point, not a hole.
-10. **`HistoryEntry.seq` is lost on rename.** `SpaceCatalog.renameHistory` builds the merged entry without
-    `seq` (back to 0). This is harmless only because `stampHistoryChanges` and the catalog-wide `seq`
-    restamp it afterwards.
-11. **`ShopLayout.copyAs` sets `seq = 0`** and depends on the service to overwrite it with the next
-    counter value. Elsewhere, factories take `seq` as a parameter (`ShoppingList.create`).
+8. **`HistoryEntry.seq` is lost on rename.** `SpaceCatalog.renameHistory` builds the merged entry without
+   `seq` (back to 0). This is harmless only because `stampHistoryChanges` and the catalog-wide `seq`
+   restamp it afterwards.
+9. **`ShopLayout.copyAs` sets `seq = 0`** and depends on the service to overwrite it with the next
+   counter value. Elsewhere, factories take `seq` as a parameter (`ShoppingList.create`).

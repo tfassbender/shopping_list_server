@@ -13,7 +13,8 @@ Use Chrome DevTools → Network → "Offline" (or airplane mode on a phone).
    header shows "Offline · N unsaved".
 3. **Offline list:** create a new list in a space offline and add items to it.
 4. **Management screens:** members, categories, shops, settings show the "needs a connection" hint and
-   their buttons are disabled.
+   their buttons are disabled. The spaces page shows no ⠿ handles; the space page still lists its lists,
+   and they open.
 5. **Reconnect:** go online → the badge disappears within a few seconds; a second device / browser shows
    the changes.
 6. **Close while offline:** make changes offline, close the tab, reopen online → the changes are sent.
@@ -21,3 +22,5 @@ Use Chrome DevTools → Network → "Offline" (or airplane mode on a phone).
    A goes online → the item is back, the ⚠ icon appears, its dialog explains what happened. With the
    setting "Hide merge warnings" the icon does not appear.
 8. **Logout:** log out and log in as another user → none of the previous user's lists are visible.
+9. **Logout with unsent changes:** make a change offline, then log out → a dialog warns that the changes
+   are not sent yet; cancelling keeps them.

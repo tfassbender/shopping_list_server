@@ -4,7 +4,8 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–11 and the UI rework are done. Next: Phase 12 (Docker & deployment).
+**Status:** Phases 0–11, the UI rework, a code review round and smaller UI additions are done. Next:
+Phase 12 (Docker & deployment).
 
 ## Guiding principles
 
@@ -132,7 +133,8 @@ Frontend:
 - [x] Lists overview per space, create/rename/delete
 - [x] List screen (mobile-first): quick add field, check by tap, edit item (quantity, unit, note),
       delete, "remove all checked"
-- [x] **Undo for check** (snackbar after checking)
+- [x] **Undo for check** (snackbar after checking) - the snackbar went away with the UI rework: checked
+      items stay in place, so tapping again is the undo
 - [x] "Checked items to the end" (personal setting from Phase 1)
 - [x] Route all list mutations through one client module (`listChanges`) – becomes the offline queue in Phase 8
 
@@ -313,10 +315,12 @@ Decided while implementing:
 
 - [x] Clickable mockup `doc/mockups/lists-mockup.html` agreed with the user
 - [x] Web app reworked to the mockup: light blue header bar with ⋮ menu for rare actions, start page shows
-  all lists of all spaces, bigger base font (17px), design tokens in `index.css`
+  all lists of all spaces, bigger base font (17px), design tokens in `index.css` (the start page later got
+  icons instead of the menu, see below)
 - [x] List view: no checkboxes (tap toggles, checked = grey + struck through), checked items stay in place;
   a header button moves them to the end on demand; + button opens the add dialog (stays open for several
-  items); shop choice via the line under the title; item details via ⋯ (favorite switch per shop)
+  items); shop choice via the line under the title; item details via ⋯ (the favorite switch per shop
+  was removed with the favorites)
 - [x] Pages "Spaces & sharing" (`/spaces`), space page with members/invites/catalog/shops (members page
   merged into it), settings as rows, API tokens on their own page (`/settings/api-tokens`)
 
@@ -333,8 +337,8 @@ Decided while implementing:
   added/updated since `since`) instead of the whole catalog - checking items changes the history all the
   time and the history can hold 2000 entries. The complete `catalog` (incl. history) is sent when
   categories/units changed or entries were removed/renamed (also when the history was full and dropped one).
-  The web app suggests from the cached history when offline; every sync pull updates that history and the
-  favorites in its query cache (`offline/pullToCache.ts`).
+  The web app suggests from the cached history when offline; every sync pull updates that history in its
+  query cache (`offline/pullToCache.ts`).
 - [x] #2 Android App Links: `GET /.well-known/assetlinks.json` (public, not in OpenAPI), fingerprints from
   configuration, separately for release and debug app (`shoppinglist.android.{release,debug}.*`, empty by
   default, so the release package never trusts the debug key); stable link paths
@@ -372,10 +376,31 @@ Design in `doc/tech_stack.md` -> Persistence. Mainly a portfolio decision, not a
 Side change: `@QuarkusTest`s run on a random HTTP port (`quarkus.http.test-port=0`), so test runs in
 several checkouts/worktrees don't collide on 8081.
 
+## Code review and UI additions (2026-11-12)
+
+- [x] Code review (backend, architecture, frontend) and fixes: per-user lock (`UserLocks`) for the account
+  and API tokens; sync pull under the space lock, applied change ids saved after the lists; prod requires
+  `SHOPPINGLIST_JWT_KEY_LOCATION` (no fallback to the dev key); `CategoryId` moved to `domain.space`, ArchUnit
+  forbids cycles between domain packages; web: offline storage errors shown, logout clears the device data
+  and warns about unsent changes, dialogs keep the keyboard focus, the service worker caches the app's
+  assets for offline starts
+- [x] Space page lists the lists of the space; a list opened there leads back to it
+- [x] Personal order of spaces: drag and drop on the spaces page, used by the start page
+  (`PUT /api/spaces/order`, Flyway `V2` with table `user_space_order`)
+- [x] Start page: + button for a new list, spaces and settings as header icons (no ⋮ menu); more compact rows
+- [x] Clearer icons (sheet of paper with list lines) for the browser tab and the installed app
+
+Open from the review, deliberately not done yet:
+- Rate limiting of login, registration and the email endpoints - with the reverse proxy in Phase 12.
+- Upper limits for spaces, lists, layouts and invites per account.
+- An open live-update stream is not closed by "log out everywhere" (it carries only ids and seq numbers).
+
 ## Phase 12 – Docker & deployment
 
-- [ ] Production config: JWT key, SMTP, database credentials, public base URL (invite/verification links),
-      Android signing certificate fingerprints (App Links)
+- [ ] Production config: JWT key (file from `SHOPPINGLIST_JWT_KEY_LOCATION`, already required by the prod
+      profile), SMTP, database credentials, public base URL (invite/verification links), Android signing
+      certificate fingerprints (App Links)
+- [ ] Rate limiting of the auth endpoints (login, registration, email sending), e.g. in the reverse proxy
 - [ ] Multi-stage `Dockerfile` (SPA + backend -> slim Java 21 runtime image)
 - [ ] `docker-compose.yml`: app + Postgres (named volume, health check, `.env` for secrets, no published
       DB port, app bound to `127.0.0.1`)

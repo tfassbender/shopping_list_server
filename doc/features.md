@@ -1,6 +1,6 @@
 # Features
 
-Collection of feature ideas. Prioritization and the implementation plan come later.
+Feature list with priorities and the detailed rules. How and when they were built: `doc/implementation_plan.md`.
 
 Legend: **Must** = MVP, **Should** = soon after MVP, **Could** = nice to have, **?** = not decided yet
 
@@ -62,7 +62,7 @@ Reviewed and prioritized. Details in the sections below the table.
 | Option: checked items move to the end of the list                | Idea            | Must ([3.2](#32-shops-and-sorting)) |
 | Autocomplete from item history                                   | Common          | Must          |
 | "Remove all checked items"                                       | Common          | Must          |
-| Undo for check (not for delete)                                  | Common          | Must          |
+| Undo for check (not for delete): tap the item again              | Common          | Must          |
 | Sharing with unlimited users (free, it's our own app)            | Reference (Pro) | Must          |
 | Share via single-use invite link only (no user search)           | Idea            | Must ([3.1](#31-spaces-sharing-and-permissions)) |
 | Roles (owner / member), leave space, remove member               | Idea            | Must ([3.1](#31-spaces-sharing-and-permissions)) |
@@ -149,7 +149,9 @@ Decided:
 
 - Lists must be usable without connection; changes sync when back online.
 - **Works offline:** everything with lists and items (add, edit, check, delete, remove checked, create /
-  rename lists). **Needs a connection:** space management (invite links, members, ownership) and API tokens.
+  rename lists). **Needs a connection:** space management (invite links, members, ownership, order of
+  spaces), categories, units, shops, the item history page, settings and API tokens. They can still be
+  viewed offline where they were loaded before.
 - Client-side storage: web IndexedDB, Android Room.
 - Autocomplete works offline too: clients receive the space's item history (catalog + sync pull) and rank
   suggestions like the server.

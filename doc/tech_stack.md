@@ -38,9 +38,11 @@ REST so the React web frontend and a later Android app are interchangeable clien
 Reuse the design of `avalons_final_stand/backend/.../application/auth` and `adapter/rest/AuthResource.kt`:
 
 - `User` data class: `id` (UUID value class), `email`, `displayName`, `passwordHash`, `emailVerified`,
-  hashed verification/reset tokens + expiry, `createdAt`, `language`
-- Endpoints (`/api/auth`): `register`, `login`, `me`, `verify-email`, `resend-verification`,
-  `forgot-password`, `reset-password`, `change-password`, `language`, `config`
+  hashed verification/reset tokens + expiry, `createdAt`, `settings` (language, theme, ...),
+  `sessionVersion` (see `doc/data_model.md`)
+- Endpoints `/api/auth`: `config`, `register`, `login`, `refresh`, `verify-email`, `resend-verification`,
+  `forgot-password`, `reset-password`. The own account under `/api/users/me`: get, delete, `settings`,
+  `display-name`, `change-password`, `logout-everywhere`
 - JWT: HS256, `upn`/`sub` = user id, group `user`, endpoints guarded with `@RolesAllowed("user")`
 - Passwords: BCrypt cost 10 (`at.favre.lib:bcrypt`), max 72 bytes validated upfront
 - Email/reset tokens: only SHA-256 hashes are persisted
@@ -53,7 +55,8 @@ Additions needed for this project:
 - **Personal API tokens** for AI agents: random opaque tokens (only hash stored), name + expiry,
   scope `read` or `full`, revocable. No MCP server – agents use the REST API. Accepted as `Bearer` token next to the JWT – needs a custom Quarkus
   `HttpAuthenticationMechanism`/`IdentityProvider` that recognizes the token prefix (e.g. `slt_...`).
-- Possibly refresh tokens / longer-lived sessions for the mobile app (avalon uses 24 h tokens)
+- Sliding sessions: `POST /api/auth/refresh` exchanges a valid session token for a fresh one (30 days),
+  so active users stay logged in
 - Account deletion (GDPR): owned spaces pass to the longest-standing member
 
 ## Architecture (hexagonal + light DDD)
@@ -66,13 +69,14 @@ bounded-context modules.
 com.tfassbender.shoppinglist
 ├── domain/          pure Kotlin, no Quarkus/Jackson/Jakarta imports
 │   ├── space/       Space (members, roles, invites), SpaceCatalog (categories, units, item history)
-│   ├── list/        ShoppingList (items), ShopLayout
-│   └── user/        User, ApiToken
+│   ├── list/        ShoppingList (items, merge rules), ShopLayout, SyncState, ItemSorter
+│   └── user/        User, UserApiTokens (ApiToken)
 ├── application/     use-case services + ports
-│   ├── port/        repositories, TokenIssuer, EmailSender, Clock
-│   ├── space/       SpaceService (create, invite, join, remove member, transfer ownership, ...)
-│   ├── list/        ShoppingListService (add item, check, sort, ...)
-│   └── auth/        AuthService (register, login, verify, reset, API tokens, ...)
+│   ├── port/        repositories, SequenceCounter, TokenIssuer, EmailSender, SpaceChangeNotifier,
+│   │                TransactionRunner
+│   ├── space/       SpaceService, CatalogService, SpaceAccess + SpaceLocks, AccountDeletionService
+│   ├── list/        ShoppingListService, LayoutService, SyncService (offline sync)
+│   └── auth/        AuthService, AccountService, ApiTokenService, UserLocks
 └── adapter/
     ├── rest/        JAX-RS resources + DTOs + exception mappers   (driving)
     ├── persistence/ File JSON repositories + JSON mapping         (driven)
@@ -89,11 +93,12 @@ Rules:
   - `SpaceCatalog` – categories (with colors), units, item history of a space.
   - `ShoppingList` – items of one list; references its `SpaceId`.
   - `ShopLayout` – sort order for one shop, part of the space, usable by several lists.
-  - `User`, `ApiToken` – personal, never shared.
+  - `SyncState` – sync bookkeeping of a space (applied change ids, tombstone purge horizon).
+  - `User`, `UserApiTokens` (the user's `ApiToken`s) – personal, never shared.
   - Aggregates reference each other **by id only**. Permission checks ("is this user a member/owner of
     the space that contains this list?") happen in the application services using the `Space`.
-- **Value objects:** typed ids as Kotlin `@JvmInline value class` (`ListId`, `ItemId`, `UserId`), `Email`
-  (normalized lowercase), `ItemName` etc. only where validation is needed.
+- **Value objects:** typed ids as Kotlin `@JvmInline value class` (`SpaceId`, `ListId`, `ItemId`, `UserId`,
+  ...), `Email` (normalized lowercase); further value objects only where validation is needed.
 - Domain objects are immutable `data class`es; mutations return a copy that the service saves.
 - **Repository ports** are defined in `application.port` in domain terms (`findById`, `findByMember`,
   `save`, `delete`). Adapters translate to the storage format with their own persistence DTOs, so the
@@ -116,8 +121,9 @@ adapter stays, which also demonstrates that the hexagonal ports really make stor
 
 - Switching the flag does **not** migrate data - the two stores are independent. A one-shot copy tool
   (file -> Postgres) is optional.
-- A single server instance stays the assumption: the in-process `SpaceLocks` remain the concurrency
-  mechanism for both adapters (no database locks, no multi-instance SSE fan-out).
+- A single server instance stays the assumption: the in-process `SpaceLocks` (space data) and `UserLocks`
+  (account, API tokens) remain the concurrency mechanism for both adapters (no database locks, no
+  multi-instance SSE fan-out).
 - In file mode the datasource and Hibernate are deactivated at runtime, so the app starts without Postgres.
 
 ### PostgreSQL (primary adapter)
@@ -153,7 +159,7 @@ adapter stays, which also demonstrates that the hexagonal ports really make stor
   personal data to `users`, so deleting a space or user is one delete. None for id references the domain
   allows to dangle (category ids, layout list ids, member and stamp user ids).
 - **Transactions:** one transaction per locked operation, opened via a small port (`TransactionRunner`)
-  that `SpaceLocks` uses; it commits before the lock is released and before live updates go out. Every
+  that `SpaceLocks` and `UserLocks` use; it commits before the lock is released and before live updates go out. Every
   repository method joins it, or runs in its own transaction outside a lock. The file adapter's runner
   does nothing. Keeps `@Transactional` out of the application services.
 - **Timestamps** are `timestamptz` with microsecond precision; an `Instant` with nanoseconds comes back
@@ -166,6 +172,8 @@ adapter stays, which also demonstrates that the hexagonal ports really make stor
 - **Dev mode:** Dev Services as well, with the data directory bound to `backend/data/dev-postgres`
   (gitignored), so dev data survives restarts.
 - **Production:** connection from `SHOPPINGLIST_DB_URL`, `SHOPPINGLIST_DB_USER`, `SHOPPINGLIST_DB_PASSWORD`.
+  The JWT signing key comes from the file in `SHOPPINGLIST_JWT_KEY_LOCATION` (required in prod; the dev key
+  in the repo is never used there).
 
 ### File-based JSON (alternative adapter)
 
@@ -176,18 +184,21 @@ files are sufficient; it needs no database at all.
   ```
   data/
   ├── users/<userId>/
-  │   ├── user.json
+  │   ├── user.json             account, settings, order of the user's spaces
   │   └── api-tokens.json
   └── spaces/<spaceId>/
       ├── space.json            members, roles, invites
       ├── catalog.json          categories, units, item history
+      ├── sync.json             applied change ids, purge horizon
+      ├── sequence.json         the space's sequence counter
       ├── lists/<listId>.json   items
       └── layouts/<layoutId>.json
   ```
 - **Atomic writes:** write to a temp file, then atomic move (avalon's `AtomicJsonFile` pattern) – a crash
   never leaves a half-written file.
 - **Concurrency:** one in-process `ReentrantLock` per space id around load-modify-save (single instance
-  deployment; simple and sufficient since a space's data is small). Plus a `version` field on the list for optimistic checks from clients if needed.
+  deployment; simple and sufficient since a space's data is small), and one per user for the account and
+  its API tokens. No version field for optimistic checks: the sync's `seq` numbers cover that role.
 - Lookups other than by id (e.g. "lists where I'm a member", user by email) scan the directory. Fine at
   this scale; an in-memory index is the obvious later optimization.
 - Path-segment guard on ids so a crafted id can't escape the data dir.
@@ -222,10 +233,10 @@ Rules are defined in `doc/features.md` 3.5. Technical approach:
 
 ## Live Updates
 
-- **SSE, notify-then-refetch:** `GET /api/spaces/{id}/events` (or one stream per user for all their spaces)
-  sends a lightweight "space changed (seq)" notification; the client then pulls via the sync endpoint.
-- Supported by `quarkus-rest` out of the box; SSE can't send an `Authorization` header from the browser's
-  `EventSource`, so use `fetch`-based SSE or a short-lived stream token.
+- **SSE, notify-then-refetch:** one stream per user for all their spaces (`GET /api/events`) sends a
+  lightweight "space changed (seq)" notification; the client then pulls via the sync endpoint.
+- Supported by `quarkus-rest` out of the box. The browser's `EventSource` can't send an `Authorization`
+  header, so the web app reads the stream with `fetch`.
 - Android: may use a different mechanism (e.g. FCM push in the background) – decided later.
 
 ## Web Frontend
@@ -250,15 +261,15 @@ Rules are defined in `doc/features.md` 3.5. Technical approach:
   `application.properties`; empty by default). The link paths are stable, so the app's intent filters can match them:
   `<public-base-url>/invite/<token>`, `/verify-email?token=<token>`, `/reset-password?token=<token>`.
 
-## Project Structure (planned)
+## Project Structure
 
 ```
 shopping_list_server/
 ├── backend/        Quarkus + Kotlin
 ├── frontend/       React + TypeScript (Vite)
 ├── e2e/            REST end-to-end tests (RestAssured), like avalon
-├── doc/            tech_stack.md, features.md, implementation_plan.md (later)
+├── doc/            tech stack, features, data model, implementation plan, QA notes, mockups
 ├── build.gradle.kts / settings.gradle.kts / gradle.properties
 ```
 
-- Local backend port: e.g. `4723` (avalon uses 4719, so both can run at the same time)
+- Local backend port: `4723` (avalon uses 4719, so both can run at the same time)
