@@ -4,8 +4,8 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–12 are done: version 1.0.0 runs on the server (2026-11-12). Next: the Android app
-(see "Later").
+**Status:** Phases 0–12 are done: version 1.0.0 runs on the server (2026-11-12). The Android app works
+against it (https://github.com/tfassbender/shopping_list_android).
 
 ## Guiding principles
 
@@ -424,5 +424,5 @@ projects on the server).
 
 ## Later
 
-- [ ] Android app (native Kotlin, same REST API, Room for offline, own live update mechanism)
+- [x] Android app (native Kotlin, same REST API) - works, in its own repository: https://github.com/tfassbender/shopping_list_android
 - [ ] Android home screen widget

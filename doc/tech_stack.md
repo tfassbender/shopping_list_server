@@ -15,7 +15,7 @@ REST so the React web frontend and a later Android app are interchangeable clien
 | Containers         | Docker (Postgres locally and on the server), Docker Compose for the production stack |
 | Web frontend       | React + TypeScript, Vite, mobile-first                        |
 | Styling            | Tailwind CSS                                                  |
-| Android app (later)| Native Android (Kotlin), consuming the same REST API          |
+| Android app        | Native Android (Kotlin), consuming the same REST API - repository `shopping_list_android` |
 | Build              | Gradle (Kotlin DSL), multi-module                             |
 | Testing            | JUnit 5, RestAssured, Dev Services/Testcontainers (Postgres), Vitest + Testing Library (frontend) |
 
@@ -264,7 +264,9 @@ Rules are defined in `doc/features.md` 3.5. Technical approach:
   `META-INF/resources` (packaged into the backend JAR with `./gradlew build -PwithFrontend`), so one
   deployable JAR. Deep links are rerouted to `index.html` (`SpaRouting`).
 
-## Android App (later)
+## Android App
+
+Own repository: https://github.com/tfassbender/shopping_list_android
 
 - Native Kotlin app using the same REST API (e.g. Retrofit/Ktor client + Jetpack Compose)
 - Requirement for the backend now: everything must be possible via REST, no logic only in the web frontend
