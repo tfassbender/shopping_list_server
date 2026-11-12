@@ -23,8 +23,9 @@ class SpaceServiceTest {
     private val spaces = InMemorySpaceRepository()
     private val clock = MutableClock()
     private val locks = SpaceLocks()
+    private val notifier = RecordingNotifier()
     private val catalogs = InMemoryCatalogRepository()
-    private val service = SpaceService(spaces, users, SpaceAccess(spaces), locks, clock, CatalogService(catalogs, com.tfassbender.shoppinglist.application.InMemorySequenceCounter(), SpaceAccess(spaces), locks, clock))
+    private val service = SpaceService(spaces, users, SpaceAccess(spaces), locks, clock, CatalogService(catalogs, com.tfassbender.shoppinglist.application.InMemorySequenceCounter(), SpaceAccess(spaces), locks, clock), notifier)
 
     private val owner = user("owner", "Olga")
     private val anna = user("anna", "Anna")
@@ -212,5 +213,30 @@ class SpaceServiceTest {
         assertNull(spaces.findById(lonely.id))
         assertFalse(spaces.findById(foreign.id)!!.isMember(owner))
         assertNull(users.findById(owner))
+    }
+
+    @Test
+    fun `users who lose access are notified - removed, left or space deleted`() {
+        val space = service.create(owner, "Home")
+        join(space.id, anna)
+        join(space.id, bob)
+
+        service.removeMember(owner, space.id, bob)
+        service.leave(anna, space.id)
+        assertEquals(listOf(listOf(bob), listOf(anna)), notifier.accessLost.map { it.second })
+
+        join(space.id, anna)
+        notifier.accessLost.clear()
+        service.delete(owner, space.id)
+        assertEquals(setOf(owner, anna), notifier.accessLost.single().second.toSet())
+    }
+
+    /** Records who was told about lost access. */
+    class RecordingNotifier : com.tfassbender.shoppinglist.application.port.SpaceChangeNotifier {
+        val accessLost = mutableListOf<Pair<com.tfassbender.shoppinglist.domain.space.SpaceId, List<UserId>>>()
+        override fun spaceChanged(spaceId: com.tfassbender.shoppinglist.domain.space.SpaceId) {}
+        override fun accessLost(spaceId: com.tfassbender.shoppinglist.domain.space.SpaceId, userIds: Collection<UserId>) {
+            accessLost += spaceId to userIds.toList()
+        }
     }
 }

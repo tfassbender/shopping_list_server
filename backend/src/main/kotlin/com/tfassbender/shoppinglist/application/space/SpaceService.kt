@@ -1,6 +1,7 @@
 package com.tfassbender.shoppinglist.application.space
 
 import com.tfassbender.shoppinglist.application.auth.SecretTokens
+import com.tfassbender.shoppinglist.application.port.SpaceChangeNotifier
 import com.tfassbender.shoppinglist.application.port.SpaceRepository
 import com.tfassbender.shoppinglist.application.port.UserRepository
 import com.tfassbender.shoppinglist.domain.DomainException
@@ -33,6 +34,7 @@ class SpaceService(
     private val locks: SpaceLocks,
     private val clock: Clock,
     private val catalog: CatalogService,
+    private val notifier: SpaceChangeNotifier,
 ) {
 
     fun create(userId: UserId, name: String): Space {
@@ -49,9 +51,14 @@ class SpaceService(
 
     fun rename(userId: UserId, spaceId: SpaceId, name: String): Space = modifyAsOwner(userId, spaceId) { it.rename(name) }
 
-    fun delete(userId: UserId, spaceId: SpaceId) = locks.withLock(spaceId) {
-        access.requireOwner(spaceId, userId)
-        spaces.delete(spaceId)
+    fun delete(userId: UserId, spaceId: SpaceId) {
+        val space = locks.withLock(spaceId) {
+            val space = access.requireOwner(spaceId, userId)
+            spaces.delete(spaceId)
+            space
+        }
+        // All members' open screens (incl. the owner's other devices) should notice at once.
+        notifier.accessLost(spaceId, space.members.map { it.userId })
     }
 
     fun members(userId: UserId, spaceId: SpaceId): List<MemberView> {
@@ -104,14 +111,19 @@ class SpaceService(
         }
     }
 
-    fun removeMember(userId: UserId, spaceId: SpaceId, memberId: UserId): Space =
-        modifyAsOwner(userId, spaceId) { it.removeMember(memberId) }
+    fun removeMember(userId: UserId, spaceId: SpaceId, memberId: UserId): Space {
+        val updated = modifyAsOwner(userId, spaceId) { it.removeMember(memberId) }
+        notifier.accessLost(spaceId, listOf(memberId))
+        return updated
+    }
 
     fun leave(userId: UserId, spaceId: SpaceId) {
         locks.withLock(spaceId) {
             val space = access.requireMember(spaceId, userId)
             spaces.save(space.removeMember(userId))
         }
+        // The user's other devices should drop the space too.
+        notifier.accessLost(spaceId, listOf(userId))
     }
 
     fun transferOwnership(userId: UserId, spaceId: SpaceId, newOwner: UserId): Space =

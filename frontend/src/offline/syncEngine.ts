@@ -42,6 +42,8 @@ export class SyncEngine {
   private scheduled = new Map<string, ReturnType<typeof setTimeout>>()
   private listeners = new Set<() => void>()
   private pullListeners = new Set<(spaceId: string, pull: PullResponse) => void>()
+  /** Spaces the server answered with 404 (deleted or user removed) -> number of unsaved changes dropped. */
+  private lost = new Map<string, number>()
   private warningsCache: StoredWarning[] = []
   private statusValue: SyncStatus = 'idle'
 
@@ -72,6 +74,14 @@ export class SyncEngine {
   /** The lists of a space as the user should see them, or undefined while not loaded yet. */
   listsOf(spaceId: string): ListsById | undefined {
     return this.views.get(spaceId)
+  }
+
+  /**
+   * Whether the user lost access to the space (it was deleted or they were removed): undefined if not,
+   * otherwise the number of unsaved changes that had to be dropped.
+   */
+  accessLost(spaceId: string): number | undefined {
+    return this.lost.get(spaceId)
   }
 
   get status(): SyncStatus {
@@ -105,8 +115,10 @@ export class SyncEngine {
     let promise = this.loading.get(spaceId)
     if (!promise) {
       promise = this.storage.get<SpaceState>(`space:${spaceId}`).then((stored) => {
-        if (!this.states.has(spaceId)) this.states.set(spaceId, stored ?? emptyState())
-        this.recompute(spaceId)
+        if (this.states.has(spaceId)) return
+        this.states.set(spaceId, stored ?? emptyState())
+        // Nothing on this device yet: stay "loading" until the first pull, instead of showing an empty space.
+        if (stored) this.recompute(spaceId)
       })
       this.loading.set(spaceId, promise)
     }
@@ -141,6 +153,7 @@ export class SyncEngine {
     this.scheduled.clear()
     this.states.clear()
     this.views.clear()
+    this.lost.clear()
     this.loading.clear()
     this.updateWarnings()
     this.notify()
@@ -184,6 +197,7 @@ export class SyncEngine {
       state.confirmed = applyPull(state.confirmed, pulled, spaceId)
       state.seq = pulled.seq
       state.acked = []
+      this.lost.delete(spaceId) // e.g. invited again
       this.recompute(spaceId)
       await this.persist(spaceId)
       this.pullListeners.forEach((listener) => listener(spaceId, pulled))
@@ -224,7 +238,8 @@ export class SyncEngine {
     if (error instanceof ApiError && error.status === 0) {
       this.setStatus('offline') // keep everything, retry later
     } else if (error instanceof ApiError && error.status === 404) {
-      // The space is gone or we were removed: drop its local data.
+      // The space is gone or we were removed: drop its local data (unsaved changes can't be saved anywhere).
+      this.lost.set(spaceId, (this.lost.get(spaceId) ?? 0) + (this.states.get(spaceId)?.queue.length ?? 0))
       this.states.delete(spaceId)
       this.views.delete(spaceId)
       this.loading.delete(spaceId)

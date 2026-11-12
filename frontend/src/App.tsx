@@ -4,6 +4,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router'
 import { authApi, toThemePreference } from './api/auth'
+import { ApiError } from './api/client'
 import { RequireAuth } from './auth/RequireAuth'
 import { getSession, setSession, shouldRefresh } from './auth/session'
 import { useCurrentUser, useSession } from './auth/useAuth'
@@ -162,9 +163,15 @@ const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
  * The query cache (spaces, categories, shops, settings) is saved in IndexedDB, so the app shows them
  * offline too. `offlineFirst`: cached data is shown even when a refetch can't reach the server.
  */
+/** A 4xx (not found, forbidden, ...) won't change on retry - show it at once instead of retrying 3 times. */
+export function retryUnlessClientError(failureCount: number, error: unknown): boolean {
+  if (error instanceof ApiError && error.status >= 400 && error.status < 500) return false
+  return failureCount < 3
+}
+
 function createQueryClient() {
   return new QueryClient({
-    defaultOptions: { queries: { gcTime: CACHE_MAX_AGE_MS, networkMode: 'offlineFirst' } },
+    defaultOptions: { queries: { gcTime: CACHE_MAX_AGE_MS, networkMode: 'offlineFirst', retry: retryUnlessClientError } },
   })
 }
 

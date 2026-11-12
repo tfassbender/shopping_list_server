@@ -60,6 +60,8 @@ export const de: Record<MessageKey, string> = {
   'list.rename': 'Tippen zum Umbenennen',
   'list.add': 'Hinzufügen',
   'list.empty': 'Die Liste ist leer. Füge den ersten Artikel mit dem +-Knopf hinzu.',
+  'list.spaceGone': 'Du hast keinen Zugriff mehr auf diese Liste: Der Bereich wurde gelöscht oder du wurdest entfernt.',
+  'list.spaceGoneLostChanges': 'Noch nicht gespeicherte Änderungen ({count}) konnten nicht gespeichert werden.',
   'list.removeChecked': 'Erledigte entfernen ({count})',
   'list.removeCheckedConfirm': '{count} erledigte(n) Artikel entfernen?',
   'list.checked': '"{name}" abgehakt',

@@ -36,6 +36,11 @@ export function useLocalList(spaceId: string, listId: string): ShoppingList | nu
   return lists === undefined ? undefined : (lists[listId] ?? null)
 }
 
+/** Set when the user lost access to the space: the number of unsaved changes that were dropped. */
+export function useSpaceAccessLost(spaceId: string): number | undefined {
+  return useEngine(() => syncEngine.accessLost(spaceId))
+}
+
 export function useSyncStatus() {
   const status = useEngine(() => syncEngine.status)
   const pending = useEngine(() => syncEngine.pendingCount())

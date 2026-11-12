@@ -10,7 +10,7 @@ import { ConfirmDialog, Dialog } from '../components/Dialog'
 import { Icon } from '../components/Icon'
 import { ErrorText, Fab, Hint, Loading, SectionTitle } from '../components/ui'
 import { t } from '../i18n/messages'
-import { syncEngine, useLocalList } from '../offline/engine'
+import { syncEngine, useLocalList, useSpaceAccessLost } from '../offline/engine'
 import { NameDialog } from '../pages/space/SpaceDialogs'
 import { AddItemDialog } from './AddItemDialog'
 import { ItemEditor } from './ItemEditor'
@@ -37,6 +37,7 @@ export function ListPage() {
 
   // Lists come from the offline-first sync engine; everything else from the (persisted) query cache.
   const list = useLocalList(spaceId, listId)
+  const lostChanges = useSpaceAccessLost(spaceId)
   const { data: space } = useSpace(spaceId)
   const { data: catalog } = useCatalog(spaceId)
   const { data: favoriteNames } = useFavorites(spaceId, layout?.id ?? null)
@@ -59,6 +60,7 @@ export function ListPage() {
     if (list) setLastList({ spaceId, listId })
   }, [list, spaceId, listId])
 
+  if (list === undefined && lostChanges !== undefined) return <SpaceGone lostChanges={lostChanges} />
   if (list === undefined) return <Page title={t('appName')} back="/"><Loading /></Page>
   if (list === null) {
     return (
@@ -195,6 +197,19 @@ export function ListPage() {
           onClose={() => setEditing(null)}
         />
       )}
+    </Page>
+  )
+}
+
+/** The space was deleted or the user was removed from it (the server answers 404). */
+function SpaceGone({ lostChanges }: { lostChanges: number }) {
+  return (
+    <Page title={t('appName')} back="/">
+      <Hint>{t('list.spaceGone')}</Hint>
+      {lostChanges > 0 && <Hint>{t('list.spaceGoneLostChanges', { count: lostChanges })}</Hint>}
+      <Link to="/" className="inline-block py-2 font-semibold text-accent underline">
+        {t('nav.toStart')}
+      </Link>
     </Page>
   )
 }

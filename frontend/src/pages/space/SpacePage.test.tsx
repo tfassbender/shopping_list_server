@@ -1,3 +1,4 @@
+import { focusManager } from '@tanstack/react-query'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
@@ -102,6 +103,32 @@ describe('SpacePage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Spaces & sharing' })).toBeInTheDocument()
     expect(wasCalled(spy, 'DELETE', '/api/spaces/s1')).toBe(true)
+  })
+
+  it('after deleting, the data of the space is not fetched again (only the sync notices the loss)', async () => {
+    const spy = setup({ 'DELETE /api/spaces/s1': { status: 204 } })
+    await userEvent.click(await screen.findByRole('button', { name: 'Menu' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete space' }))
+    const before = spy.mock.calls.length
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete space' }))
+    expect(await screen.findByRole('heading', { name: 'Spaces & sharing' })).toBeInTheDocument()
+
+    const after = spy.mock.calls.slice(before).map(([url, init]) => `${init?.method ?? 'GET'} ${new URL(String(url), 'http://localhost').pathname}`)
+    expect(after.filter((call) => call.startsWith('GET /api/spaces/s1') && !call.endsWith('/changes'))).toEqual([])
+  })
+
+  it('a space deleted by someone else shows only the error, not the cached members', async () => {
+    let deleted = false
+    setup({ 'GET /api/spaces/s1': () => (deleted ? { status: 404, body: { code: 'SPACE_NOT_FOUND' } } : space) })
+    expect(await screen.findByText('Bob')).toBeInTheDocument()
+
+    deleted = true
+    focusManager.setFocused(false)
+    focusManager.setFocused(true) // refetch on focus, as when returning to the app
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('This space does not exist or you are not a member.')
+    expect(screen.queryByText('Bob')).not.toBeInTheDocument()
+    focusManager.setFocused(undefined)
   })
 
   it('stays on the page and shows the reason when leaving is refused', async () => {

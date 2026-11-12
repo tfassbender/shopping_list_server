@@ -78,4 +78,20 @@ class EventResourceTest {
     fun `the stream requires authentication`() {
         RestAssured.given().get("/api/events").then().statusCode(401)
     }
+
+    @Test
+    fun `a removed member is notified even though no longer a member`() {
+        val owner = TestUsers.register()
+        val member = TestUsers.register()
+        val spaceId: String = owner.request().body(mapOf("name" to "Flat")).post("/api/spaces").then().extract().path("id")
+        val token: String = owner.request().body(mapOf<String, Any>()).post("/api/spaces/$spaceId/invites").then().extract().path("token")
+        member.request().post("/api/invites/$token/accept").then().statusCode(200)
+
+        val memberEvents = openStream(member)
+        assertNotNull(memberEvents.awaitLine(5) { it.contains("PING") })
+
+        owner.request().delete("/api/spaces/$spaceId").then().statusCode(204)
+
+        assertNotNull(memberEvents.awaitLine(5) { it.contains("SPACE_CHANGED") && it.contains(spaceId) })
+    }
 }

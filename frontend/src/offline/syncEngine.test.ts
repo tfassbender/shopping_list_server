@@ -247,6 +247,34 @@ describe('SyncEngine', () => {
     expect(engine.listsOf(SPACE)).toBeUndefined()
   })
 
+  it('remembers a lost space with the number of dropped changes until a pull succeeds again', async () => {
+    expect(engine.accessLost(SPACE)).toBeUndefined()
+    engine.enqueue(SPACE, { type: 'ADD_ITEM', listId: 'l1', itemId: 'a', name: 'A' })
+    server.push.mockRejectedValueOnce(new ApiError(404, 'SPACE_NOT_FOUND'))
+    await engine.sync(SPACE)
+    expect(engine.accessLost(SPACE)).toBe(1)
+    expect(engine.pendingCount()).toBe(0)
+
+    await engine.open(SPACE) // e.g. invited again
+    expect(engine.accessLost(SPACE)).toBeUndefined()
+    expect(engine.listsOf(SPACE)?.l1.name).toBe('Groceries')
+  })
+
+  it('stays "loading" for a space with nothing on this device until the first pull', async () => {
+    const fresh = engineWith(server)
+    let resolvePull: () => void = () => {}
+    server.pull.mockImplementationOnce(async () => {
+      await new Promise<void>((resolve) => (resolvePull = resolve))
+      return { seq: 1, fullResync: true, lists: [], listIds: [], catalog: null, historyChanges: [], layouts: null, layoutIds: [], favorites: {} }
+    })
+    const opening = fresh.open(SPACE)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(fresh.listsOf(SPACE)).toBeUndefined()
+    resolvePull()
+    await opening
+    expect(fresh.listsOf(SPACE)).toEqual({})
+  })
+
   it('other errors keep the data and report an error status', async () => {
     engine.enqueue(SPACE, { type: 'ADD_ITEM', listId: 'l1', itemId: 'a', name: 'A' })
     server.push.mockRejectedValueOnce(new ApiError(500, 'INTERNAL_ERROR'))

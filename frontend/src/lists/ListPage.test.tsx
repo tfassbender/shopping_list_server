@@ -239,4 +239,32 @@ describe('ListPage', () => {
     renderWithProviders(<AppRoutes />, '/spaces/s1/lists/unknown')
     expect(await screen.findByText('This list does not exist (anymore).')).toBeInTheDocument()
   })
+
+  it('tells a removed member that the list is gone, including how many changes were lost', async () => {
+    let removed = false
+    const gone = { status: 404, body: { code: 'SPACE_NOT_FOUND' } }
+    const original = fakeSyncServer('s1', [{ id: 'l1', spaceId: 's1', name: 'Groceries', createdAt: '', seq: 1, items: [item('1', 'Milk')] }])
+    setup([], {
+      'POST /api/spaces/s1/changes': (body: unknown) => (removed ? gone : original.routes['POST /api/spaces/s1/changes'](body)),
+      'GET /api/spaces/s1/changes': () => (removed ? gone : original.routes['GET /api/spaces/s1/changes'](undefined)),
+    })
+    await screen.findByRole('checkbox', { name: 'Milk' })
+    removed = true
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add item' }))
+    await userEvent.type(screen.getByLabelText('Name'), 'Bread')
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }))
+    const { syncEngine } = await import('../offline/engine')
+    await syncEngine.syncAll()
+
+    expect(await screen.findByText(/You no longer have access to this list/)).toBeInTheDocument()
+    expect(screen.getByText(/\(1\) could not be saved/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'To the start page' })).toBeInTheDocument()
+  })
+
+  it('a deep link into a space the user is not a member of does not load forever', async () => {
+    mockApi({ 'GET /api/users/me': testUser, 'GET /api/spaces/s9/changes': { status: 404, body: { code: 'SPACE_NOT_FOUND' } } })
+    renderWithProviders(<AppRoutes />, '/spaces/s9/lists/l1')
+    expect(await screen.findByText(/You no longer have access to this list/)).toBeInTheDocument()
+  })
 })

@@ -23,18 +23,29 @@ import java.time.Duration
 data class SpaceEventDto(val type: String, val spaceId: String? = null, val seq: Long? = null)
 
 /**
+ * A broadcast event. [formerMembers] are users who just lost access and must still get it (they can't be
+ * found via the space's members any more); the field is internal and never sent to clients.
+ */
+class BroadcastEvent(val dto: SpaceEventDto, val formerMembers: Set<UserId> = emptySet())
+
+/**
  * Broadcasts "space changed" to all open event streams. Each stream filters for the spaces its user is a
  * member of (checked per event, so membership changes take effect at once).
  */
 @ApplicationScoped
 class SseSpaceChangeNotifier(private val sequence: SequenceCounter) : SpaceChangeNotifier {
-    private val processor: BroadcastProcessor<SpaceEventDto> = BroadcastProcessor.create()
+    private val processor: BroadcastProcessor<BroadcastEvent> = BroadcastProcessor.create()
 
     override fun spaceChanged(spaceId: SpaceId) {
-        processor.onNext(SpaceEventDto(CHANGED, spaceId.value, sequence.current(spaceId)))
+        processor.onNext(BroadcastEvent(SpaceEventDto(CHANGED, spaceId.value, sequence.current(spaceId))))
     }
 
-    fun events(): Multi<SpaceEventDto> = processor
+    override fun accessLost(spaceId: SpaceId, userIds: Collection<UserId>) {
+        if (userIds.isEmpty()) return
+        processor.onNext(BroadcastEvent(SpaceEventDto(CHANGED, spaceId.value), userIds.toSet()))
+    }
+
+    fun events(): Multi<BroadcastEvent> = processor
 
     companion object {
         const val CHANGED = "SPACE_CHANGED"
@@ -65,7 +76,9 @@ class EventResource(
     fun events(): Multi<SpaceEventDto> {
         // Resolve the user now: the security context is only available while the request is set up.
         val userId = currentUser.id()
-        val changes = notifier.events().filter { event -> isMember(userId, event.spaceId) }
+        val changes = notifier.events()
+            .filter { event -> userId in event.formerMembers || isMember(userId, event.dto.spaceId) }
+            .map { it.dto }
         val pings = Multi.createFrom().ticks().every(Duration.ofSeconds(heartbeatSeconds)).map { SpaceEventDto(SseSpaceChangeNotifier.PING) }
         return Multi.createBy().merging().streams(changes, pings)
     }

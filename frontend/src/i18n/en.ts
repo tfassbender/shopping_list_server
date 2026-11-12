@@ -58,6 +58,8 @@ export const en = {
   'list.rename': 'Tap to rename',
   'list.add': 'Add',
   'list.empty': 'This list is empty. Add the first item with the + button.',
+  'list.spaceGone': 'You no longer have access to this list: the space was deleted or you were removed from it.',
+  'list.spaceGoneLostChanges': 'Changes not yet saved ({count}) could not be saved.',
   'list.removeChecked': 'Remove checked ({count})',
   'list.removeCheckedConfirm': 'Remove {count} checked item(s)?',
   'list.checked': '"{name}" checked',

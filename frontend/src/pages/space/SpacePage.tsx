@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useCatalog, useHistory } from '../../api/catalog'
+import { ApiError } from '../../api/client'
 import { useLayouts } from '../../api/layouts'
 import { spaceKeys, spacesApi, useSpace, type CreatedInvite, type Member } from '../../api/spaces'
 import { useCurrentUser } from '../../auth/useAuth'
@@ -37,8 +38,10 @@ export function SpacePage() {
   const refresh = () => queryClient.invalidateQueries({ queryKey: spaceKeys.all })
   const gone = () => {
     void syncEngine.sync(spaceId) // the sync notices the missing access and drops the offline data
-    void refresh()
-    navigate('/spaces')
+    navigate('/spaces', { replace: true }) // browser back shouldn't lead to the deleted space
+    // Forget the space's cached data (instead of refetching it, which only gives 404s now).
+    queryClient.removeQueries({ queryKey: spaceKeys.detail(spaceId) })
+    void queryClient.invalidateQueries({ queryKey: spaceKeys.all, exact: true })
   }
   const rename = useMutation({
     mutationFn: (name: string) => spacesApi.rename(spaceId, name),
@@ -52,7 +55,8 @@ export function SpacePage() {
   const removeMember = useMutation({ mutationFn: (userId: string) => spacesApi.removeMember(spaceId, userId), onSuccess: refresh })
   const makeOwner = useMutation({ mutationFn: (userId: string) => spacesApi.transferOwnership(spaceId, userId), onSuccess: refresh })
 
-  if (!space && error) {
+  // A 404 means the space is gone (or the user was removed): don't show cached data below the error.
+  if (error && (!space || (error instanceof ApiError && error.status === 404))) {
     return (
       <Page title={t('spaces.title')} back="/spaces">
         <LoadError error={error} onRetry={() => void refetch()} />
