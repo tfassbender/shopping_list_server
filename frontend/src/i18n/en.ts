@@ -243,6 +243,7 @@ export const en = {
   'start.createSpace': 'Create a space',
   'start.noLists': 'No lists yet.',
   'start.lastUsed': 'last used',
+  'start.notLoadedOffline': 'No connection - the lists of this space are not on this device yet. They appear as soon as you are online.',
   'newList.title': 'New list',
   'newList.space': 'In space',
   'newList.spaceHint': 'Everyone in the space sees this list.',

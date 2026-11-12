@@ -85,4 +85,16 @@ class FileSpaceRepositoryTest {
 
         assertFalse(dataDir.resolve("spaces/s1").exists())
     }
+
+    @Test
+    fun `a corrupt or invalid space file is skipped when searching all spaces`() {
+        repository.save(space)
+        Files.createDirectories(dataDir.resolve("spaces/broken"))
+        Files.writeString(dataDir.resolve("spaces/broken/space.json"), "{ not json")
+        // valid JSON, but breaks a domain rule (no owner)
+        Files.createDirectories(dataDir.resolve("spaces/invalid"))
+        Files.writeString(dataDir.resolve("spaces/invalid/space.json"), """{"id":"invalid","name":"X","createdAt":"2026-01-01T10:00:00Z","members":[]}""")
+
+        assertEquals(listOf(space.id), repository.findByMember(UserId("owner")).map { it.id })
+    }
 }

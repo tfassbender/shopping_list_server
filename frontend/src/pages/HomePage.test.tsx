@@ -140,6 +140,17 @@ describe('HomePage', () => {
     expect(within(spaceChoice).getByRole('button', { name: 'Office' })).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('offline without lists on this device says so instead of loading forever', async () => {
+    setup([home], {}, {
+      'GET /api/spaces/s1/changes': () => {
+        throw new TypeError('Failed to fetch')
+      },
+    })
+
+    expect(await screen.findByText(/No connection - the lists of this space are not on this device yet/)).toBeInTheDocument()
+    expect(screen.queryByText('Loading...')).not.toBeInTheDocument()
+  })
+
   it('cancelling the new list dialog creates nothing', async () => {
     const { servers } = setup([home])
 

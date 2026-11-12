@@ -242,6 +242,7 @@ export const de: Record<MessageKey, string> = {
   'start.createSpace': 'Bereich anlegen',
   'start.noLists': 'Noch keine Listen.',
   'start.lastUsed': 'zuletzt benutzt',
+  'start.notLoadedOffline': 'Keine Verbindung - die Listen dieses Bereichs sind noch nicht auf diesem Gerät. Sie erscheinen, sobald du online bist.',
   'newList.title': 'Neue Liste',
   'newList.space': 'Im Bereich',
   'newList.spaceHint': 'Alle im Bereich sehen diese Liste.',

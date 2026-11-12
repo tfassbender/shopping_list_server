@@ -35,7 +35,8 @@ export function AppBar(props: { title: string; back?: string; sub?: ReactNode; a
               <h1 className="truncate text-[1.35rem] font-bold">{props.title}</h1>
             </div>
           )}
-          {session ? <SyncIndicator /> : <LanguageToggle />}
+          {/* With a second row, the badges go there - the title keeps its room on a phone. */}
+          {session ? !props.sub && <SyncIndicator /> : <LanguageToggle />}
           {props.actions}
           {props.menu && <Menu entries={props.menu} />}
         </div>
@@ -43,7 +44,12 @@ export function AppBar(props: { title: string; back?: string; sub?: ReactNode; a
          * The line below the title (e.g. the shop) gets a row of its own, so the badges and buttons next
          * to the title don't squeeze it. Indented to line up with the title.
          */}
-        {props.sub && <div className={`-mt-1 pr-4 pb-2 ${props.back ? 'pl-[3.25rem]' : 'pl-4'}`}>{props.sub}</div>}
+        {props.sub && (
+          <div className={`-mt-1 flex min-h-8 items-center justify-between gap-2 pr-2 pb-1.5 ${props.back ? 'pl-[3.25rem]' : 'pl-4'}`}>
+            <div className="min-w-0">{props.sub}</div>
+            {session && <SyncIndicator compact />}
+          </div>
+        )}
       </div>
     </header>
   )

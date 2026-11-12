@@ -35,7 +35,7 @@ class FileUserRepository(private val files: JsonFiles) : UserRepository {
     }
 
     private fun all(): Sequence<User> = files.subdirectories(files.usersDir()).asSequence()
-        .mapNotNull { files.read(it.resolve(FILE_NAME), UserFile::class.java)?.toDomain() }
+        .mapNotNull { files.readForScan(it.resolve(FILE_NAME), UserFile::class.java) { file -> file.toDomain() } }
 
     private companion object {
         const val FILE_NAME = "user.json"

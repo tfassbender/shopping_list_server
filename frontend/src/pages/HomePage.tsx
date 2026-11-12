@@ -6,6 +6,7 @@ import { Button, Hint, LoadError, Loading, SectionTitle } from '../components/ui
 import { t } from '../i18n/messages'
 import { getLastList } from '../lists/lastList'
 import { useSpaceLists } from '../offline/engine'
+import { useOnline } from '../offline/online'
 import { NewListDialog, NewSpaceDialog } from './space/SpaceDialogs'
 
 /**
@@ -60,10 +61,12 @@ export function HomePage() {
 /** The lists of one space (from the offline store, so this works without connection). */
 function SpaceLists(props: { space: Space; showName: boolean; lastListId?: string; onNewList: () => void }) {
   const lists = useSpaceLists(props.space.id)
+  const online = useOnline()
   return (
     <section aria-label={props.space.name}>
       {props.showName ? <SectionTitle>{props.space.name}</SectionTitle> : <div className="h-3" />}
-      {lists === undefined && <Loading />}
+      {/* Nothing on this device yet: offline it would load forever, so say why nothing shows. */}
+      {lists === undefined && (online ? <Loading /> : <Hint>{t('start.notLoadedOffline')}</Hint>)}
       {lists?.length === 0 && (
         <Hint>
           {t('start.noLists')}{' '}

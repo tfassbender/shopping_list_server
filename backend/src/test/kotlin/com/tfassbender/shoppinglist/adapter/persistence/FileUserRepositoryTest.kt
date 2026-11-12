@@ -91,4 +91,17 @@ class FileUserRepositoryTest {
         assertThrows<IllegalArgumentException> { JsonFiles.safeSegment("a/b") }
         assertThrows<IllegalArgumentException> { JsonFiles.safeSegment("") }
     }
+
+    @Test
+    fun `a corrupt user file is skipped by lookups over all users, but not by a direct read`() {
+        repository.save(user)
+        val broken = dataDir.resolve("users/u-broken/user.json")
+        Files.createDirectories(broken.parent)
+        Files.writeString(broken, "{ not json")
+
+        // other users can still log in
+        assertEquals(user.id, repository.findByEmail(user.email)?.id)
+        // the broken file itself is not silently treated as missing (it could be overwritten)
+        assertThrows<java.io.UncheckedIOException> { repository.findById(UserId("u-broken")) }
+    }
 }

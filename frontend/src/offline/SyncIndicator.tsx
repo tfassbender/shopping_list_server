@@ -10,7 +10,7 @@ import { useOnline } from './online'
 import type { StoredWarning } from './syncEngine'
 
 /** Header badges: offline / pending changes, and the merge warning icon (unless the user hides it). */
-export function SyncIndicator() {
+export function SyncIndicator({ compact = false }: { compact?: boolean }) {
   const online = useOnline()
   const { status, pending } = useSyncStatus()
   const warnings = useMergeWarnings()
@@ -30,7 +30,7 @@ export function SyncIndicator() {
         <button
           onClick={() => setOpen(true)}
           aria-label={t('warnings.open', { count: warnings.length })}
-          className="flex size-12 items-center justify-center rounded-full text-xl hover:bg-brand-ink/10"
+          className={`flex items-center justify-center rounded-full hover:bg-brand-ink/10 ${compact ? '-my-1 size-10 text-lg' : 'size-12 text-xl'}`}
         >
           ⚠
         </button>

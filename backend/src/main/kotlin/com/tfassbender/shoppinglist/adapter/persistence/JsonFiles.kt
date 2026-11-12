@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import org.jboss.logging.Logger
 import java.io.IOException
 import java.io.UncheckedIOException
 import java.nio.file.AtomicMoveNotSupportedException
@@ -23,6 +24,8 @@ import kotlin.io.path.readText
  * Owns its own [ObjectMapper] – persistence DTOs are independent of the REST JSON settings.
  */
 class JsonFiles(val root: Path) {
+
+    private val log: Logger = Logger.getLogger(JsonFiles::class.java)
 
     val mapper: ObjectMapper = jacksonObjectMapper()
         .registerModule(JavaTimeModule())
@@ -44,6 +47,19 @@ class JsonFiles(val root: Path) {
             throw UncheckedIOException("Failed to read '$file'", e)
         }
     }
+
+    /**
+     * For lookups that scan all users or spaces: a file that can't be read or converted is logged and
+     * skipped, so one broken file doesn't make e.g. every login fail. Direct reads ([read]) still fail
+     * loudly - the caller must not overwrite a file it couldn't read.
+     */
+    fun <F, T> readForScan(file: Path, type: Class<F>, toDomain: (F) -> T): T? =
+        try {
+            read(file, type)?.let(toDomain)
+        } catch (e: RuntimeException) {
+            log.errorf(e, "Skipping unreadable file '%s' - fix or remove it", file)
+            null
+        }
 
     fun write(file: Path, value: Any) {
         val dir = file.parent

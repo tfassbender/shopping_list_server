@@ -31,7 +31,7 @@ class FileSpaceRepository(private val files: JsonFiles) : SpaceRepository {
     }
 
     private fun all(): Sequence<Space> = files.subdirectories(files.spacesDir()).asSequence()
-        .mapNotNull { files.read(it.resolve(FILE_NAME), SpaceFile::class.java)?.toDomain() }
+        .mapNotNull { files.readForScan(it.resolve(FILE_NAME), SpaceFile::class.java) { file -> file.toDomain() } }
 
     private companion object {
         const val FILE_NAME = "space.json"
