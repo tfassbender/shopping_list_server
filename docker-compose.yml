@@ -1,0 +1,46 @@
+# Production stack: the app and its PostgreSQL database (doc/deployment.md).
+# On the server: ./start.sh and ./stop.sh. The image is built on the PC (./gradlew dockerImage) and uploaded as a file.
+# Settings: config/application.properties and config/jwt.jwk (mounted into the app), the database password in .env.
+name: shopping-list
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: shoppinglist
+      POSTGRES_USER: shoppinglist
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    # No published port: only the app reaches the database, over the Compose network.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shoppinglist -d shoppinglist"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  app:
+    # Loaded from the uploaded image file (start.sh), never built or pulled on the server.
+    # `build` is only for trying the stack locally: docker compose up -d --build
+    build: .
+    image: shopping-list:latest
+    pull_policy: never
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SHOPPINGLIST_DB_URL: jdbc:postgresql://db:5432/shoppinglist
+      SHOPPINGLIST_DB_USER: shoppinglist
+      SHOPPINGLIST_DB_PASSWORD: ${DB_PASSWORD}
+      SHOPPINGLIST_JWT_KEY_LOCATION: /app/config/jwt.jwk
+    volumes:
+      # config/application.properties overrides the built-in settings (Quarkus reads it from the working directory).
+      - ./config:/app/config:ro
+    # Only reachable from the server itself; cloudflared forwards the public hostname to it.
+    ports:
+      - "127.0.0.1:${APP_PORT:-4723}:4723"
+
+volumes:
+  db-data:

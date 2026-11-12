@@ -1,0 +1,17 @@
+# Only sources go into the build context - no build output, dependencies, data or secrets.
+.git
+.gradle
+.kotlin
+.idea
+**/build
+**/node_modules
+frontend/dist
+backend/data
+data
+e2e/src
+doc
+.env
+config
+backups
+application.properties
+.playwright-mcp

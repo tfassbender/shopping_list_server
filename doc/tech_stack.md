@@ -171,9 +171,9 @@ adapter stays, which also demonstrates that the hexagonal ports really make stor
   by default and on files with `-Pstorage=file`.
 - **Dev mode:** Dev Services as well, with the data directory bound to `backend/data/dev-postgres`
   (gitignored), so dev data survives restarts.
-- **Production:** connection from `SHOPPINGLIST_DB_URL`, `SHOPPINGLIST_DB_USER`, `SHOPPINGLIST_DB_PASSWORD`.
-  The JWT signing key comes from the file in `SHOPPINGLIST_JWT_KEY_LOCATION` (required in prod; the dev key
-  in the repo is never used there).
+- **Production:** connection from `SHOPPINGLIST_DB_URL`, `SHOPPINGLIST_DB_USER`, `SHOPPINGLIST_DB_PASSWORD`
+  (set by `docker-compose.yml`). The JWT signing key comes from the file in `SHOPPINGLIST_JWT_KEY_LOCATION`
+  (required in prod; the dev key in the repo is never used there).
 
 ### File-based JSON (alternative adapter)
 
@@ -209,11 +209,23 @@ files are sufficient; it needs no database at all.
 - **Docker** for PostgreSQL locally (Docker Desktop; enables Quarkus Dev Services) and on the Ubuntu server
   (Docker Engine + Compose plugin from Docker's apt repository).
 - **Production stack** via `docker-compose.yml`: app image (multi-stage `Dockerfile`: builds the SPA and the
-  backend, runs on a slim Java 21 runtime) + Postgres with a named volume and health check; secrets in an
-  `.env` file that is not committed.
+  backend, runs on an Alpine Java 21 runtime) + Postgres with a named volume and health check.
+- **Releases** without sources on the server: `./gradlew dockerImage` builds the image on the PC and saves it
+  as a file (`docker save`, ~120 MB) next to `start.sh`/`stop.sh`; it is uploaded by hand and `./start.sh`
+  loads and starts it (`docker load` + `docker compose up -d`).
 - Postgres publishes **no port**; the app reaches it on the internal Compose network. The app port binds to
-  `127.0.0.1` behind a reverse proxy for HTTPS (ports published by Docker bypass `ufw`).
-- Backups: daily `pg_dump` (via `docker exec`) by cron.
+  `127.0.0.1` (ports published by Docker bypass `ufw`).
+- **HTTPS via a cloudflared tunnel** (as for the other projects on the server): Cloudflare terminates TLS
+  and forwards the hostname to `127.0.0.1:4723`. No reverse proxy; the prod profile trusts the forwarded
+  headers. Rate limits for login, registration and emails live in the app (`AuthRateLimits`, keyed by
+  Cloudflare's `CF-Connecting-IP`).
+- **Settings outside the image:** the server's `config/` folder is mounted into the container, so Quarkus
+  reads `config/application.properties` (public URL, SMTP, anything to override) on top of the built-in
+  settings; `config/jwt.jwk` is the JWT key. Built-in settings must not set these values under `%prod.`,
+  because a profile value would win over the file. Only the database password is in `.env` (the Postgres
+  container needs it too).
+- Backups: daily `pg_dump` (via `docker compose exec`) by cron, `deploy/backup.sh`.
+- Step by step: `doc/deployment.md`.
 
 ## Offline Sync
 

@@ -4,8 +4,8 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–11, the UI rework, a code review round and smaller UI additions are done. Next:
-Phase 12 (Docker & deployment).
+**Status:** Phases 0–11, the UI rework, a code review round and smaller UI additions are done. Phase 12:
+image, Compose stack and docs are ready (version 1.0.0); the server setup is next.
 
 ## Guiding principles
 
@@ -391,21 +391,33 @@ several checkouts/worktrees don't collide on 8081.
 - [x] Clearer icons (sheet of paper with list lines) for the browser tab and the installed app
 
 Open from the review, deliberately not done yet:
-- Rate limiting of login, registration and the email endpoints - with the reverse proxy in Phase 12.
+- ~~Rate limiting of login, registration and the email endpoints~~ - done in Phase 12.
 - Upper limits for spaces, lists, layouts and invites per account.
 - An open live-update stream is not closed by "log out everywhere" (it carries only ids and seq numbers).
 
 ## Phase 12 – Docker & deployment
 
-- [ ] Production config: JWT key (file from `SHOPPINGLIST_JWT_KEY_LOCATION`, already required by the prod
-      profile), SMTP, database credentials, public base URL (invite/verification links), Android signing
-      certificate fingerprints (App Links)
-- [ ] Rate limiting of the auth endpoints (login, registration, email sending), e.g. in the reverse proxy
-- [ ] Multi-stage `Dockerfile` (SPA + backend -> slim Java 21 runtime image)
-- [ ] `docker-compose.yml`: app + Postgres (named volume, health check, `.env` for secrets, no published
-      DB port, app bound to `127.0.0.1`)
-- [ ] Ubuntu server: Docker Engine + Compose plugin, reverse proxy with HTTPS
-- [ ] Backups: daily `pg_dump` via cron
+- [x] Production config outside the image: `config/application.properties` (public URL, Resend SMTP) and
+      `config/jwt.jwk` mounted into the container, database password in `.env`; version 1.0.0
+- [ ] Android signing certificate fingerprints (App Links) - when the Android app exists
+- [x] Rate limiting of login, registration and the email endpoints in the app (`AuthRateLimits`, per client
+      address via Cloudflare's `CF-Connecting-IP`; off in dev/test/e2e)
+- [x] Multi-stage `Dockerfile` (Node stage for the SPA, Gradle stage with `-PwithFrontend=prebuilt`, JRE 21
+      runtime as an unprivileged user)
+- [x] `docker-compose.yml`: app + Postgres (named volume, health check, `config/` mounted, no published DB
+      port, app bound to `127.0.0.1`) - tried locally
+- [x] Backups: `deploy/backup.sh` (`pg_dump`, 14 days) for a daily cron job - tried locally
+- [x] `./gradlew dockerImage`: image built on the PC and saved as a file in `build/docker/` with `start.sh`,
+      `stop.sh`, `backup.sh`, the Compose file and the config templates; uploaded by hand and started on the
+      server with `./start.sh` (no sources there, as with the other projects) - tried locally
+- [x] `doc/deployment.md`: setup, cloudflared ingress, updates, backups and restore
+- [x] Ubuntu server: Docker Engine + Compose plugin (replaced the snap Docker)
+- [ ] Ubuntu server: `.env` and `config/`, first start, cloudflared ingress for
+      `shopping-list.tobias-fassbender.com`, cron for backups
+- [ ] Tag `v1.0.0` once it runs on the server
+
+Decided: HTTPS through the existing cloudflared tunnel instead of a reverse proxy (as for the other
+projects on the server).
 - [ ] Optional: GitHub Actions builds the image and pushes it to GHCR
 
 ## Later

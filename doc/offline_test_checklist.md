@@ -2,7 +2,9 @@
 
 Automated tests cover the sync logic (`SyncEngine`, merge rules). These checks cover what only a real
 browser shows: service worker, IndexedDB, connection changes. Run against a **production build**
-(`./gradlew build -PwithFrontend`, then `java -jar backend/build/quarkus-app/quarkus-run.jar`) – the
+(`./gradlew build -PwithFrontend`, then
+`java -Dquarkus.profile=e2e -Dshoppinglist.storage=file -jar backend/build/quarkus-app/quarkus-run.jar`, or the
+deployed app) – the
 service worker is not active in the Vite dev server.
 
 Use Chrome DevTools → Network → "Offline" (or airplane mode on a phone).

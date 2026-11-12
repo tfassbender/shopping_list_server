@@ -1,0 +1,22 @@
+# Production settings of the shopping list app. On the server: config/application.properties (never
+# committed). Quarkus reads this file on top of the built-in settings, so everything set here wins; change
+# it and run ./start.sh again. Built-in settings: backend/src/main/resources/application.properties.
+
+# --- Public address -------------------------------------------------------------------------------------
+# Links in emails (verification, password reset) and invite links point here. Required.
+shoppinglist.public-base-url=https://shopping-list.tobias-fassbender.com
+
+# --- Email (Resend SMTP) --------------------------------------------------------------------------------
+# Sender: noreply@mail.tobias-fassbender.com (quarkus.mailer.from, built in) - the domain must be verified in
+# Resend. Resend's SMTP relay: the user is always "resend", the password is the API key.
+quarkus.mailer.host=smtp.resend.com
+quarkus.mailer.port=587
+quarkus.mailer.start-tls=REQUIRED
+quarkus.mailer.username=resend
+quarkus.mailer.password=
+
+# --- Optional ---------------------------------------------------------------------------------------------
+# More log output while looking into a problem:
+#quarkus.log.category."com.tfassbender".level=DEBUG
+# Logs go to `docker compose logs app`. The JWT key is config/jwt.jwk next to this file; the database
+# connection comes from docker-compose.yml and .env.

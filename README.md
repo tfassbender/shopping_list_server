@@ -33,16 +33,21 @@ API docs: http://localhost:4723/q/swagger-ui
 
 ```bash
 ./gradlew :backend:test -Pstorage=file                                    # tests on the file storage
-java -Dshoppinglist.storage=file -jar backend/build/quarkus-app/quarkus-run.jar   # packaged app without a database
+# packaged app locally, without a database and without emails (e2e profile):
+java -Dquarkus.profile=e2e -Dshoppinglist.storage=file -jar backend/build/quarkus-app/quarkus-run.jar
 ```
 
-The packaged app on PostgreSQL reads the connection from the environment:
-`SHOPPINGLIST_DB_URL` (e.g. `jdbc:postgresql://localhost:5432/shoppinglist`), `SHOPPINGLIST_DB_USER`,
-`SHOPPINGLIST_DB_PASSWORD`. Flyway creates/migrates the schema at startup.
+In its default `prod` profile the packaged app needs the production settings: the database connection
+(`SHOPPINGLIST_DB_URL` / `_USER` / `_PASSWORD`), the JWT key file (`SHOPPINGLIST_JWT_KEY_LOCATION` - the dev
+key in the repository is only used in dev and tests), and `config/application.properties` with the public
+URL and the SMTP settings. The Docker setup provides all of it (below).
 
-In production (the packaged app, in both storage modes) the JWT signing key must come from a file:
-`SHOPPINGLIST_JWT_KEY_LOCATION` (a JWK file, e.g. `/run/secrets/jwt.jwk`). The dev key in the repository is only
-used in dev and tests.
+## Deployment
+
+Docker Compose (app + PostgreSQL) behind a cloudflared tunnel. `./gradlew dockerImage` builds the image
+into `build/docker/` (with `start.sh`, `stop.sh` and the config templates); upload it to the server and run
+`./start.sh` there. The settings live outside the image in `config/application.properties`. Setup, updates
+and backups: [doc/deployment.md](doc/deployment.md).
 
 ## Documentation
 
@@ -50,5 +55,6 @@ used in dev and tests.
 - [Features](doc/features.md)
 - [Domain data model](doc/data_model.md)
 - [Implementation plan](doc/implementation_plan.md)
+- [Deployment](doc/deployment.md)
 - [Manual offline test checklist](doc/offline_test_checklist.md)
 - [QA findings of the test run on 2026-11-11](doc/qa_findings.md)

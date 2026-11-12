@@ -70,9 +70,12 @@ tasks.withType<Test> {
 
 // With -PwithFrontend the React SPA is built and packaged into META-INF/resources, where Quarkus serves
 // it as static content. Without the flag (dev, plain tests) the backend builds standalone.
-if (providers.gradleProperty("withFrontend").isPresent) {
+// `-PwithFrontend=prebuilt` packages an existing frontend/dist without running npm (the Docker build makes
+// it in a separate Node stage, so the Java build stage needs no Node).
+val withFrontend = providers.gradleProperty("withFrontend")
+if (withFrontend.isPresent) {
     tasks.processResources {
-        dependsOn(":frontend:npmBuild")
+        if (withFrontend.get() != "prebuilt") dependsOn(":frontend:npmBuild")
         from(rootProject.file("frontend/dist")) {
             into("META-INF/resources")
         }

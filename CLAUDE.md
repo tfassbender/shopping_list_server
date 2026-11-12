@@ -97,9 +97,15 @@ for backend dev mode and tests (Quarkus Dev Services start PostgreSQL in a conta
 
 - **Everything (backend + frontend tests, JAR with SPA):** `./gradlew build -PwithFrontend`
   (without `-PwithFrontend` the backend JAR contains no web app)
-- **Run the packaged app:** `java -jar backend/build/quarkus-app/quarkus-run.jar` → http://localhost:4723
-  (Postgres from `SHOPPINGLIST_DB_URL` / `_USER` / `_PASSWORD`; `-Dshoppinglist.storage=file` runs without a database;
-  the JWT key file from `SHOPPINGLIST_JWT_KEY_LOCATION` - required in prod, no fallback to the dev key)
+- **Run the packaged app locally:** `java -Dquarkus.profile=e2e -Dshoppinglist.storage=file -jar backend/build/quarkus-app/quarkus-run.jar`
+  → http://localhost:4723 (no database, no emails, no rate limits). The default `prod` profile needs the
+  production settings (database and JWT key from the environment, `config/application.properties` with public
+  URL and SMTP) - the Docker setup provides them.
+- **Deployment:** `./gradlew dockerImage` builds the image and puts it with `start.sh`, `stop.sh`, `backup.sh`,
+  `docker-compose.yml` and the config templates (`deploy/`) into `build/docker/`; uploaded by hand, started on the
+  server with `./start.sh`. Settings outside the image: `config/application.properties` + `config/jwt.jwk`,
+  database password in `.env`. Behind a cloudflared tunnel - see `doc/deployment.md`. Try the stack locally
+  with `APP_PORT=4732 docker compose up -d --build`.
 - **Backend dev (live reload, port 4723):** `./gradlew :backend:quarkusDev` (dev database persisted in
   `backend/data/dev-postgres`)
 - **Backend tests:** `./gradlew :backend:test` (on Postgres; `-Pstorage=file` runs them on the file storage,
