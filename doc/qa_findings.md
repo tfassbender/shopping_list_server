@@ -42,14 +42,17 @@ Worked through in the session of 2026-11-12 (commits `e0a36aa`..`e99dab9`), each
 - **#22** amount field: input is kept as typed ("1.2.3"), marked invalid and blocks saving - done.
 - **#23** a unit without an amount is not shown ("l Oat milk" → "Oat milk") - done.
 - **#19** a member re-opening an already used link getting "invalid" is OK.
+- **#22** emoji counting as two characters in name limits and **#23** the history merge spelling: fine
+  as they are. Data model points (#24): not needed, little data expected.
+- **#24** start page offline without data of a space on the device: shows a hint - done. Corrupt
+  files: lookups over all users/spaces log and skip them; direct reads still fail - done.
+  "Offline status after logout" is fixed too (`clear()` resets the status).
+- **#14** the offline badge and the ⚠ icon sit in the second header row on the list page - done.
+- E2E tests run once against the dev backend after all fixes: 6/6 passed.
 
 **Still open**
-- **#22** favorite switch vs. Cancel; duplicate items without hint; emoji counting as two characters
-  in name limits.
-- **#23** history merge changing the spelling; the remaining console noise is reduced (4xx are no
-  longer retried, deleted spaces aren't refetched).
-- **#24** ("offline status after logout" is fixed: `clear()` resets the status.) Start page offline without cached data now shows "Loading..." per space until the first
-  pull (before it showed "no lists", which was wrong too); corrupt data files; data model points.
+- **#22** favorite switch vs. Cancel; duplicate items without hint.
+- **#23** console noise: to be checked again later.
 
 ---
 
