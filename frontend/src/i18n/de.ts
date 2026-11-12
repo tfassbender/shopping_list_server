@@ -319,6 +319,7 @@ export const de: Record<MessageKey, string> = {
   'history.remove': 'Entfernen',
   'error.HISTORY_ENTRY_NOT_FOUND': 'Dieser Artikel wurde inzwischen entfernt.',
   'error.unknown': 'Etwas ist schiefgelaufen. Bitte versuch es noch einmal.',
+  'error.TOO_MANY_REQUESTS': 'Zu viele Versuche. Bitte warte eine Weile und versuche es dann erneut.',
   'error.NETWORK_ERROR': 'Server nicht erreichbar. Prüfe deine Verbindung.',
   'error.INVALID_EMAIL': 'Bitte gib eine gültige E-Mail-Adresse ein.',
   'error.INVALID_DISPLAY_NAME': 'Der Anzeigename muss 1-40 Zeichen lang sein.',

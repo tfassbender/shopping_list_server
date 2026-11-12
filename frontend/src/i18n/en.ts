@@ -320,6 +320,7 @@ export const en = {
   'history.remove': 'Remove',
   'error.HISTORY_ENTRY_NOT_FOUND': 'This item was removed in the meantime.',
   'error.unknown': 'Something went wrong. Please try again.',
+  'error.TOO_MANY_REQUESTS': 'Too many attempts. Please wait a while and try again.',
   'error.NETWORK_ERROR': 'Server not reachable. Check your connection.',
   'error.INVALID_EMAIL': 'Please enter a valid email address.',
   'error.INVALID_DISPLAY_NAME': 'The display name must be 1-40 characters.',
