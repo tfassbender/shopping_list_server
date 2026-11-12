@@ -9,6 +9,7 @@ pluginManagement {
         id("io.quarkus") version quarkusPluginVersion
         kotlin("jvm") version kotlinVersion
         kotlin("plugin.allopen") version kotlinVersion
+        kotlin("plugin.jpa") version kotlinVersion
     }
 }
 

@@ -1,6 +1,8 @@
 plugins {
     kotlin("jvm")
     kotlin("plugin.allopen")
+    // No-arg constructors for @Entity/@Embeddable classes (JPA instantiates them reflectively).
+    kotlin("plugin.jpa")
     id("io.quarkus")
 }
 
@@ -19,6 +21,11 @@ dependencies {
     implementation("io.quarkus:quarkus-smallrye-jwt")
     implementation("io.quarkus:quarkus-smallrye-jwt-build")
     implementation("io.quarkus:quarkus-mailer")
+    // PostgreSQL persistence (shoppinglist.storage=postgres): plain JPA via Hibernate, schema owned by Flyway.
+    implementation("io.quarkus:quarkus-hibernate-orm")
+    implementation("io.quarkus:quarkus-jdbc-postgresql")
+    implementation("io.quarkus:quarkus-flyway")
+    implementation("io.quarkus:quarkus-flyway-postgresql")
     implementation("at.favre.lib:bcrypt:0.10.2")
     // Kotlin data classes (de)serialize without no-arg constructors; Quarkus auto-registers the module.
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -37,6 +44,9 @@ allOpen {
     annotation("jakarta.enterprise.context.ApplicationScoped")
     annotation("jakarta.enterprise.context.RequestScoped")
     annotation("io.quarkus.test.junit.QuarkusTest")
+    // Hibernate creates lazy-loading proxies as subclasses of entities.
+    annotation("jakarta.persistence.Entity")
+    annotation("jakarta.persistence.Embeddable")
 }
 
 kotlin {
@@ -54,6 +64,8 @@ java {
 
 tasks.withType<Test> {
     systemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager")
+    // Tests run against Postgres (Dev Services, needs Docker); `-Pstorage=file` runs them on the file storage.
+    providers.gradleProperty("storage").orNull?.let { systemProperty("shoppinglist.storage", it) }
 }
 
 // With -PwithFrontend the React SPA is built and packaged into META-INF/resources, where Quarkus serves
