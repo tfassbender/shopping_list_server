@@ -36,7 +36,7 @@ describe('German translations', () => {
 
   it('are not empty and not just copied English (except names and the language list)', () => {
     const identical = (Object.keys(en) as MessageKey[]).filter((key) => de[key] === en[key])
-    expect(identical.every((key) => key.startsWith('settings.language.') || ['common.name', 'item.name', 'tokens.name', 'offline.badge', 'item.noUnit'].includes(key))).toBe(true)
+    expect(identical.every((key) => key.startsWith('settings.language.') || ['common.name', 'item.name', 'tokens.name', 'offline.badge', 'item.noUnit', 'spaces.summary'].includes(key))).toBe(true)
     expect((Object.keys(de) as MessageKey[]).every((key) => de[key].trim().length > 0)).toBe(true)
   })
 })

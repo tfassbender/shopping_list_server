@@ -146,7 +146,7 @@ export function ListPage() {
       }
       menu={[
         { label: t('list.menu.rename'), icon: 'rename', onSelect: () => setDialog('rename') },
-        { label: t('list.menu.removeChecked', { count: checked.length }), icon: 'removeChecked', onSelect: () => apply({ type: 'removeChecked' }), disabled: checked.length === 0 },
+        { label: checked.length > 0 ? t('list.menu.removeChecked', { count: checked.length }) : t('list.menu.removeCheckedNone'), icon: 'removeChecked', onSelect: () => apply({ type: 'removeChecked' }), disabled: checked.length === 0 },
         'divider',
         { label: t('space.catalog'), icon: 'categories', onSelect: () => navigate(`/spaces/${spaceId}/catalog`, { state: { back: `/spaces/${spaceId}/lists/${listId}` } }) },
         { label: t('space.layouts'), icon: 'shops', onSelect: () => navigate(`/spaces/${spaceId}/layouts`, { state: { back: `/spaces/${spaceId}/lists/${listId}` } }) },

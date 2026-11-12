@@ -77,7 +77,7 @@ describe('CatalogPage', () => {
     const hex = within(dialog).getByLabelText('Hex code')
     await userEvent.clear(hex)
     await userEvent.type(hex, '12AB')
-    expect(within(dialog).getByRole('button', { name: 'Apply' })).toBeEnabled() // still the previous valid color
+    expect(within(dialog).getByRole('button', { name: 'Apply' })).toBeDisabled() // incomplete code
     await userEvent.type(hex, '9F')
     expect(within(dialog).getByRole('slider', { name: 'Hue' })).toHaveValue(String(hueOf('#12ab9f')))
     await userEvent.click(within(dialog).getByRole('button', { name: 'Apply' }))

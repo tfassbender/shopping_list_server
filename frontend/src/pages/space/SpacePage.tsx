@@ -207,6 +207,11 @@ export function SpacePage() {
               <span className="block text-sm text-muted">{t('members.removeConfirm', { name: memberDialog.displayName, space: space.name })}</span>
             </button>
           </div>
+          <DialogActions>
+            <Button variant="ghost" onClick={() => setMemberDialog(null)}>
+              {t('common.cancel')}
+            </Button>
+          </DialogActions>
         </Dialog>
       )}
       {confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}

@@ -57,7 +57,9 @@ function ColorDialog({ initial, label, onSave, onClose }: { initial: string; lab
   const [hexText, setHexText] = useState(initial)
   const hexId = useId()
   const colors = PALETTE.includes(initial) ? PALETTE : [initial, ...PALETTE]
-  const valid = HEX.test(color)
+  // Apply takes what the hex field shows - so not while it holds an incomplete code (that would apply
+  // the previous color instead).
+  const valid = HEX.test(color) && HEX.test(normalizeHex(hexText))
 
   function choose(next: string) {
     setColor(next)
@@ -66,7 +68,7 @@ function ColorDialog({ initial, label, onSave, onClose }: { initial: string; lab
 
   function typeHex(text: string) {
     setHexText(text)
-    const normalized = (text.startsWith('#') ? text : `#${text}`).trim().toLowerCase()
+    const normalized = normalizeHex(text)
     if (HEX.test(normalized)) setColor(normalized)
   }
 
@@ -128,6 +130,10 @@ function ColorDialog({ initial, label, onSave, onClose }: { initial: string; lab
       </DialogActions>
     </Dialog>
   )
+}
+
+function normalizeHex(text: string): string {
+  return (text.startsWith('#') ? text : `#${text}`).trim().toLowerCase()
 }
 
 /** Saturation and lightness of the slider colors: as soft as the palette, readable as dots and headers. */

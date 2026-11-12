@@ -32,7 +32,11 @@ export function SpacesPage() {
 
 function SpaceRow({ space, onOpen }: { space: Space; onOpen: () => void }) {
   const lists = useSpaceLists(space.id)
-  const summary = t('spaces.summary', { lists: lists?.length ?? 0, members: space.memberCount })
+  const listCount = lists?.length ?? 0
+  const summary = t('spaces.summary', {
+    lists: listCount === 1 ? t('spaces.lists.one') : t('spaces.lists.other', { count: listCount }),
+    members: space.memberCount === 1 ? t('spaces.members.one') : t('spaces.members.other', { count: space.memberCount }),
+  })
   const role = space.myRole === 'OWNER' ? t('spaces.role.OWNER') : t('spaces.role.MEMBER')
   return (
     <Row

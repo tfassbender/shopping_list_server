@@ -90,8 +90,10 @@ describe('ColorPicker', () => {
     const hex = within(dialog).getByLabelText('Hex code')
 
     await userEvent.clear(hex)
-    expect(within(dialog).getByRole('button', { name: 'Apply' })).toBeEnabled() // still the last valid color
+    // not while the field shows no / an incomplete code - Apply would take another color than shown
+    expect(within(dialog).getByRole('button', { name: 'Apply' })).toBeDisabled()
     await userEvent.type(hex, '12AB9')
+    expect(within(dialog).getByRole('button', { name: 'Apply' })).toBeDisabled()
     expect(within(dialog).getByRole('slider', { name: 'Hue' })).toHaveValue(String(hueOf('#78909c')))
     await userEvent.type(hex, 'F{Enter}')
 

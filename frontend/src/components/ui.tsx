@@ -169,7 +169,8 @@ export function ChevronRight() {
 export function Avatar({ name }: { name: string }) {
   return (
     <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-raised font-bold text-accent">
-      {name.trim().charAt(0).toUpperCase() || '?'}
+      {/* Array.from splits by code points, so an emoji isn't cut in half (charAt would show "�") */}
+      {Array.from(name.trim())[0]?.toUpperCase() ?? '?'}
     </span>
   )
 }

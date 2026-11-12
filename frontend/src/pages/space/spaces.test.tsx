@@ -13,6 +13,22 @@ const members = [
 describe('spaces', () => {
   beforeEach(() => loginForTest())
 
+  it('summarises each space with correct singular and plural', async () => {
+    const pull = (lists: unknown[]) => ({ seq: 1, fullResync: true, lists, listIds: lists.map((l) => (l as { id: string }).id), catalog: null, historyChanges: [], layouts: null, layoutIds: [], favorites: {} })
+    mockApi({
+      'GET /api/users/me': testUser,
+      'GET /api/spaces': [{ ...space, memberCount: 1 }, { ...space, id: 's2', name: '\u{1F34E} Fruit', memberCount: 3 }],
+      'GET /api/spaces/s1/changes': pull([{ id: 'l1', spaceId: 's1', name: 'A', createdAt: '', seq: 1, deleted: false, items: [] }]),
+      'GET /api/spaces/s2/changes': pull([]),
+    })
+    renderWithProviders(<AppRoutes />, '/spaces')
+
+    expect(await screen.findByText(/^1 list · 1 member ·/)).toBeInTheDocument()
+    expect(await screen.findByText(/^0 lists · 3 members ·/)).toBeInTheDocument()
+    // the avatar shows the whole emoji, not half of it
+    expect(screen.getByText('\u{1F34E}')).toBeInTheDocument()
+  })
+
   it('lists spaces and creates a new one', async () => {
     const created: unknown[] = []
     const spy = mockApi({

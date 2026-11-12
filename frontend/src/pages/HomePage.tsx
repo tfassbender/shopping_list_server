@@ -84,7 +84,8 @@ function SpaceLists(props: { space: Space; showName: boolean; lastListId?: strin
             {/* wrap-anywhere: a long name without spaces wraps instead of running under the count */}
             <span className="min-w-0 flex-1 wrap-anywhere">
               <span className="text-xl font-semibold">{list.name}</span>
-              {list.id === props.lastListId && <span className="text-sm font-semibold text-accent"> · {t('start.lastUsed')}</span>}
+              {/* only worth saying when there is more than one list to choose from */}
+              {list.id === props.lastListId && (lists.length > 1 || props.showName) && <span className="text-sm font-semibold text-accent"> · {t('start.lastUsed')}</span>}
             </span>
             <span
               aria-label={t('lists.openCount', { count: open.length })}

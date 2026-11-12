@@ -59,7 +59,7 @@ class ApiTokenResourceTest {
     @Test
     fun `tokens can't manage tokens or the account`() {
         val (_, token) = createToken("FULL")
-        withToken(token).get("/api/users/me/api-tokens").then().statusCode(403)
+        withToken(token).get("/api/users/me/api-tokens").then().statusCode(403).body("code", equalTo("SESSION_REQUIRED"))
         withToken(token).body(mapOf("name" to "x", "scope" to "FULL")).post("/api/users/me/api-tokens").then().statusCode(403)
         withToken(token).delete("/api/users/me").then().statusCode(403)
         withToken(token).body(mapOf("currentPassword" to TestUsers.PASSWORD, "newPassword" to "hacked-password"))
