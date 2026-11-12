@@ -12,6 +12,7 @@ import { Icon } from '../../components/Icon'
 import { Button, ErrorText, Fab, Hint, Loading, Row, SectionTitle, Switch } from '../../components/ui'
 import { t, tDynamic } from '../../i18n/messages'
 import { OnlineOnly, useOnline } from '../../offline/online'
+import { normalizeName } from '../../lists/sortForLayout'
 import { NameDialog } from './SpaceDialogs'
 
 /** Overview of the shop layouts of a space; + creates one. */
@@ -212,7 +213,18 @@ export function LayoutEditorPage() {
 /** Mode ITEMS: an ordered list of item names, filled by hand or from the items of the connected lists. */
 function ItemOrderEditor({ spaceId, layout, onChange }: { spaceId: string; layout: ShopLayout; onChange: (names: string[]) => void }) {
   const [importError, setImportError] = useState<unknown>(null)
-  const known = new Set(layout.itemOrder.map((n) => n.toLowerCase()))
+  const [duplicate, setDuplicate] = useState<string | null>(null)
+  // Same normalization as the server, which refuses entries that differ only in case or spaces.
+  const known = new Set(layout.itemOrder.map(normalizeName))
+
+  function add(name: string) {
+    if (known.has(normalizeName(name))) {
+      setDuplicate(name)
+      return false // keep the text, so the user sees what was refused
+    }
+    setDuplicate(null)
+    onChange([...layout.itemOrder, name])
+  }
 
   async function importFromLists() {
     setImportError(null)
@@ -221,7 +233,7 @@ function ItemOrderEditor({ spaceId, layout, onChange }: { spaceId: string; layou
       // Names not yet in the order, each only once (case-insensitive).
       const added = new Map<string, string>()
       for (const name of lists.flatMap((l) => l.items.map((i) => i.name))) {
-        const key = name.toLowerCase()
+        const key = normalizeName(name)
         if (!known.has(key) && !added.has(key)) added.set(key, name)
       }
       if (added.size > 0) onChange([...layout.itemOrder, ...added.values()])
@@ -258,8 +270,9 @@ function ItemOrderEditor({ spaceId, layout, onChange }: { spaceId: string; layou
         submitLabel={t('list.add')}
         maxLength={100}
         clearOnSubmit
-        onSubmit={(name) => !known.has(name.toLowerCase()) && onChange([...layout.itemOrder, name])}
+        onSubmit={add}
       />
+      {duplicate && <p role="status" className="text-sm text-muted">{t('layouts.entryExists', { name: duplicate })}</p>}
       {layout.listIds.length > 0 && (
         <Button variant="secondary" onClick={importFromLists}>
           {t('layouts.importItems')}

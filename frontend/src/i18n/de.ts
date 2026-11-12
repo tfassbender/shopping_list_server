@@ -111,6 +111,7 @@ export const de: Record<MessageKey, string> = {
   'layouts.editCategories': 'Kategorien bearbeiten',
   'layouts.itemsHint': 'Zieh die Artikel in die Reihenfolge des Geschäfts.',
   'layouts.newEntry': 'Artikel hinzufügen',
+  'layouts.entryExists': '"{name}" ist schon in der Reihenfolge.',
   'layouts.removeEntry': '{name} entfernen',
   'layouts.importItems': 'Artikel der verbundenen Listen übernehmen',
   'layouts.connectedLists': 'Listen',

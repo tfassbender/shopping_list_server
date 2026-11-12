@@ -108,6 +108,7 @@ export const en = {
   'layouts.editCategories': 'Edit categories',
   'layouts.itemsHint': 'Drag the items into the order of the shop.',
   'layouts.newEntry': 'Add item',
+  'layouts.entryExists': '"{name}" is already in the order.',
   'layouts.removeEntry': 'Remove {name}',
   'layouts.importItems': 'Add the items of the connected lists',
   'layouts.connectedLists': 'Lists',

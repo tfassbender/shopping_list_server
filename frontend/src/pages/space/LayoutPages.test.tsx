@@ -227,6 +227,14 @@ describe('layout editor', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add' }))
     await waitFor(() => expect(sentBodies(spy, 'PUT', '/api/spaces/s1/layouts/aldi/item-order')).toEqual([{ entries: ['Milk'] }]))
 
+    // the server refuses entries that differ only in case or spaces: not sent, the text stays with a hint
+    await screen.findByRole('button', { name: 'Move Milk' })
+    await userEvent.type(screen.getByLabelText('Add item'), ' MILK')
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+    expect(screen.getByText('"MILK" is already in the order.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Add item')).toHaveValue(' MILK')
+    expect(sentBodies(spy, 'PUT', '/api/spaces/s1/layouts/aldi/item-order')).toHaveLength(1)
+
     const lists = screen.getByRole('heading', { name: 'Lists' }).parentElement!
     await userEvent.click(within(lists).getByLabelText('Hardware'))
     await waitFor(() => expect(within(lists).getByLabelText('Hardware')).toBeChecked())

@@ -4,7 +4,7 @@ import { Button } from './ui'
 
 /**
  * A one-field form with a submit button (create / rename something), the label above the field. Clears
- * itself after submitting when `clearOnSubmit` is set.
+ * itself after submitting when `clearOnSubmit` is set - unless `onSubmit` returns false (value refused).
  */
 export function InlineForm(props: {
   label: string
@@ -13,7 +13,7 @@ export function InlineForm(props: {
   maxLength?: number
   disabled?: boolean
   clearOnSubmit?: boolean
-  onSubmit: (value: string) => void
+  onSubmit: (value: string) => void | boolean
   onCancel?: () => void
 }) {
   const [value, setValue] = useState(props.initialValue ?? '')
@@ -23,8 +23,8 @@ export function InlineForm(props: {
     event.preventDefault()
     const trimmed = value.trim()
     if (!trimmed) return
-    props.onSubmit(trimmed)
-    if (props.clearOnSubmit) setValue('')
+    const accepted = props.onSubmit(trimmed) !== false
+    if (accepted && props.clearOnSubmit) setValue('')
   }
 
   return (

@@ -16,13 +16,19 @@ export function HomePage() {
   const { data: spaces, isPending, error, refetch } = useSpaces()
   const navigate = useNavigate()
   const [dialog, setDialog] = useState<'list' | 'space' | null>(null)
+  // "New list" below a space creates the list there; the menu entry preselects the last used space.
+  const [newListSpaceId, setNewListSpaceId] = useState<string | undefined>()
   const lastList = getLastList()
+  const openNewList = (spaceId?: string) => {
+    setNewListSpaceId(spaceId ?? (spaces?.some((s) => s.id === lastList?.spaceId) ? lastList?.spaceId : undefined))
+    setDialog('list')
+  }
 
   return (
     <Page
       title={t('start.title')}
       menu={[
-        { label: t('newList.title'), icon: 'newList', onSelect: () => setDialog('list'), disabled: !spaces?.length },
+        { label: t('newList.title'), icon: 'newList', onSelect: () => openNewList(), disabled: !spaces?.length },
         { label: t('spaces.title'), icon: 'spaces', onSelect: () => navigate('/spaces') },
         'divider',
         { label: t('nav.settings'), icon: 'settings', onSelect: () => navigate('/settings') },
@@ -37,12 +43,12 @@ export function HomePage() {
         </div>
       )}
       {spaces?.map((space) => (
-        <SpaceLists key={space.id} space={space} showName={spaces.length > 1} lastListId={lastList?.listId} onNewList={() => setDialog('list')} />
+        <SpaceLists key={space.id} space={space} showName={spaces.length > 1} lastListId={lastList?.listId} onNewList={() => openNewList(space.id)} />
       ))}
       {dialog === 'list' && spaces && (
         <NewListDialog
           spaces={spaces}
-          defaultSpaceId={spaces.some((s) => s.id === lastList?.spaceId) ? lastList?.spaceId : undefined}
+          defaultSpaceId={newListSpaceId}
           onClose={() => setDialog(null)}
         />
       )}

@@ -130,6 +130,16 @@ describe('HomePage', () => {
     expect(servers.s1.received()).toHaveLength(0)
   })
 
+  it('"New list" below a space without lists preselects that space', async () => {
+    setup([home, office])
+
+    const officeSection = await screen.findByRole('region', { name: 'Office' })
+    await userEvent.click(await within(officeSection).findByRole('button', { name: 'New list' }))
+
+    const spaceChoice = within(screen.getByRole('dialog')).getByRole('group', { name: 'In space' })
+    expect(within(spaceChoice).getByRole('button', { name: 'Office' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('cancelling the new list dialog creates nothing', async () => {
     const { servers } = setup([home])
 
