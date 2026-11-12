@@ -74,7 +74,7 @@ Worked through in the session of 2026-11-12 (commits `e0a36aa`..`e99dab9`), each
 | 15 | Settings rows: email overlaps its label, long names break the row | 🟡 | Layout | ✅ fixed |
 | 16 | Long words without spaces overflow (items, list names) | 🟡 | Layout | ✅ fixed |
 | 17 | Suggestion dropdown: arrow keys don't scroll; Escape closes the whole dialog | 🟡 | Add dialog | ✅ fixed |
-| 18 | Category header toggle seems to do nothing without a shop | 🟡 | Lists | ❔ to decide |
+| 18 | Category header toggle seems to do nothing without a shop | 🟡 | Lists | ✅ kept as is (decided) |
 | 19 | Invalid invite link is a dead end; "already member" not recognised | 🟡 | Invites | ✅ fixed (rest OK as is) |
 | 20 | Missing translations for several backend error codes | 🟡 | i18n | ✅ fixed |
 | 21 | Back navigation: Shops page doesn't return to the list; in-app back adds history entries | 🟡 | Navigation | ✅ fixed |
