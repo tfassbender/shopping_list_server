@@ -22,12 +22,12 @@ kotlin {
 tasks.test {
     useJUnitPlatform()
     // Backend under test. Start it first: ./gradlew :backend:quarkusDev
-    systemProperty("e2e.base-url", findProperty("baseUrl")?.toString() ?: "http://localhost:4720")
+    systemProperty("e2e.base-url", findProperty("baseUrl")?.toString() ?: "http://localhost:4723")
 }
 
 // Explicit alias: ./gradlew :e2e:e2eTest (tests skip themselves if the backend is not running).
 tasks.register("e2eTest") {
     group = "verification"
-    description = "Run REST end-to-end tests against a running backend (default http://localhost:4720)"
+    description = "Run REST end-to-end tests against a running backend (default http://localhost:4723)"
     dependsOn("test")
 }

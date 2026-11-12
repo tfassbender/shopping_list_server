@@ -47,9 +47,9 @@ Goal: a Gradle monorepo where backend, frontend and e2e build, and the SPA is se
 - [x] Package skeleton `domain` / `application` / `adapter` + **ArchUnit** layering test
 - [x] `GET /api/health` + `@QuarkusTest` smoke test
 - [x] Error handling: exception mappers → consistent JSON error body (`code`, `message`, error id for 500s)
-- [x] Config: port 4720, `shoppinglist.data.dir`, CORS for the Vite dev server
+- [x] Config: port 4723, `shoppinglist.data.dir`, CORS for the Vite dev server
 - [x] `frontend`: React + TypeScript + Vite + Tailwind, React Router, TanStack Query, Vitest;
-      Vite proxies `/api` → 4720
+      Vite proxies `/api` → 4723
 - [x] **Dark mode** foundation: Tailwind `dark:` variant, follows system setting (user override in Phase 1)
 - [x] All UI strings in one place (simple message module) so i18n in Phase 10 is a drop-in
 - [x] Gradle tasks: `:frontend:npmBuild`, `-PwithFrontend` packages the SPA into the backend JAR

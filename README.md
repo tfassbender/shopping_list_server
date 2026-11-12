@@ -16,11 +16,11 @@ Requires JDK 21 and Node.js.
 
 ```bash
 ./gradlew build -PwithFrontend                          # build + test everything
-java -jar backend/build/quarkus-app/quarkus-run.jar    # http://localhost:4720
+java -jar backend/build/quarkus-app/quarkus-run.jar    # http://localhost:4723
 ```
 
 Development: `./gradlew :backend:quarkusDev` and `./gradlew :frontend:npmDev` (http://localhost:5173; `:frontend:npmDevStop` frees the port if a server was left running).
-API docs: http://localhost:4720/q/swagger-ui
+API docs: http://localhost:4723/q/swagger-ui
 
 ## Documentation
 

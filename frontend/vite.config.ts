@@ -10,7 +10,7 @@ export default defineConfig({
     strictPort: true,
     // The app always calls relative `/api/...` URLs: proxied to Quarkus in dev, same origin in production.
     proxy: {
-      '/api': process.env.BACKEND_URL ?? 'http://localhost:4720',
+      '/api': process.env.BACKEND_URL ?? 'http://localhost:4723',
     },
   },
   build: {

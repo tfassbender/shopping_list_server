@@ -183,4 +183,4 @@ shopping_list_server/
 ├── build.gradle.kts / settings.gradle.kts / gradle.properties
 ```
 
-- Local backend port: e.g. `4720` (avalon uses 4719, so both can run at the same time)
+- Local backend port: e.g. `4723` (avalon uses 4719, so both can run at the same time)

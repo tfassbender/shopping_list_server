@@ -11,7 +11,7 @@ import java.net.URI
  */
 object E2eSupport {
 
-    val baseUrl: String = System.getProperty("e2e.base-url", "http://localhost:4720")
+    val baseUrl: String = System.getProperty("e2e.base-url", "http://localhost:4723")
 
     fun requireRunningBackend() {
         assumeTrue(isBackendReachable(), "Backend not reachable at $baseUrl - skipping e2e test")

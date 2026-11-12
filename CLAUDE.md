@@ -59,7 +59,7 @@ Workflow: tech stack → feature analysis → implementation plan → implementa
 - **Live updates (web): SSE, notify-then-refetch** via the sync endpoint.
 - **AI agents use the same REST API**, documented via OpenAPI; users authenticate them with personal
   API tokens (read-only or full access). No MCP server.
-- **Backend port:** 4720 (avalon uses 4719).
+- **Backend port:** 4723 (avalon uses 4719).
 
 ## Open decisions
 
@@ -89,11 +89,11 @@ Gradle monorepo (`backend` / `frontend` / `e2e`), JDK 21. Run from the repo root
 
 - **Everything (backend + frontend tests, JAR with SPA):** `./gradlew build -PwithFrontend`
   (without `-PwithFrontend` the backend JAR contains no web app)
-- **Run the packaged app:** `java -jar backend/build/quarkus-app/quarkus-run.jar` → http://localhost:4720
-- **Backend dev (live reload, port 4720):** `./gradlew :backend:quarkusDev`
+- **Run the packaged app:** `java -jar backend/build/quarkus-app/quarkus-run.jar` → http://localhost:4723
+- **Backend dev (live reload, port 4723):** `./gradlew :backend:quarkusDev`
 - **Backend tests:** `./gradlew :backend:test`; one class:
   `./gradlew :backend:test --tests "com.tfassbender.shoppinglist.adapter.rest.HealthResourceTest"`
-- **Frontend dev (Vite, port 5173, proxies `/api` → 4720):** `./gradlew :frontend:npmDev` (or `cd frontend && npm run dev`);
+- **Frontend dev (Vite, port 5173, proxies `/api` → 4723):** `./gradlew :frontend:npmDev` (or `cd frontend && npm run dev`);
   `./gradlew :frontend:npmDevStop` frees the port if a server was left running
 - **Frontend tests / type check / build:** `cd frontend && npm test` / `npm run check` / `npm run build`;
   one file: `npm test -- src/App.test.tsx`
