@@ -259,6 +259,7 @@ export const en = {
   'addItem.another': 'Add another',
   'addItem.suggestions': 'Suggestions',
   'item.amount': 'Amount',
+  'item.invalidAmount': 'Please enter a number, e.g. 2 or 1,5.',
   'item.categoryAuto': 'Automatic',
   'item.favoriteAt': 'Favorite at {shop}',
   'item.favoriteOffline': 'Only possible with a connection.',

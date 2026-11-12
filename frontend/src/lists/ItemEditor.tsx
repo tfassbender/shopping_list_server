@@ -5,6 +5,7 @@ import { Dialog, DialogActions } from '../components/Dialog'
 import { Button, SelectField, Switch, TextField } from '../components/ui'
 import { t } from '../i18n/messages'
 import { useOnline } from '../offline/online'
+import { isValidAmount } from './amount'
 import { AmountUnitFields } from './AmountUnitFields'
 
 /**
@@ -31,7 +32,7 @@ export function ItemEditor(props: {
   const online = useOnline()
 
   function save() {
-    if (!name.trim()) return // only spaces: the name would be rejected by the server
+    if (!name.trim() || !isValidAmount(quantity)) return // only spaces / a marked invalid amount
     const values: Record<EditableField, string> = { name, note, categoryId, quantity, unit }
     const changed: Partial<Record<EditableField, string | null>> = {}
     for (const field of Object.keys(values) as EditableField[]) {
@@ -77,7 +78,7 @@ export function ItemEditor(props: {
         <Button variant="ghost" onClick={props.onClose}>
           {t('common.cancel')}
         </Button>
-        <Button type="submit" disabled={!name.trim()}>
+        <Button type="submit" disabled={!name.trim() || !isValidAmount(quantity)}>
           {t('common.save')}
         </Button>
       </DialogActions>

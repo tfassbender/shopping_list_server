@@ -33,7 +33,7 @@ export function Button({
 }
 
 const inputClass =
-  'block min-h-12 w-full rounded-lg border border-line bg-raised px-3 text-base text-fg focus:border-accent focus:ring-2 focus:ring-accent/30 focus:outline-none'
+  'block min-h-12 w-full rounded-lg border border-line bg-raised px-3 text-base text-fg focus:border-accent focus:ring-2 focus:ring-accent/30 focus:outline-none aria-invalid:border-danger'
 
 /*
  * Fields get a <label> linked by id (`htmlFor`) instead of wrapping the control: a wrapped <select> would

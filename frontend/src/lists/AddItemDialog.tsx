@@ -4,6 +4,7 @@ import { Dialog, DialogActions } from '../components/Dialog'
 import { Icon } from '../components/Icon'
 import { Button, SelectField } from '../components/ui'
 import { t } from '../i18n/messages'
+import { isValidAmount } from './amount'
 import { AmountUnitFields } from './AmountUnitFields'
 import { isVoiceInputSupported, listenOnce } from './voiceInput'
 
@@ -47,6 +48,7 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
   const [dismissed, setDismissed] = useState(false)
   const suggestions = name.trim() && nameFocused && !dismissed ? (data ?? []) : []
   const listbox = useRef<HTMLUListElement>(null)
+  const amountValid = isValidAmount(quantity)
 
   // Arrow keys move the highlight; keep it visible in the (scrolling) dropdown, or Enter would add an
   // item the user can't see.
@@ -66,6 +68,7 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
 
   /** Adds what is entered (or the highlighted suggestion); nothing if the name is empty. */
   function addCurrent() {
+    if (!amountValid) return
     const chosen = suggestions[highlighted]
     if (chosen) addSuggestion(chosen)
     else if (name.trim()) add({ name: name.trim(), quantity: quantity.trim() || null, unit: unit.trim() || null, categoryId: categoryId || null })
@@ -73,10 +76,12 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
 
   /** A suggestion brings its last category and unit; an amount or unit typed before is kept. */
   function addSuggestion(suggestion: Suggestion) {
+    if (!amountValid) return
     add({ name: suggestion.name, categoryId: suggestion.categoryId, quantity: quantity.trim() || null, unit: unit.trim() || suggestion.unit })
   }
 
   function done() {
+    if (!amountValid) return // stay open, so the marked amount can be corrected
     addCurrent()
     onClose()
   }
@@ -186,10 +191,12 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
         <Button variant="ghost" className="mr-auto" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button type="submit" variant="secondary" disabled={!name.trim() && highlighted < 0}>
+        <Button type="submit" variant="secondary" disabled={!amountValid || (!name.trim() && highlighted < 0)}>
           {t('addItem.another')}
         </Button>
-        <Button onClick={done}>{t('common.done')}</Button>
+        <Button onClick={done} disabled={!amountValid}>
+          {t('common.done')}
+        </Button>
       </DialogActions>
     </Dialog>
   )

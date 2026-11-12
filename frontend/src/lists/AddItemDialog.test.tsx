@@ -150,6 +150,18 @@ describe('AddItemDialog', () => {
     delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
   })
 
+  it('does not add an item with an invalid amount', async () => {
+    const { onAdd, onClose, name } = setup()
+
+    await userEvent.type(screen.getByLabelText('Amount'), '1,2,')
+    await userEvent.type(name, 'Bread{Enter}')
+    expect(screen.getByRole('button', { name: 'Done' })).toBeDisabled()
+
+    expect(onAdd).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+    expect(name).toHaveValue('Bread')
+  })
+
   it('Escape closes without adding', async () => {
     const { onAdd, onClose, name } = setup()
 

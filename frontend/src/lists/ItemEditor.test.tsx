@@ -131,4 +131,22 @@ describe('ItemEditor', () => {
     expect(within(dialog).getByText('Only possible with a connection.')).toBeInTheDocument()
     onLine.mockRestore()
   })
+
+  it('keeps an amount with two separators as typed, marks it and blocks saving', async () => {
+    const { dialog, onSave } = setup()
+    const amount = within(dialog).getByLabelText('Amount')
+
+    await userEvent.clear(amount)
+    await userEvent.type(amount, '1.2.3')
+
+    expect(amount).toHaveValue('1.2.3') // not silently turned into "1.23"
+    expect(amount).toHaveAttribute('aria-invalid', 'true')
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('Please enter a number')
+    expect(within(dialog).getByRole('button', { name: 'Save' })).toBeDisabled()
+    await userEvent.type(amount, '{Enter}')
+    expect(onSave).not.toHaveBeenCalled()
+
+    await userEvent.type(amount, '{Backspace}{Backspace}')
+    expect(within(dialog).getByRole('button', { name: 'Save' })).toBeEnabled()
+  })
 })

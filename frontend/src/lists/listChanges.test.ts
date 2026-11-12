@@ -93,7 +93,7 @@ describe('sortItems', () => {
 
   it('formats amounts', () => {
     expect(amountText({ quantity: '2', unit: 'l' })).toBe('2 l')
-    expect(amountText({ quantity: null, unit: 'kg' })).toBe('kg')
+    expect(amountText({ quantity: null, unit: 'kg' })).toBe('') // a unit alone is not shown
     expect(amountText({ quantity: null, unit: null })).toBe('')
   })
 })

@@ -258,6 +258,7 @@ export const de: Record<MessageKey, string> = {
   'addItem.another': 'Weiterer Artikel',
   'addItem.suggestions': 'Vorschläge',
   'item.amount': 'Menge',
+  'item.invalidAmount': 'Bitte gib eine Zahl ein, z. B. 2 oder 1,5.',
   'item.categoryAuto': 'Automatisch',
   'item.favoriteAt': 'Favorit bei {shop}',
   'item.favoriteOffline': 'Nur mit Verbindung möglich.',
