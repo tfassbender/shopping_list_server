@@ -93,7 +93,8 @@ Gradle monorepo (`backend` / `frontend` / `e2e`), JDK 21. Run from the repo root
 - **Backend dev (live reload, port 4720):** `./gradlew :backend:quarkusDev`
 - **Backend tests:** `./gradlew :backend:test`; one class:
   `./gradlew :backend:test --tests "com.tfassbender.shoppinglist.adapter.rest.HealthResourceTest"`
-- **Frontend dev (Vite, port 5173, proxies `/api` → 4720):** `cd frontend && npm run dev`
+- **Frontend dev (Vite, port 5173, proxies `/api` → 4720):** `./gradlew :frontend:npmDev` (or `cd frontend && npm run dev`);
+  `./gradlew :frontend:npmDevStop` frees the port if a server was left running
 - **Frontend tests / type check / build:** `cd frontend && npm test` / `npm run check` / `npm run build`;
   one file: `npm test -- src/App.test.tsx`
 - **E2E (REST against a running backend):** start the backend, then `./gradlew :e2e:e2eTest`
