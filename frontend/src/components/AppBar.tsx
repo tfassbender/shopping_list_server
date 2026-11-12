@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router'
 import { useSession } from '../auth/useAuth'
 import { getLanguage, setLanguage, t } from '../i18n/messages'
 import { SyncIndicator } from '../offline/SyncIndicator'
+import { useGoBack } from './backNavigation'
 import { Icon, type IconName } from './Icon'
 
 /** An entry of the ⋮ menu; `'divider'` draws a line between groups. */
@@ -20,11 +21,7 @@ export function AppBar(props: { title: string; back?: string; sub?: ReactNode; a
     <header className="sticky top-0 z-20 bg-brand pt-[env(safe-area-inset-top)] text-brand-ink">
       <div className="relative mx-auto max-w-2xl">
         <div className={`flex items-center gap-1 pr-1 ${props.sub ? 'min-h-14' : 'min-h-16'} ${props.back ? 'pl-1' : 'pl-4'}`}>
-          {props.back && (
-            <Link to={props.back} aria-label={t('common.back')} className={iconButtonClass}>
-              <Icon name="back" className="text-[1.3rem]" />
-            </Link>
-          )}
+          {props.back && <BackLink to={props.back} />}
           {/*
            * On every page but the start page, a tap on the title row (including the empty space after the
            * title) leads to the start page.
@@ -49,6 +46,24 @@ export function AppBar(props: { title: string; back?: string; sub?: ReactNode; a
         {props.sub && <div className={`-mt-1 pr-4 pb-2 ${props.back ? 'pl-[3.25rem]' : 'pl-4'}`}>{props.sub}</div>}
       </div>
     </header>
+  )
+}
+
+/** A real link (long press, screen readers), but a tap goes back in the history where possible. */
+function BackLink({ to }: { to: string }) {
+  const goBack = useGoBack(to)
+  return (
+    <Link
+      to={to}
+      aria-label={t('common.back')}
+      onClick={(event) => {
+        event.preventDefault()
+        goBack()
+      }}
+      className={iconButtonClass}
+    >
+      <Icon name="back" className="text-[1.3rem]" />
+    </Link>
   )
 }
 

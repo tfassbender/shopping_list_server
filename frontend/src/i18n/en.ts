@@ -125,6 +125,7 @@ export const en = {
   'item.favoriteNamed': 'Favorite {name}',
   'list.section.items': 'Items',
   'invite.title': 'Invitation',
+  'invite.alreadyMember': 'You are already a member of "{space}". This link can still be passed on to someone else.',
   'invite.question': '{name} invites you to the space "{space}". Join?',
   'invite.accept': 'Join',
   'health.checking': 'Checking connection...',
@@ -346,6 +347,19 @@ export const en = {
   'error.TOKEN_NOT_FOUND': 'This token was already revoked.',
   'error.READ_ONLY_TOKEN': 'This API token may only read.',
   'error.TOO_MANY_FAVORITES': 'Too many favorites for this shop.',
+  'error.INVITE_NOT_FOUND': 'This invite was already revoked.',
+  'error.MEMBER_NOT_FOUND': 'This person is no longer a member of the space.',
+  'error.USER_NOT_FOUND': 'This account no longer exists.',
+  'error.SESSION_EXPIRED': 'Your session has expired. Please log in again.',
+  'error.INVALID_LANGUAGE': 'This language is not supported.',
+  'error.LIST_EXISTS': 'This list exists already.',
+  'error.LAYOUT_EXISTS': 'This shop exists already.',
+  'error.ITEM_EXISTS': 'This item exists already.',
+  'error.TOO_MANY_CATEGORIES': 'A space cannot have more categories.',
+  'error.TOO_MANY_UNITS': 'A space cannot have more units.',
+  'error.INVALID_CHANGE': 'The change was invalid.',
+  'error.BATCH_TOO_LARGE': 'Too many changes at once. Please try again.',
+  'error.INTERNAL_ERROR': 'Error on the server. Please try again later.',
 } as const
 
 export type MessageKey = keyof typeof en

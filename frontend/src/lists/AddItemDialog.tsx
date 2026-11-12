@@ -43,7 +43,16 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
   const { data } = useSuggestions(spaceId, query)
   // The dropdown shows while the name field (or the dropdown itself) has the focus.
   const [nameFocused, setNameFocused] = useState(true)
-  const suggestions = name.trim() && nameFocused ? (data ?? []) : []
+  // Escape closes only the dropdown (until the next keystroke), not the whole dialog.
+  const [dismissed, setDismissed] = useState(false)
+  const suggestions = name.trim() && nameFocused && !dismissed ? (data ?? []) : []
+  const listbox = useRef<HTMLUListElement>(null)
+
+  // Arrow keys move the highlight; keep it visible in the (scrolling) dropdown, or Enter would add an
+  // item the user can't see.
+  useEffect(() => {
+    if (highlighted >= 0) listbox.current?.children[highlighted]?.scrollIntoView?.({ block: 'nearest' })
+  }, [highlighted])
 
   function add(item: NewItem) {
     onAdd(item)
@@ -79,6 +88,10 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
     } else if (event.key === 'ArrowUp') {
       event.preventDefault()
       setHighlighted((h) => Math.max(h - 1, -1))
+    } else if (event.key === 'Escape' && suggestions.length > 0) {
+      event.stopPropagation() // the dialog closes on Escape - only the dropdown should
+      setDismissed(true)
+      setHighlighted(-1)
     }
   }
 
@@ -120,6 +133,7 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
             onChange={(e) => {
               setName(e.target.value)
               setHighlighted(-1)
+              setDismissed(false)
             }}
             className="block min-h-12 w-full rounded-lg border border-line bg-raised px-3 text-base focus:border-accent focus:ring-2 focus:ring-accent/30 focus:outline-none"
           />
@@ -137,7 +151,7 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
           </button>
         )}
         {suggestions.length > 0 && (
-          <ul id="add-item-suggestions" role="listbox" aria-label={t('addItem.suggestions')} className="absolute inset-x-0 top-full z-10 mt-1 max-h-[6.25rem] overflow-y-auto rounded-lg border border-line bg-surface shadow-lg">
+          <ul id="add-item-suggestions" ref={listbox} role="listbox" aria-label={t('addItem.suggestions')} className="absolute inset-x-0 top-full z-10 mt-1 max-h-[6.25rem] overflow-y-auto rounded-lg border border-line bg-surface shadow-lg">
             {suggestions.map((suggestion, index) => {
               const category = catalog?.categories.find((c) => c.id === suggestion.categoryId)
               return (

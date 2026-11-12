@@ -6,7 +6,7 @@ import { layoutKeys, layoutsApi, useLayouts, type LayoutMode, type ShopLayout } 
 import { listsApi, useLists } from '../../api/lists'
 import { InlineForm } from '../../components/InlineForm'
 import { SortableList } from '../../components/SortableList'
-import { Page } from '../../components/AppBar'
+import { Page, useBackTo } from '../../components/AppBar'
 import { ConfirmDialog } from '../../components/Dialog'
 import { Icon } from '../../components/Icon'
 import { Button, ErrorText, Fab, Hint, Loading, Row, SectionTitle, Switch } from '../../components/ui'
@@ -22,6 +22,8 @@ export function LayoutsPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const online = useOnline()
+  // Opened from a list, back leads there; otherwise to the space page.
+  const back = useBackTo(`/spaces/${spaceId}`)
   const [creating, setCreating] = useState(false)
   const create = useMutation({
     mutationFn: (name: string) => layoutsApi.create(spaceId, name, 'CATEGORIES'),
@@ -32,7 +34,7 @@ export function LayoutsPage() {
   })
 
   return (
-    <Page title={t('layouts.title')} back={`/spaces/${spaceId}`}>
+    <Page title={t('layouts.title')} back={back}>
       <Hint>{t('layouts.explanation')}</Hint>
       <ErrorText error={error} />
       {layouts?.length === 0 && <p className="py-6 text-center text-muted">{t('layouts.emptyHint')}</p>}

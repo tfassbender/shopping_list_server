@@ -121,6 +121,35 @@ describe('AddItemDialog', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
+  it('with the dropdown open, the first Escape only closes the dropdown and keeps the text', async () => {
+    const { onClose, name } = setup()
+
+    await userEvent.type(name, 'mil')
+    await screen.findByRole('listbox')
+    await userEvent.keyboard('{Escape}')
+
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(onClose).not.toHaveBeenCalled()
+    expect(name).toHaveValue('mil')
+    // a second Escape (dropdown closed) closes the dialog
+    await userEvent.keyboard('{Escape}')
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('keeps the highlighted suggestion scrolled into view', async () => {
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    const { name } = setup()
+
+    await userEvent.type(name, 'mil')
+    await screen.findByRole('listbox')
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+
+    expect(scrollIntoView).toHaveBeenLastCalledWith({ block: 'nearest' })
+    expect(scrollIntoView.mock.contexts.at(-1)).toHaveTextContent('Millet')
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView
+  })
+
   it('Escape closes without adding', async () => {
     const { onAdd, onClose, name } = setup()
 

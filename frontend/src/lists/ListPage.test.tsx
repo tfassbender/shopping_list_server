@@ -106,6 +106,24 @@ describe('ListPage', () => {
     expect(screen.queryByRole('list', { name: 'Checked' })).not.toBeInTheDocument()
   })
 
+  it('opens the shops from the menu, back leads to the list (also from a shop)', async () => {
+    setup([item('1', 'Milk')], {
+      'GET /api/spaces/s1/layouts': [{ id: 'aldi', name: 'Aldi', mode: 'CATEGORIES', categoryOrder: [], itemOrder: [], listIds: [], createdAt: '' }],
+      'GET /api/spaces/s1/lists': [],
+    })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Menu' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Shops' }))
+    expect(await screen.findByRole('heading', { name: 'Shops' })).toBeInTheDocument()
+    await userEvent.click(await screen.findByRole('button', { name: /Aldi/ }))
+    expect(await screen.findByRole('heading', { name: 'Aldi' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('link', { name: 'Back' }))
+    expect(await screen.findByRole('heading', { name: 'Shops' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('link', { name: 'Back' }))
+    expect(await screen.findByRole('heading', { name: 'Groceries' })).toBeInTheDocument()
+  })
+
   it('opens the items used before from the menu, back leads to the list', async () => {
     setup([item('1', 'Milk')], { 'GET /api/spaces/s1/catalog/history': [] })
 

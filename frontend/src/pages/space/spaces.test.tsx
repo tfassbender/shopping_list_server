@@ -63,6 +63,19 @@ describe('spaces', () => {
     })
     renderWithProviders(<AppRoutes />, '/invite/used')
     expect(await screen.findByRole('alert')).toHaveTextContent('already used')
+    // not a dead end
+    expect(screen.getByRole('link', { name: 'To the start page' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Back' })).toBeInTheDocument()
+  })
+
+  it('tells a member opening a valid invite of their own space that they are already a member', async () => {
+    mockApi({
+      'GET /api/users/me': testUser,
+      'GET /api/invites/mine': { spaceName: 'Family', invitedBy: 'Anna', alreadyMember: true },
+    })
+    renderWithProviders(<AppRoutes />, '/invite/mine')
+    expect(await screen.findByText(/You are already a member of "Family"/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Join' })).not.toBeInTheDocument()
   })
 
   it('owner sees member management and creates an invite link', async () => {

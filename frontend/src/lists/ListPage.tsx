@@ -149,7 +149,7 @@ export function ListPage() {
         { label: t('list.menu.removeChecked', { count: checked.length }), icon: 'removeChecked', onSelect: () => apply({ type: 'removeChecked' }), disabled: checked.length === 0 },
         'divider',
         { label: t('space.catalog'), icon: 'categories', onSelect: () => navigate(`/spaces/${spaceId}/catalog`, { state: { back: `/spaces/${spaceId}/lists/${listId}` } }) },
-        { label: t('space.layouts'), icon: 'shops', onSelect: () => navigate(`/spaces/${spaceId}/layouts`) },
+        { label: t('space.layouts'), icon: 'shops', onSelect: () => navigate(`/spaces/${spaceId}/layouts`, { state: { back: `/spaces/${spaceId}/lists/${listId}` } }) },
         // The history page leads back here instead of to the space page (see HistoryPage).
         { label: t('history.title'), icon: 'history', onSelect: () => navigate(`/spaces/${spaceId}/history`, { state: { back: `/spaces/${spaceId}/lists/${listId}` } }) },
         ...(space?.myRole === 'OWNER' ? ['divider' as const, { label: t('list.delete'), icon: 'delete' as const, danger: true, onSelect: () => setDialog('delete') }] : []),
@@ -262,7 +262,11 @@ function ShopDialog(props: {
         {[...connected, ...others].map((l) => option(l.id, l.name, t('shop.layoutHint')))}
       </div>
       {props.layouts.length === 0 && <p className="text-muted">{t('shop.noShops')}</p>}
-      <Link to={`/spaces/${props.spaceId}/layouts`} className="inline-block py-2 font-semibold text-accent underline">
+      <Link
+        to={`/spaces/${props.spaceId}/layouts`}
+        state={{ back: `/spaces/${props.spaceId}/lists/${props.listId}` }}
+        className="inline-block py-2 font-semibold text-accent underline"
+      >
         {t('shop.manage')}
       </Link>
     </Dialog>

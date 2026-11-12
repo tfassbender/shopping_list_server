@@ -233,7 +233,8 @@ function OpenInvites({ spaceId }: { spaceId: string }) {
           title={t('invites.forOnePerson')}
           hint={t('invites.validUntil', { date: new Date(invite.expiresAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) })}
           end={
-            <Button variant="secondary" onClick={() => revoke.mutate(invite.id)}>
+            // disabled while revoking, so a double tap doesn't send a second request (that one would fail)
+            <Button variant="secondary" disabled={revoke.isPending} onClick={() => revoke.mutate(invite.id)}>
               {t('invites.revoke')}
             </Button>
           }
