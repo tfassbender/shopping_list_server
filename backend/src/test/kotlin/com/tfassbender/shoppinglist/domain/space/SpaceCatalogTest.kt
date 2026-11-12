@@ -40,6 +40,16 @@ class SpaceCatalogTest {
         }
 
         @Test
+        fun `category names are unique, ignoring case and spaces`() {
+            val withTwoWords = catalog.addCategory(Category(CategoryId("veg"), "Fruit veg", "#ffffff"))
+            assertEquals("CATEGORY_EXISTS", assertThrows<DomainException> { catalog.addCategory(Category(CategoryId("new"), "DAIRY", "#ffffff")) }.code)
+            assertEquals("CATEGORY_EXISTS", assertThrows<DomainException> { withTwoWords.addCategory(Category(CategoryId("new"), "fruit  veg", "#ffffff")) }.code)
+            assertEquals("CATEGORY_EXISTS", assertThrows<DomainException> { catalog.updateCategory(bakery.id, "  dairy ", "#ffffff") }.code)
+            // keeping the own name (e.g. only changing the color or the case) is fine
+            assertEquals("dairy", catalog.updateCategory(dairy.id, "dairy", "#000000").category(dairy.id)!!.name)
+        }
+
+        @Test
         fun `reorder must contain every category exactly once`() {
             listOf(listOf(dairy.id), listOf(dairy.id, dairy.id), listOf(dairy.id, bakery.id, CategoryId("x"))).forEach {
                 assertEquals("INVALID_ORDER", assertThrows<DomainException> { catalog.reorderCategories(it) }.code)

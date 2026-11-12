@@ -110,4 +110,25 @@ describe('ItemEditor', () => {
     const { dialog } = setup({ onToggleFavorite: vi.fn() })
     expect(within(dialog).queryByRole('switch')).not.toBeInTheDocument()
   })
+
+  it('cannot save a name of only spaces', async () => {
+    const { dialog, onSave } = setup()
+
+    await userEvent.clear(within(dialog).getByLabelText('Name'))
+    await userEvent.type(within(dialog).getByLabelText('Name'), '   ')
+
+    expect(within(dialog).getByRole('button', { name: 'Save' })).toBeDisabled()
+    await userEvent.type(within(dialog).getByLabelText('Name'), '{Enter}')
+    expect(onSave).not.toHaveBeenCalled()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('disables the favorite switch while offline (favorites are not part of the offline sync)', () => {
+    const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    const { dialog } = setup({ shopName: 'Aldi', favorite: false, onToggleFavorite: vi.fn() })
+
+    expect(within(dialog).getByRole('switch', { name: 'Favorite at Aldi' })).toBeDisabled()
+    expect(within(dialog).getByText('Only possible with a connection.')).toBeInTheDocument()
+    onLine.mockRestore()
+  })
 })

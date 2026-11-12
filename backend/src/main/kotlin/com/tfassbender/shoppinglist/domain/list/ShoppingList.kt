@@ -150,10 +150,19 @@ data class ShoppingList(
             unit = normalizeOptional(change.unit, ItemField.UNIT),
             note = normalizeOptional(change.note, ItemField.NOTE),
             categoryId = change.categoryId,
-            createdAt = context.now,
+            createdAt = nextCreatedAt(context.now),
             seq = context.seq,
         ).stamped(ItemAspect.EXISTENCE, context)
         return copy(items = items + item)
+    }
+
+    /**
+     * Items of one sync batch are added at the same instant, but "order of adding" sorts by [Item.createdAt]:
+     * each new item gets at least 1 ms more than the newest one, so the order stays unambiguous everywhere.
+     */
+    private fun nextCreatedAt(now: Instant): Instant {
+        val newest = items.maxOfOrNull { it.createdAt } ?: return now
+        return maxOf(now, newest.plusMillis(1))
     }
 
     /** Edit, check and uncheck: restores a deleted item (edit wins over delete), later change wins. */

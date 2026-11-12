@@ -193,16 +193,17 @@ export function Segmented<T extends string>(props: { label: string; options: { v
 }
 
 /** On/off switch: a styled checkbox, so keyboard and screen readers work as usual. */
-export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (checked: boolean) => void; label: string }) {
+export function Switch({ checked, onChange, label, disabled }: { checked: boolean; onChange: (checked: boolean) => void; label: string; disabled?: boolean }) {
   return (
-    <span className="relative inline-block h-[30px] w-[52px] shrink-0">
+    <span className={`relative inline-block h-[30px] w-[52px] shrink-0 ${disabled ? 'opacity-50' : ''}`}>
       <input
         type="checkbox"
         role="switch"
         aria-label={label}
         checked={checked}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
-        className="peer absolute inset-0 z-10 m-0 cursor-pointer opacity-0"
+        className="peer absolute inset-0 z-10 m-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
       />
       <span className="pointer-events-none absolute inset-0 rounded-full bg-line transition peer-checked:bg-accent peer-focus-visible:outline-2 peer-focus-visible:outline-accent" />
       <span className="pointer-events-none absolute top-[3px] left-[3px] size-6 rounded-full bg-white shadow transition peer-checked:translate-x-[22px]" />

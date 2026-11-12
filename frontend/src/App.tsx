@@ -184,12 +184,21 @@ const persister = createAsyncStoragePersister({
   },
 })
 
+/**
+ * The restored cache may be older than what the server has: settings changed on another device, or a
+ * change made right before a reload that the (throttled) cache write didn't catch. The user's own data
+ * (theme, language) is fetched again on every start; everything else follows its normal staleness.
+ */
+export function refreshAfterRestore(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: ['me'] })
+}
+
 export function App() {
   // One QueryClient for the app's lifetime: it caches server data (TanStack Query).
   const [queryClient] = useState(createQueryClient)
 
   return (
-    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: CACHE_MAX_AGE_MS }}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: CACHE_MAX_AGE_MS }} onSuccess={() => refreshAfterRestore(queryClient)}>
       <ThemeSync />
       <KeepScreenOn />
       <SessionRefresher />

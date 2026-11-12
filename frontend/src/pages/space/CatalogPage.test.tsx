@@ -110,6 +110,27 @@ describe('CatalogPage', () => {
     await waitFor(() => expect(screen.getAllByLabelText('Category name')).toHaveLength(1))
   })
 
+  it('a refused or blank rename shows the error and the saved name again', async () => {
+    mockApi({
+      'GET /api/users/me': testUser,
+      'GET /api/spaces/s1/catalog': catalog,
+      'PUT /api/spaces/s1/catalog/categories/dairy': { status: 409, body: { code: 'CATEGORY_EXISTS' } },
+    })
+    renderWithProviders(<AppRoutes />, '/spaces/s1/catalog')
+
+    const dairy = (await screen.findAllByLabelText('Category name'))[1]
+    await userEvent.clear(dairy)
+    await userEvent.type(dairy, 'vegetables')
+    await userEvent.tab()
+    expect(await screen.findByRole('alert')).toHaveTextContent('This category already exists.')
+    await waitFor(() => expect(dairy).toHaveValue('Dairy'))
+
+    await userEvent.clear(dairy)
+    await userEvent.type(dairy, '   ')
+    await userEvent.tab()
+    expect(dairy).toHaveValue('Dairy')
+  })
+
   it('adds and removes units', async () => {
     const spy = setup()
     renderWithProviders(<AppRoutes />, '/spaces/s1/catalog')

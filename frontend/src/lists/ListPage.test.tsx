@@ -99,6 +99,11 @@ describe('ListPage', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: 'Milk' }))
     expect(order()).toEqual(['Milk', 'Bread'])
     await waitFor(() => expect(server.list('l1').items[0].checked).toBe(false))
+
+    // checking it again keeps it in place, like any other newly checked item
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Milk' }))
+    expect(order()).toEqual(['Milk', 'Bread'])
+    expect(screen.queryByRole('list', { name: 'Checked' })).not.toBeInTheDocument()
   })
 
   it('opens the items used before from the menu, back leads to the list', async () => {

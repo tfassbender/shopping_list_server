@@ -1,6 +1,8 @@
 package com.tfassbender.shoppinglist.application.space
 
+import com.tfassbender.shoppinglist.application.port.SpaceChangeNotifier
 import com.tfassbender.shoppinglist.domain.space.SpaceId
+import com.tfassbender.shoppinglist.domain.user.UserId
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
@@ -8,7 +10,13 @@ import kotlin.test.assertEquals
 class SpaceLocksTest {
 
     private val notified = mutableListOf<SpaceId>()
-    private val locks = SpaceLocks { notified += it }
+    private val locks = SpaceLocks(object : SpaceChangeNotifier {
+        override fun spaceChanged(spaceId: SpaceId) {
+            notified += spaceId
+        }
+
+        override fun accessLost(spaceId: SpaceId, userIds: Collection<UserId>) {}
+    })
     private val space = SpaceId("s")
 
     @Test

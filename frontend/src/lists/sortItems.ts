@@ -2,9 +2,26 @@ import type { Category } from '../api/catalog'
 import type { Item } from '../api/lists'
 import { formatAmount } from './amount'
 
-/** Order of a list without a shop layout: oldest first (order of adding). */
+/**
+ * Order of a list without a shop layout: oldest first (order of adding). Equal times keep the given order
+ * (the sort is stable); the server gives the items of one sync batch distinct times.
+ */
 export function sortItems(items: Item[]): Item[] {
-  return [...items].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  return [...items].sort((a, b) => compareInstants(a.createdAt, b.createdAt))
+}
+
+/**
+ * Compares ISO instants from the server. Plain string comparison is wrong for them: the fraction has a
+ * varying length ("10:00:00Z", "10:00:00.5Z", "10:00:00.123456Z") and "Z" sorts after the digits.
+ */
+export function compareInstants(a: string, b: string): number {
+  const x = normalizeInstant(a)
+  const y = normalizeInstant(b)
+  return x < y ? -1 : x > y ? 1 : 0
+}
+
+function normalizeInstant(instant: string): string {
+  return instant.replace(/(:\d\d)(?:\.(\d+))?Z$/, (_, seconds: string, fraction: string | undefined) => `${seconds}.${(fraction ?? '').padEnd(9, '0')}Z`)
 }
 
 /** A visible block of the list: one category (colored header), uncategorized items, or the checked items. */

@@ -4,7 +4,7 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–10 and the UI rework are done. Next: Phase 11 (deployment).
+**Status:** Phases 0–10 and the UI rework are done. Next: Phase 11 (PostgreSQL persistence).
 
 ## Guiding principles
 
@@ -31,7 +31,8 @@ after each phase. Update the checkboxes and the status as work completes.
 | 8     | Offline sync – web client                       | **App works offline**                         |
 | 9     | Live updates (SSE)                              | Shared lists update without refresh           |
 | 10    | i18n, polish, Could-features                    | German/English, PWA, voice input              |
-| 11    | Deployment                                      | Running in production                         |
+| 11    | PostgreSQL persistence (switchable)             | Data in Postgres, files via config flag       |
+| 12    | Docker & deployment                             | Running in production                         |
 | later | Android app, widget                             |                                               |
 
 ---
@@ -342,11 +343,36 @@ Decided while implementing:
   POSTs annotated, otherwise the spec says 201), optional query parameters are `required: false`, and
   `SessionResponse` sends `token`/`expiresAt` as explicit nulls. Checked by `OpenApiContractTest`.
 
-## Phase 11 – Deployment
+## Phase 11 – PostgreSQL persistence (switchable)
 
-- [ ] Production config: JWT key, SMTP, data dir, public base URL (invite/verification links),
+Goal: PostgreSQL is the primary storage; the file storage stays available via `shoppinglist.storage=file`.
+Design in `doc/tech_stack.md` -> Persistence. Mainly a portfolio decision, not a performance one.
+
+- [ ] Local Postgres in Docker (Docker Desktop); Quarkus Dev Services for dev and tests
+- [ ] Dependencies: `quarkus-hibernate-orm`, `quarkus-jdbc-postgresql`, `quarkus-flyway`; Kotlin
+      `plugin.jpa` + `allopen` for `@Entity`
+- [ ] Config flag `shoppinglist.storage=postgres|file`; producers pick the adapter; datasource and
+      Hibernate deactivated in file mode (app starts without Postgres)
+- [ ] Flyway `V1` migration with the normalized schema; Hibernate only validates
+- [ ] JPA entities in `adapter.persistence.jpa`, **separate from the domain model**, with mapping
+      entity <-> domain; ArchUnit rule: no `jakarta.persistence` outside `adapter.persistence`
+- [ ] JPA repositories for all ports (users, favorites, API tokens, spaces, catalog, lists + items,
+      layouts, sequence counter, sync state)
+- [ ] `TransactionRunner` port: one transaction per `SpaceLocks` operation (no-op for files)
+- [ ] Shared repository contract tests, run against the file and the Postgres adapter
+- [ ] REST and e2e tests green in both modes
+- [ ] Optional: one-shot copy tool file -> Postgres
+
+## Phase 12 – Docker & deployment
+
+- [ ] Production config: JWT key, SMTP, database credentials, public base URL (invite/verification links),
       Android signing certificate fingerprints (App Links)
-- [ ] Packaging (single JAR incl. SPA), service setup, HTTPS, backups of the data dir
+- [ ] Multi-stage `Dockerfile` (SPA + backend -> slim Java 21 runtime image)
+- [ ] `docker-compose.yml`: app + Postgres (named volume, health check, `.env` for secrets, no published
+      DB port, app bound to `127.0.0.1`)
+- [ ] Ubuntu server: Docker Engine + Compose plugin, reverse proxy with HTTPS
+- [ ] Backups: daily `pg_dump` via cron
+- [ ] Optional: GitHub Actions builds the image and pushes it to GHCR
 
 ## Later
 

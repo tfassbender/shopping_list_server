@@ -56,6 +56,7 @@ data class SpaceCatalog(
         if (category(category.id) != null) {
             throw DomainException(ErrorKind.CONFLICT, "CATEGORY_EXISTS", "Category ${category.id.value} exists")
         }
+        requireUniqueName(category.name, except = null)
         if (categories.size >= MAX_CATEGORIES) {
             throw DomainException(ErrorKind.VALIDATION, "TOO_MANY_CATEGORIES", "At most $MAX_CATEGORIES categories")
         }
@@ -64,7 +65,15 @@ data class SpaceCatalog(
 
     fun updateCategory(id: CategoryId, name: String, color: String): SpaceCatalog {
         requireCategory(id)
+        requireUniqueName(name, except = id)
         return copy(categories = categories.map { if (it.id == id) Category(id, name.trim(), color) else it })
+    }
+
+    /** Two categories with the same name (ignoring case and spaces) couldn't be told apart in the dialogs. */
+    private fun requireUniqueName(name: String, except: CategoryId?) {
+        if (categories.any { it.id != except && normalize(it.name) == normalize(name) }) {
+            throw DomainException(ErrorKind.CONFLICT, "CATEGORY_EXISTS", "A category named '${name.trim()}' exists")
+        }
     }
 
     /** Deleting a category also forgets it in the history; items keep the id and show as uncategorized. */

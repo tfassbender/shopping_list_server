@@ -2,6 +2,7 @@ import { ApiError } from '../api/client'
 import type { ShoppingList } from '../api/lists'
 import type { MergeWarningDto, NewSyncOp, PullResponse, SyncApi, SyncOp } from '../api/sync'
 import { applyOp, applyPull, type ListsById } from './applyOp'
+import { compareInstants } from '../lists/sortItems'
 import type { KeyValueStorage } from './storage'
 
 /** A merge warning (from the server) or a rejected change, kept until the user clears it. */
@@ -46,6 +47,8 @@ export class SyncEngine {
   private lost = new Map<string, number>()
   private warningsCache: StoredWarning[] = []
   private statusValue: SyncStatus = 'idle'
+  /** A running [clear] - loading must wait for it, or it would read the previous user's data. */
+  private clearing: Promise<void> = Promise.resolve()
 
   constructor(
     private api: SyncApi,
@@ -100,6 +103,7 @@ export class SyncEngine {
 
   /** Loads all spaces known on this device (app start), then syncs them. */
   async start(): Promise<void> {
+    await this.clearing
     const ids = (await this.storage.get<string[]>(INDEX_KEY)) ?? []
     await Promise.all(ids.map((id) => this.load(id)))
     await Promise.all(ids.map((id) => this.sync(id)))
@@ -114,7 +118,7 @@ export class SyncEngine {
   private load(spaceId: string): Promise<void> {
     let promise = this.loading.get(spaceId)
     if (!promise) {
-      promise = this.storage.get<SpaceState>(`space:${spaceId}`).then((stored) => {
+      promise = this.clearing.then(() => this.storage.get<SpaceState>(`space:${spaceId}`)).then((stored) => {
         if (this.states.has(spaceId)) return
         this.states.set(spaceId, stored ?? emptyState())
         // Nothing on this device yet: stay "loading" until the first pull, instead of showing an empty space.
@@ -155,9 +159,11 @@ export class SyncEngine {
     this.views.clear()
     this.lost.clear()
     this.loading.clear()
+    this.statusValue = 'idle' // an "offline" status must not survive a logout either
     this.updateWarnings()
     this.notify()
-    await this.storage.clear()
+    this.clearing = this.storage.clear()
+    await this.clearing
   }
 
   // ---- syncing ----
@@ -319,5 +325,5 @@ export class SyncEngine {
 
 /** Sorted lists of a space for overviews. */
 export function listArray(lists: ListsById | undefined): ShoppingList[] {
-  return Object.values(lists ?? {}).sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  return Object.values(lists ?? {}).sort((a, b) => compareInstants(a.createdAt, b.createdAt))
 }

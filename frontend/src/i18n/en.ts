@@ -258,6 +258,7 @@ export const en = {
   'item.amount': 'Amount',
   'item.categoryAuto': 'Automatic',
   'item.favoriteAt': 'Favorite at {shop}',
+  'item.favoriteOffline': 'Only possible with a connection.',
   'shop.title': 'Where are you shopping?',
   'shop.noneHint': 'Order of adding',
   'shop.layoutHint': 'Sorted by the way through the shop',

@@ -1,6 +1,7 @@
 import type { Category } from '../api/catalog'
 import type { ShopLayout } from '../api/layouts'
 import type { Item } from '../api/lists'
+import { compareInstants } from './sortItems'
 
 /** Same normalization as the server (`SpaceCatalog.normalize`): trimmed, lowercase, single spaces. */
 export function normalizeName(name: string): string {
@@ -39,7 +40,7 @@ export function sortForLayout(
       a.favorite - b.favorite ||
       b.usage - a.usage ||
       compareText(a.name, b.name) ||
-      a.item.createdAt.localeCompare(b.item.createdAt),
+      compareInstants(a.item.createdAt, b.item.createdAt),
   )
   return keyed.map((k) => k.item)
 }

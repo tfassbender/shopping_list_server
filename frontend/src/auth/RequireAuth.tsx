@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router'
+import { getLogoutTarget } from './session'
 import { useSession } from './useAuth'
 
 /**
@@ -10,6 +11,9 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const session = useSession()
   const location = useLocation()
   if (!session) {
+    // A deliberate logout says where to go; React would otherwise render this redirect first.
+    const afterLogout = getLogoutTarget()
+    if (afterLogout) return <Navigate to={afterLogout} replace />
     const target = location.pathname + location.search
     return <Navigate to={`/login?redirect=${encodeURIComponent(target)}`} replace />
   }

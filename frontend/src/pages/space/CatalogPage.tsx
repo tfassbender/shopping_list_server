@@ -56,7 +56,7 @@ export function CatalogPage() {
           renderItem={(category) => (
             <CategoryRow
               category={category}
-              onSave={(name, color) => update.mutate(() => catalogApi.updateCategory(spaceId, category.id, name, color))}
+              onSave={(name, color, onFailed) => update.mutate(() => catalogApi.updateCategory(spaceId, category.id, name, color), { onError: onFailed })}
               onDelete={() => setDeleting(category)}
             />
           )}
@@ -80,8 +80,16 @@ export function CatalogPage() {
   )
 }
 
-function CategoryRow({ category, onSave, onDelete }: { category: Category; onSave: (name: string, color: string) => void; onDelete: () => void }) {
+function CategoryRow(props: { category: Category; onSave: (name: string, color: string, onFailed?: () => void) => void; onDelete: () => void }) {
+  const { category, onSave, onDelete } = props
   const [name, setName] = useState(category.name)
+  // Blank or refused (e.g. the name exists already): show the saved name again instead of the edited one.
+  const reset = () => setName(category.name)
+  function save() {
+    const trimmed = name.trim()
+    if (!trimmed) reset()
+    else if (trimmed !== category.name) onSave(trimmed, category.color, reset)
+  }
   return (
     <div className="flex items-center gap-2 py-1 pr-2">
       <ColorPicker label={t('catalog.color', { name: category.name })} value={category.color} onChange={(color) => onSave(category.name, color)} />
@@ -90,7 +98,7 @@ function CategoryRow({ category, onSave, onDelete }: { category: Category; onSav
         value={name}
         maxLength={40}
         onChange={(e) => setName(e.target.value)}
-        onBlur={() => name.trim() && name.trim() !== category.name && onSave(name.trim(), category.color)}
+        onBlur={save}
         className="min-h-10 min-w-0 flex-1 rounded border border-transparent bg-transparent px-2 hover:border-line focus:border-accent focus:outline-none"
       />
       <button onClick={onDelete} aria-label={t('catalog.deleteCategory', { name: category.name })} className="flex size-10 items-center justify-center text-muted hover:text-red-600">

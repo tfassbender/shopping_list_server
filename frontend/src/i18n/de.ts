@@ -257,6 +257,7 @@ export const de: Record<MessageKey, string> = {
   'item.amount': 'Menge',
   'item.categoryAuto': 'Automatisch',
   'item.favoriteAt': 'Favorit bei {shop}',
+  'item.favoriteOffline': 'Nur mit Verbindung möglich.',
   'shop.title': 'Wo kaufst du ein?',
   'shop.noneHint': 'Reihenfolge des Hinzufügens',
   'shop.layoutHint': 'Sortiert nach dem Weg durchs Geschäft',

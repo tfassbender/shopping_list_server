@@ -58,6 +58,18 @@ class ShoppingListTest {
     @Nested
     inner class AddingItems {
         @Test
+        fun `items added at the same instant (one sync batch) still get distinct, increasing creation times`() {
+            val eggs = ItemId("eggs")
+            val list = listOf(AddItem(milk, "Milk"), AddItem(bread, "Bread"), AddItem(eggs, "Eggs"))
+                .fold(empty) { current, change -> current.apply(change, seq = 2, now = t0) }
+
+            assertEquals(listOf(t0, t0.plusMillis(1), t0.plusMillis(2)), list.items.map { it.createdAt })
+            // later items keep the real time
+            val later = list.apply(AddItem(ItemId("tea"), "Tea"), seq = 3, now = t0.plusSeconds(5))
+            assertEquals(t0.plusSeconds(5), later.items.last().createdAt)
+        }
+
+        @Test
         fun `add item normalizes fields and stamps seq`() {
             val list = empty.apply(AddItem(milk, "  Milk ", " 2 ", "", "  "), seq = 7, now = t0)
             val item = list.item(milk)!!

@@ -152,6 +152,21 @@ describe('SettingsPage', () => {
     expect(getSession()).toBeNull()
   })
 
+  it('after logging out, logging in again opens the start page, not the settings', async () => {
+    setup({
+      'POST /api/auth/login': newSession,
+      'GET /api/spaces': [],
+    })
+    await userEvent.click(await screen.findByRole('button', { name: 'Log out' }))
+
+    await userEvent.type(await screen.findByLabelText('Email'), 'anna@example.com')
+    await userEvent.type(screen.getByLabelText('Password'), 'secret-password')
+    await userEvent.click(screen.getByRole('button', { name: 'Log in' }))
+
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Log in' })).not.toBeInTheDocument())
+    expect(screen.queryByRole('heading', { name: 'Settings' })).not.toBeInTheDocument()
+  })
+
   it('deletes the account only after confirmation and logs out', async () => {
     const spy = setup({ 'DELETE /api/users/me': { status: 204 } })
     const deleteCalls = () => spy.mock.calls.filter(([, init]) => init?.method === 'DELETE')
@@ -168,14 +183,9 @@ describe('SettingsPage', () => {
 
     await waitFor(() => expect(getSession()).toBeNull())
     expect(deleteCalls()).toHaveLength(1)
-    expect(await screen.findByRole('button', { name: 'Log in' })).toBeInTheDocument()
   })
 
-  // BUG: after deleting the account the page should switch to the registration (SettingsPage calls
-  // navigate('/register')), but the user ends up on the login page (/login?redirect=/settings): logout()
-  // clears the session first, so RequireAuth around /settings redirects to the login page, and that
-  // redirect wins over the navigation to /register (React Router runs navigations as transitions).
-  it.skip('leads to the registration page after deleting the account', async () => {
+  it('leads to the registration page after deleting the account', async () => {
     setup({ 'DELETE /api/users/me': { status: 204 } })
 
     await userEvent.click(await screen.findByRole('button', { name: 'Delete my account' }))

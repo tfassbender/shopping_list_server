@@ -60,6 +60,16 @@ export function ListPage() {
     if (list) setLastList({ spaceId, listId })
   }, [list, spaceId, listId])
 
+  // An unchecked item returns to its place for good: checking it again must not send it straight back to
+  // "Checked" (only the sort button does that). Also covers items unchecked by others.
+  useEffect(() => {
+    if (!list) return
+    setMovedToEnd((moved) => {
+      const stillChecked = new Set(list.items.filter((i) => i.checked && moved.has(i.id)).map((i) => i.id))
+      return stillChecked.size === moved.size ? moved : stillChecked
+    })
+  }, [list])
+
   if (list === undefined && lostChanges !== undefined) return <SpaceGone lostChanges={lostChanges} />
   if (list === undefined) return <Page title={t('appName')} back="/"><Loading /></Page>
   if (list === null) {
@@ -266,10 +276,15 @@ function useToggleFavorite(spaceId: string, layoutId: string | null) {
   return useMutation({
     mutationFn: ({ name, favorite }: { name: string; favorite: boolean }) =>
       favorite ? layoutsApi.removeFavorite(spaceId, layoutId!, name) : layoutsApi.addFavorite(spaceId, layoutId!, name),
-    onMutate: ({ name, favorite }) =>
+    onMutate: ({ name, favorite }) => {
+      const previous = queryClient.getQueryData<string[]>(key)
       queryClient.setQueryData<string[]>(key, (names = []) =>
         favorite ? names.filter((n) => n !== normalizeName(name)) : [...names, normalizeName(name)],
-      ),
+      )
+      return { previous }
+    },
+    // Not saved: show the old state again instead of a favorite that only exists on this device.
+    onError: (_error, _variables, context) => queryClient.setQueryData(key, context?.previous),
     onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
   })
 }

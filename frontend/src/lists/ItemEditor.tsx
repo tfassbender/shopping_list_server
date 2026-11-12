@@ -4,6 +4,7 @@ import type { EditableField, Item } from '../api/lists'
 import { Dialog, DialogActions } from '../components/Dialog'
 import { Button, SelectField, Switch, TextField } from '../components/ui'
 import { t } from '../i18n/messages'
+import { useOnline } from '../offline/online'
 import { AmountUnitFields } from './AmountUnitFields'
 
 /**
@@ -26,8 +27,11 @@ export function ItemEditor(props: {
   const [unit, setUnit] = useState(item.unit ?? '')
   const [categoryId, setCategoryId] = useState(item.categoryId ?? '')
   const [note, setNote] = useState(item.note ?? '')
+  // Favorites are saved on the server right away (not via the offline sync), so they need a connection.
+  const online = useOnline()
 
   function save() {
+    if (!name.trim()) return // only spaces: the name would be rejected by the server
     const values: Record<EditableField, string> = { name, note, categoryId, quantity, unit }
     const changed: Partial<Record<EditableField, string | null>> = {}
     for (const field of Object.keys(values) as EditableField[]) {
@@ -52,8 +56,11 @@ export function ItemEditor(props: {
       <TextField label={t('item.note')} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
       {props.shopName && props.onToggleFavorite && (
         <label className="flex min-h-12 items-center justify-between gap-3">
-          <span>{t('item.favoriteAt', { shop: props.shopName })}</span>
-          <Switch checked={!!props.favorite} onChange={props.onToggleFavorite} label={t('item.favoriteAt', { shop: props.shopName })} />
+          <span>
+            {t('item.favoriteAt', { shop: props.shopName })}
+            {!online && <span className="block text-sm text-muted">{t('item.favoriteOffline')}</span>}
+          </span>
+          <Switch checked={!!props.favorite} disabled={!online} onChange={props.onToggleFavorite} label={t('item.favoriteAt', { shop: props.shopName })} />
         </label>
       )}
       <DialogActions>
@@ -70,7 +77,9 @@ export function ItemEditor(props: {
         <Button variant="ghost" onClick={props.onClose}>
           {t('common.cancel')}
         </Button>
-        <Button type="submit">{t('common.save')}</Button>
+        <Button type="submit" disabled={!name.trim()}>
+          {t('common.save')}
+        </Button>
       </DialogActions>
     </Dialog>
   )

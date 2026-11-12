@@ -15,6 +15,8 @@ const REFRESH_AFTER_MS = 24 * 60 * 60 * 1000
 type Listener = () => void
 const listeners = new Set<Listener>()
 let current: Session | null = load()
+/** Where to go after a deliberate logout (see RequireAuth); null after an expired/revoked session. */
+let logoutTarget: string | null = null
 
 function load(): Session | null {
   try {
@@ -35,15 +37,25 @@ export function getSession(): Session | null {
 
 export function setSession(token: string, expiresAt: string, now = new Date()) {
   current = { token, expiresAt, receivedAt: now.toISOString() }
+  logoutTarget = null
   localStorage.setItem(STORAGE_KEY, JSON.stringify(current))
   notify()
 }
 
-export function clearSession() {
+/**
+ * Ends the session. `then` is set for a deliberate logout: the login guard goes there instead of to
+ * `/login?redirect=<current page>` (which is meant for an expired session).
+ */
+export function clearSession(options: { then?: string } = {}) {
   if (current === null) return
   current = null
+  logoutTarget = options.then ?? null
   localStorage.removeItem(STORAGE_KEY)
   notify()
+}
+
+export function getLogoutTarget(): string | null {
+  return logoutTarget
 }
 
 export function subscribeSession(listener: Listener): () => void {

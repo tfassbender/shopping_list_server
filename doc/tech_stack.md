@@ -11,12 +11,13 @@ REST so the React web frontend and a later Android app are interchangeable clien
 | REST               | Quarkus REST (`quarkus-rest-jackson`), JSON via Jackson + `jackson-module-kotlin` |
 | Auth               | SmallRye JWT (HS256 bearer tokens), BCrypt password hashing   |
 | Email              | Quarkus Mailer (verification + password reset; mocked in dev/test) |
-| Persistence        | File-based JSON (one file per aggregate), behind repository ports |
+| Persistence        | PostgreSQL via Hibernate ORM (plain JPA) + Flyway; file-based JSON as switchable alternative - both behind repository ports |
+| Containers         | Docker (Postgres locally and on the server), Docker Compose for the production stack |
 | Web frontend       | React + TypeScript, Vite, mobile-first                        |
 | Styling            | Tailwind CSS                                                  |
 | Android app (later)| Native Android (Kotlin), consuming the same REST API          |
 | Build              | Gradle (Kotlin DSL), multi-module                             |
-| Testing            | JUnit 5, RestAssured, Vitest + Testing Library (frontend)     |
+| Testing            | JUnit 5, RestAssured, Dev Services/Testcontainers (Postgres), Vitest + Testing Library (frontend) |
 
 ## Backend
 
@@ -75,6 +76,7 @@ com.tfassbender.shoppinglist
 └── adapter/
     ├── rest/        JAX-RS resources + DTOs + exception mappers   (driving)
     ├── persistence/ File JSON repositories + JSON mapping         (driven)
+    │   └── jpa/     JPA entities + repositories (PostgreSQL)      (driven)
     ├── security/    JWT issuer                                    (driven)
     └── email/       Quarkus Mailer EmailSender                    (driven)
 ```
@@ -99,10 +101,52 @@ Rules:
 - REST DTOs live in `adapter.rest` – never expose domain objects directly on the wire.
 - Architecture rules are enforced with **ArchUnit** tests (as in avalon).
 
-## Persistence: file-based JSON
+## Persistence
 
-Decided: **JSON files, no database.** Lists are small; this keeps setup and hosting trivial. Exchanging it
-later (e.g. for PostgreSQL) only means writing new adapters for the repository ports.
+Two interchangeable adapters implement the same repository ports in `application.port`; a runtime config
+flag selects one:
+
+```properties
+shoppinglist.storage=postgres   # default; or: file
+```
+
+**Why a database at all:** not performance (the data is small, one server instance). The project is also a
+portfolio piece, and PostgreSQL + Hibernate + Flyway + Docker are technologies worth showing. The file
+adapter stays, which also demonstrates that the hexagonal ports really make storage exchangeable.
+
+- Switching the flag does **not** migrate data - the two stores are independent. A one-shot copy tool
+  (file -> Postgres) is optional.
+- A single server instance stays the assumption: the in-process `SpaceLocks` remain the concurrency
+  mechanism for both adapters (no database locks, no multi-instance SSE fan-out).
+- In file mode the datasource and Hibernate are deactivated at runtime, so the app starts without Postgres.
+
+### PostgreSQL (primary adapter)
+
+- **Hibernate ORM with plain JPA** (`EntityManager`), no Panache: plain JPA skills carry over to other
+  stacks, and Panache's active-record style would pull persistence concerns towards the domain.
+- **Normalized schema** (tables for users, favorites, API tokens, spaces, members, invites, categories,
+  units, item history, lists, items, item stamps, layouts, layout entries, sequence counter, sync state).
+- **JPA entities are separate from the domain model - a firm rule.** Entities live only in
+  `adapter.persistence.jpa`; the domain stays immutable Kotlin `data class`es with value-class ids and no
+  JPA annotations. Repositories map entity <-> domain in both directions (same idea as the file DTOs).
+  Reasons: JPA needs mutable, open classes with a no-arg constructor and managed identity, which conflicts
+  with immutable aggregates; and the domain must not depend on Jakarta Persistence (ArchUnit enforces it).
+  The Kotlin `plugin.jpa` (no-arg) and `allopen` for `@Entity` apply to the entity classes only.
+- **Saving an aggregate** replaces its state: the repository loads the root entity and syncs the child
+  collections (added/changed/removed items, members, ...) with `orphanRemoval`. The aggregate is the unit
+  of persistence - no lazy loading leaks into the domain, entities never leave the adapter.
+- **Schema owned by Flyway** (`db/migration/V*__*.sql`, `migrate-at-start`); Hibernate only validates the
+  schema, it never generates tables.
+- **Transactions:** one transaction per locked operation, opened via a small port (`TransactionRunner`)
+  that `SpaceLocks` uses; the file adapter's implementation does nothing. Keeps `@Transactional` out of the
+  application services.
+- **Tests:** one shared contract test suite runs against both adapters; the Postgres variant uses a real
+  database (Quarkus Dev Services / Testcontainers, needs Docker).
+
+### File-based JSON (alternative adapter)
+
+The original storage, kept as a fully working alternative (`shoppinglist.storage=file`). Lists are small, so
+files are sufficient; it needs no database at all.
 
 - Layout under a configurable data dir (`shoppinglist.data.dir`, default `data`, gitignored):
   ```
@@ -125,6 +169,17 @@ later (e.g. for PostgreSQL) only means writing new adapters for the repository p
   this scale; an in-memory index is the obvious later optimization.
 - Path-segment guard on ids so a crafted id can't escape the data dir.
 - Persistence DTOs carry a `schemaVersion` so the file format can evolve.
+
+## Containers & Deployment
+
+- **Docker** for PostgreSQL locally (Docker Desktop; enables Quarkus Dev Services) and on the Ubuntu server
+  (Docker Engine + Compose plugin from Docker's apt repository).
+- **Production stack** via `docker-compose.yml`: app image (multi-stage `Dockerfile`: builds the SPA and the
+  backend, runs on a slim Java 21 runtime) + Postgres with a named volume and health check; secrets in an
+  `.env` file that is not committed.
+- Postgres publishes **no port**; the app reaches it on the internal Compose network. The app port binds to
+  `127.0.0.1` behind a reverse proxy for HTTPS (ports published by Docker bypass `ufw`).
+- Backups: daily `pg_dump` (via `docker exec`) by cron.
 
 ## Offline Sync
 

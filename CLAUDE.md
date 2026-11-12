@@ -12,12 +12,13 @@ A shopping list app with user management and list sharing between users.
 
 **Status:** Phases 0–10 of `doc/implementation_plan.md` are implemented (accounts, spaces, lists, catalog,
 shop layouts, API tokens, offline sync, live updates, i18n/PWA) plus the UI rework from
-`doc/mockups/lists-mockup.html`. Next: deployment.
+`doc/mockups/lists-mockup.html`. Next: Phase 11 (PostgreSQL persistence), then Phase 12 (Docker &
+deployment).
 
 ## Documentation (`doc/`)
 
 - `doc/tech_stack.md` – **authoritative** tech stack and architecture decisions (hexagonal layering,
-  light DDD, file-based JSON persistence). Read before writing backend code.
+  light DDD, Postgres/JPA + file-based persistence, Docker). Read before writing backend code.
 - `doc/features.md` – **authoritative** feature list with priorities and detailed rules (spaces,
   permissions, sorting, offline sync, API tokens). Based partly on the reference app *Einfacher Einkaufszettel*.
 - `doc/data_model.md` – Mermaid diagrams of the domain model (aggregates, id references, sync fields).
@@ -45,9 +46,13 @@ Workflow: tech stack → feature analysis → implementation plan → implementa
   - **Not used:** domain events, CQRS, event sourcing, generic base classes "for later". Call out
     over-engineering.
   - Enforce layering with ArchUnit tests.
-- **Persistence: file-based JSON, no database.** One file per aggregate under `data/users/<id>/` and
-  `data/spaces/<id>/`, atomic writes (temp file + move), a `ReentrantLock` per space for
-  load-modify-save. Must stay exchangeable – only the persistence adapter knows about files.
+- **Persistence: PostgreSQL (primary) or file-based JSON, switched by `shoppinglist.storage`.** Postgres via
+  Hibernate ORM with plain JPA (no Panache), normalized schema, Flyway owns the schema (Hibernate only
+  validates). **JPA entities are separate from the domain model** and never leave the persistence adapter.
+  The file adapter stays: one file per aggregate under `data/users/<id>/` and `data/spaces/<id>/`, atomic
+  writes. Both use a `ReentrantLock` per space for load-modify-save (single instance). Chosen partly as a
+  portfolio piece, not for performance.
+- **Docker:** Postgres runs in Docker locally and on the Ubuntu server; production via Docker Compose.
 - **User management modelled on `../avalons_final_stand`** (email login, BCrypt, HS256 JWT, email
   verification & password reset with hashed tokens, `email-disabled` switch for dev/test).
 - **Base package:** `com.tfassbender.shoppinglist`.

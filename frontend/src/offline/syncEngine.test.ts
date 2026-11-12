@@ -292,6 +292,22 @@ describe('SyncEngine', () => {
     expect(await storage.get('spaces')).toBeUndefined()
   })
 
+  it('clear resets an offline status and a start right after it does not load the old data', async () => {
+    const storage = memoryStorage()
+    const local = engineWith(server, storage)
+    await local.open(SPACE)
+    server.offline = true
+    await local.sync(SPACE)
+    expect(local.status).toBe('offline')
+
+    const clearing = local.clear()
+    const starting = local.start() // e.g. the next user logs in at once
+    await Promise.all([clearing, starting])
+
+    expect(local.status).toBe('idle')
+    expect(local.listsOf(SPACE)).toBeUndefined()
+  })
+
   it('notifies subscribers about changes', () => {
     const listener = vi.fn()
     engine.subscribe(listener)

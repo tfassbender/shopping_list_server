@@ -49,8 +49,7 @@ export function SettingsPage() {
   const deleteAccount = useMutation({
     mutationFn: accountApi.deleteAccount,
     onSuccess: () => {
-      logout()
-      navigate('/register')
+      logout('/register')
     },
   })
 
@@ -130,10 +129,7 @@ export function SettingsPage() {
         <Row onClick={() => setDialog('password')} title={t('settings.password')} chevron />
         <Row onClick={() => setDialog('logoutEverywhere')} title={t('settings.logoutEverywhere')} />
         <Row
-          onClick={() => {
-            logout()
-            navigate('/login')
-          }}
+          onClick={() => logout()}
           title={t('nav.logout')}
         />
         <Row onClick={() => setDialog('delete')} title={t('settings.deleteAccount')} danger />
