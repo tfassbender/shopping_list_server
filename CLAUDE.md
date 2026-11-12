@@ -10,10 +10,9 @@ A shopping list app with user management and list sharing between users.
 - **Web frontend:** React + TypeScript (Vite), mobile-first
 - **Android app:** planned later, uses the same REST API
 
-**Status:** Phases 0–10 of `doc/implementation_plan.md` are implemented (accounts, spaces, lists, catalog,
-shop layouts, API tokens, offline sync, live updates, i18n/PWA) plus the UI rework from
-`doc/mockups/lists-mockup.html`. Next: Phase 11 (PostgreSQL persistence), then Phase 12 (Docker &
-deployment).
+**Status:** Phases 0–11 of `doc/implementation_plan.md` are implemented (accounts, spaces, lists, catalog,
+shop layouts, API tokens, offline sync, live updates, i18n/PWA, PostgreSQL storage switchable to files)
+plus the UI rework from `doc/mockups/lists-mockup.html`. Next: Phase 12 (Docker & deployment).
 
 ## Documentation (`doc/`)
 
@@ -72,6 +71,9 @@ Workflow: tech stack → feature analysis → implementation plan → implementa
 
 ## Where things are (beyond `doc/`)
 
+- Persistence: `adapter/persistence/` (file repositories, `PersistenceProducers` picks the storage),
+  `adapter/persistence/jpa/` (entities + JPA repositories), schema in `resources/db/migration/` (Flyway -
+  never edit an applied migration, add `V2__...`).
 - Merge rules of the offline sync: `domain/list/ShoppingList.kt` + `Merge.kt` (tests: `MergeRulesTest`).
 - Web offline layer: `frontend/src/offline/` (`SyncEngine`, IndexedDB storage, live updates via SSE).
 - Texts: `frontend/src/i18n/en.ts` / `de.ts` - add every new text to both.
@@ -90,14 +92,20 @@ Don't hard-code undecided details – ask.
 
 ## Build, run & test commands
 
-Gradle monorepo (`backend` / `frontend` / `e2e`), JDK 21. Run from the repo root.
+Gradle monorepo (`backend` / `frontend` / `e2e`), JDK 21. Run from the repo root. **Docker must be running**
+for backend dev mode and tests (Quarkus Dev Services start PostgreSQL in a container).
 
 - **Everything (backend + frontend tests, JAR with SPA):** `./gradlew build -PwithFrontend`
   (without `-PwithFrontend` the backend JAR contains no web app)
 - **Run the packaged app:** `java -jar backend/build/quarkus-app/quarkus-run.jar` → http://localhost:4723
-- **Backend dev (live reload, port 4723):** `./gradlew :backend:quarkusDev`
-- **Backend tests:** `./gradlew :backend:test`; one class:
+  (Postgres from `SHOPPINGLIST_DB_URL` / `_USER` / `_PASSWORD`; `-Dshoppinglist.storage=file` runs without a database)
+- **Backend dev (live reload, port 4723):** `./gradlew :backend:quarkusDev` (dev database persisted in
+  `backend/data/dev-postgres`)
+- **Backend tests:** `./gradlew :backend:test` (on Postgres; `-Pstorage=file` runs them on the file storage,
+  Postgres-only tests skip themselves); one class:
   `./gradlew :backend:test --tests "com.tfassbender.shoppinglist.adapter.rest.HealthResourceTest"`
+- **Repository contract:** `RepositoryContract` holds the behaviour both storage adapters must have; it runs
+  as `FileRepositoryContractTest` and `JpaRepositoryContractTest`. Add new repository behaviour there.
 - **Frontend dev (Vite, port 5173, proxies `/api` → 4723):** `./gradlew :frontend:npmDev` (or `cd frontend && npm run dev`);
   `./gradlew :frontend:npmDevStop` frees the port if a server was left running
 - **Frontend tests / type check / build:** `cd frontend && npm test` / `npm run check` / `npm run build`;

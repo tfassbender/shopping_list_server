@@ -4,7 +4,7 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–10 and the UI rework are done. Next: Phase 11 (PostgreSQL persistence).
+**Status:** Phases 0–11 and the UI rework are done. Next: Phase 12 (Docker & deployment).
 
 ## Guiding principles
 
@@ -353,20 +353,24 @@ Decided while implementing:
 Goal: PostgreSQL is the primary storage; the file storage stays available via `shoppinglist.storage=file`.
 Design in `doc/tech_stack.md` -> Persistence. Mainly a portfolio decision, not a performance one.
 
-- [ ] Local Postgres in Docker (Docker Desktop); Quarkus Dev Services for dev and tests
-- [ ] Dependencies: `quarkus-hibernate-orm`, `quarkus-jdbc-postgresql`, `quarkus-flyway`; Kotlin
-      `plugin.jpa` + `allopen` for `@Entity`
-- [ ] Config flag `shoppinglist.storage=postgres|file`; producers pick the adapter; datasource and
-      Hibernate deactivated in file mode (app starts without Postgres)
-- [ ] Flyway `V1` migration with the normalized schema; Hibernate only validates
-- [ ] JPA entities in `adapter.persistence.jpa`, **separate from the domain model**, with mapping
-      entity <-> domain; ArchUnit rule: no `jakarta.persistence` outside `adapter.persistence`
-- [ ] JPA repositories for all ports (users, API tokens, spaces, catalog, lists + items,
+- [x] Local Postgres in Docker (Docker Desktop); Quarkus Dev Services for dev and tests (image
+      `postgres:17`; dev data bound to `backend/data/dev-postgres`, tests start empty)
+- [x] Dependencies: `quarkus-hibernate-orm`, `quarkus-jdbc-postgresql`, `quarkus-flyway` (+ `-postgresql`);
+      Kotlin `plugin.jpa` + `allopen` for `@Entity`/`@Embeddable`
+- [x] Config flag `shoppinglist.storage=postgres|file`; producers pick the adapter; datasource, Hibernate
+      and Flyway deactivated in file mode (app starts without Postgres - checked with the packaged JAR)
+- [x] Flyway `V1` migration with the normalized schema; Hibernate only validates
+- [x] JPA entities in `adapter.persistence.jpa`, **separate from the domain model**, with mapping
+      entity <-> domain; ArchUnit rules: JPA/JTA only in `adapter.persistence`, entities only in `.jpa`
+- [x] JPA repositories for all ports (users, API tokens, spaces, catalog, lists + items,
       layouts, sequence counter, sync state)
-- [ ] `TransactionRunner` port: one transaction per `SpaceLocks` operation (no-op for files)
-- [ ] Shared repository contract tests, run against the file and the Postgres adapter
-- [ ] REST and e2e tests green in both modes
-- [ ] Optional: one-shot copy tool file -> Postgres
+- [x] `TransactionRunner` port: one transaction per `SpaceLocks` operation (no-op for files), rollback test
+- [x] Shared repository contract tests (`RepositoryContract`), run against the file and the Postgres adapter
+- [x] REST and e2e tests green in both modes (e2e against dev mode and the packaged JAR on Postgres and files)
+- [ ] ~~Optional: one-shot copy tool file -> Postgres~~ - skipped: not deployed yet, no data to move
+
+Side change: `@QuarkusTest`s run on a random HTTP port (`quarkus.http.test-port=0`), so test runs in
+several checkouts/worktrees don't collide on 8081.
 
 ## Phase 12 – Docker & deployment
 

@@ -62,22 +62,25 @@ classDiagram
     UserApiTokens "1" ..> "1" User : userId
 ```
 
-| Aggregate root | Responsibility | Scope | File (under the data dir) |
-|---|---|---|---|
-| `Space` | Members with roles, invite links | shared | `spaces/<spaceId>/space.json` |
-| `SpaceCatalog` | Categories, units, item history | shared, 1 per space | `spaces/<spaceId>/catalog.json` |
-| `ShoppingList` | One list and its items, merge rules | shared | `spaces/<spaceId>/lists/<listId>.json` |
-| `ShopLayout` | Walking order through one shop | shared | `spaces/<spaceId>/layouts/<layoutId>.json` |
-| `SyncState` | Idempotency of change ids, tombstone purge horizon | shared, 1 per space | `spaces/<spaceId>/sync.json` |
-| `User` | Account, credentials, settings | personal | `users/<userId>/user.json` |
-| `UserApiTokens` | The user's API tokens for AI agents/scripts | personal, 1 per user | `users/<userId>/api-tokens.json` |
+| Aggregate root | Responsibility | Scope | PostgreSQL tables | File (under the data dir) |
+|---|---|---|---|---|
+| `Space` | Members with roles, invite links | shared | `spaces`, `space_members`, `space_invites` | `spaces/<spaceId>/space.json` |
+| `SpaceCatalog` | Categories, units, item history | shared, 1 per space | `catalogs`, `catalog_categories`, `catalog_units`, `item_history` | `spaces/<spaceId>/catalog.json` |
+| `ShoppingList` | One list and its items, merge rules | shared | `shopping_lists`, `items`, `item_stamps` | `spaces/<spaceId>/lists/<listId>.json` |
+| `ShopLayout` | Walking order through one shop | shared | `shop_layouts`, `layout_category_order`, `layout_item_order`, `layout_lists` | `spaces/<spaceId>/layouts/<layoutId>.json` |
+| `SyncState` | Idempotency of change ids, tombstone purge horizon | shared, 1 per space | `sync_states`, `sync_applied_changes` | `spaces/<spaceId>/sync.json` |
+| `User` | Account, credentials, settings | personal | `users` | `users/<userId>/user.json` |
+| `UserApiTokens` | The user's API tokens for AI agents/scripts | personal, 1 per user | `api_tokens` | `users/<userId>/api-tokens.json` |
 
-Not an aggregate but part of the stored state: the **space sequence counter**
-(`spaces/<spaceId>/sequence.json`). It sits behind the application port `SequenceCounter`, not in the
+Not an aggregate but part of the stored state: the **space sequence counter** (table `space_sequences`,
+file `spaces/<spaceId>/sequence.json`). It sits behind the application port `SequenceCounter`, not in the
 domain; see [Sync fields](#6-how-the-sync-fields-fit-together).
 
-All files are written atomically (temp file + move), and all changes to a space's data run under one
-in-process lock per space. Persistence DTOs live in `adapter/persistence/` and carry a `schemaVersion`.
+Which storage is used is set by `shoppinglist.storage` (`postgres` or `file`, see `doc/tech_stack.md` →
+Persistence). All changes to a space's data run under one in-process lock per space, and with Postgres in
+one transaction per locked operation. The schema is `backend/src/main/resources/db/migration/V1__initial_schema.sql`;
+JPA entities live in `adapter/persistence/jpa/`, file DTOs (with a `schemaVersion`) in `adapter/persistence/`.
+Files are written atomically (temp file + move).
 
 ## 2. Users and authentication (personal)
 

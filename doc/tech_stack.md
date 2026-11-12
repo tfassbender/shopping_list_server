@@ -132,16 +132,40 @@ adapter stays, which also demonstrates that the hexagonal ports really make stor
   Reasons: JPA needs mutable, open classes with a no-arg constructor and managed identity, which conflicts
   with immutable aggregates; and the domain must not depend on Jakarta Persistence (ArchUnit enforces it).
   The Kotlin `plugin.jpa` (no-arg) and `allopen` for `@Entity` apply to the entity classes only.
-- **Saving an aggregate** replaces its state: the repository loads the root entity and syncs the child
-  collections (added/changed/removed items, members, ...) with `orphanRemoval`. The aggregate is the unit
-  of persistence - no lazy loading leaks into the domain, entities never leave the adapter.
-- **Schema owned by Flyway** (`db/migration/V*__*.sql`, `migrate-at-start`); Hibernate only validates the
-  schema, it never generates tables.
+- **Saving an aggregate** replaces its state: the repository loads the managed root entity (or creates
+  it) and brings it to the domain state with `updateFrom`; Hibernate writes only the rows that changed.
+  - Parts without identity in the database (members, invites, categories, units, history entries, layout
+    orders, applied change ids, merge stamps) are `@ElementCollection`s of `data class` embeddables;
+    ordered lists carry a `position` column (`@OrderColumn`).
+  - Items are real entities (`@OneToMany(orphanRemoval)`), because each one owns its stamps. They are
+    matched by domain id and updated in place - new instances for the same item would make Hibernate
+    insert before it deletes and break the unique (list, item id) constraint.
+  - Roots whose domain ids are unique only per space (lists, layouts) get a surrogate `pk` plus a unique
+    constraint on (space id, domain id). The user's API tokens have no root row of their own - they are
+    rows keyed by user id.
+  - The aggregate is the unit of persistence: domain objects are built inside the transaction, so no lazy
+    loading leaks into the domain, and entities never leave the adapter.
+- **Schema owned by Flyway** (`src/main/resources/db/migration/V*__*.sql`, `migrate-at-start`); Hibernate
+  only validates it (`schema-management.strategy=validate`) and never generates tables. Applied migrations
+  are never edited - changes go into a new `V2__...`. Column names come from the property names
+  (`CamelCaseToUnderscoresNamingStrategy`).
+- **Foreign keys** with `ON DELETE CASCADE` inside an aggregate and from all space data to `spaces` and all
+  personal data to `users`, so deleting a space or user is one delete. None for id references the domain
+  allows to dangle (category ids, layout list ids, member and stamp user ids).
 - **Transactions:** one transaction per locked operation, opened via a small port (`TransactionRunner`)
-  that `SpaceLocks` uses; the file adapter's implementation does nothing. Keeps `@Transactional` out of the
-  application services.
-- **Tests:** one shared contract test suite runs against both adapters; the Postgres variant uses a real
-  database (Quarkus Dev Services / Testcontainers, needs Docker).
+  that `SpaceLocks` uses; it commits before the lock is released and before live updates go out. Every
+  repository method joins it, or runs in its own transaction outside a lock. The file adapter's runner
+  does nothing. Keeps `@Transactional` out of the application services.
+- **Timestamps** are `timestamptz` with microsecond precision; an `Instant` with nanoseconds comes back
+  rounded to microseconds (harmless, the app never compares stored timestamps for equality).
+- **Tests:** `RepositoryContract` is one test suite that runs against both adapters
+  (`FileRepositoryContractTest`, `JpaRepositoryContractTest`), plus a rollback test of `SpaceLocks`. The
+  Postgres tests use a real database from Quarkus Dev Services (Testcontainers, needs Docker); each
+  test uses random ids because the database is shared by the whole test run. All REST tests run on Postgres
+  by default and on files with `-Pstorage=file`.
+- **Dev mode:** Dev Services as well, with the data directory bound to `backend/data/dev-postgres`
+  (gitignored), so dev data survives restarts.
+- **Production:** connection from `SHOPPINGLIST_DB_URL`, `SHOPPINGLIST_DB_USER`, `SHOPPINGLIST_DB_PASSWORD`.
 
 ### File-based JSON (alternative adapter)
 
