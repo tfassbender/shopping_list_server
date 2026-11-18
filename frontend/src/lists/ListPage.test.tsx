@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { chooseCategory } from '../test/chooseCategory'
 import { AppRoutes } from '../App'
 import type { Item } from '../api/lists'
 import { fakeSyncServer } from '../test/fakeSyncServer'
@@ -251,7 +252,7 @@ describe('ListPage', () => {
     const { server } = setup([item('1', 'Milk')])
 
     await userEvent.click(await screen.findByRole('button', { name: 'Edit Milk' }))
-    await userEvent.selectOptions(within(screen.getByRole('dialog')).getByLabelText('Category'), 'Dairy')
+    await chooseCategory(screen.getByRole('dialog'), 'Dairy')
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }))
 
     await waitFor(() => expect(server.received('EDIT_ITEM')).toEqual([expect.objectContaining({ field: 'CATEGORY', value: 'dairy' })]))

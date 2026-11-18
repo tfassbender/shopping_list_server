@@ -73,6 +73,8 @@ export const en = {
   'item.noUnit': '–',
   'item.note': 'Note',
   'item.category': 'Category',
+  'category.search': 'Search category',
+  'category.noMatch': 'No matching category',
   'item.noCategory': 'No category',
   'list.section.other': 'Other',
   'list.section.checked': 'Checked',

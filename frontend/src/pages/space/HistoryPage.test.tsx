@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { chooseCategory } from '../../test/chooseCategory'
 import { AppRoutes } from '../../App'
 import type { HistoryEntry } from '../../api/catalog'
 import { mockApi, sentBodies, testUser } from '../../test/mockApi'
@@ -43,7 +44,7 @@ describe('items used before', () => {
 
     // issue #5: the category can be changed in the same dialog
     await userEvent.click(screen.getByRole('button', { name: /^Brot\/Brötchen/ }))
-    await userEvent.selectOptions(within(screen.getByRole('dialog')).getByLabelText('Category'), 'Bakery')
+    await chooseCategory(screen.getByRole('dialog'), 'Bakery')
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }))
     expect(await screen.findByRole('button', { name: /^Brot\/Brötchen/ })).toHaveTextContent('Brot/BrötchenBakery')
     expect(sentBodies(spy, 'PUT', '/api/spaces/s1/catalog/history/category')).toEqual([{ categoryId: 'bakery' }])

@@ -99,12 +99,34 @@ describe('AddItemDialog', () => {
     expect(onAdd).toHaveBeenCalledWith({ name: 'Milk', categoryId: 'dairy', quantity: '2', unit: 'kg' })
   })
 
+  it('the category list can be searched; Enter takes the first match without adding (issue #6)', async () => {
+    const { onAdd, name } = setup()
+
+    await userEvent.type(name, 'Carrots')
+    await userEvent.click(screen.getByLabelText('Category'))
+    await userEvent.type(screen.getByLabelText('Search category'), 'veg')
+    expect(within(screen.getByRole('listbox', { name: 'Category' })).getAllByRole('option').map((o) => o.textContent)).toEqual(['Vegetables'])
+    await userEvent.type(screen.getByLabelText('Search category'), '{Enter}')
+
+    expect(onAdd).not.toHaveBeenCalled()
+    expect(screen.queryByRole('listbox', { name: 'Category' })).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Category')).toHaveTextContent('Vegetables')
+
+    await userEvent.click(screen.getByLabelText('Category'))
+    await userEvent.type(screen.getByLabelText('Search category'), 'xyz')
+    expect(screen.getByText('No matching category')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.getByRole('dialog')).toBeInTheDocument() // Escape closed only the list
+    expect(screen.queryByRole('listbox', { name: 'Category' })).not.toBeInTheDocument()
+  })
+
   it('adds the entered item with the chosen category; "Done" closes', async () => {
     const { onAdd, onClose, name } = setup()
 
-    expect(within(screen.getByLabelText('Category')).getAllByRole('option').map((o) => o.textContent)).toEqual(['Automatic', 'Dairy', 'Vegetables'])
     await userEvent.type(name, '  Carrots ')
-    await userEvent.selectOptions(screen.getByLabelText('Category'), 'veg')
+    await userEvent.click(screen.getByLabelText('Category'))
+    expect(within(screen.getByRole('listbox', { name: 'Category' })).getAllByRole('option').map((o) => o.textContent)).toEqual(['Automatic', 'Dairy', 'Vegetables'])
+    await userEvent.click(screen.getByRole('option', { name: 'Vegetables' }))
     await userEvent.click(screen.getByRole('button', { name: 'Done' }))
 
     expect(onAdd).toHaveBeenCalledWith({ name: 'Carrots', quantity: null, unit: null, categoryId: 'veg' })

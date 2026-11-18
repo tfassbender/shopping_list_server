@@ -1,5 +1,6 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { chooseCategory } from '../test/chooseCategory'
 import { vi } from 'vitest'
 import type { Item } from '../api/lists'
 import { renderWithProviders } from '../test/render'
@@ -30,7 +31,7 @@ describe('ItemEditor', () => {
     expect(within(dialog).getByLabelText('Amount')).toHaveValue('2')
     expect(within(dialog).getByLabelText('Unit')).toHaveValue('l')
     expect(within(dialog).getByLabelText('Name')).toHaveValue('Milk')
-    expect(within(dialog).getByLabelText('Category')).toHaveValue('dairy')
+    expect(within(dialog).getByLabelText('Category')).toHaveTextContent('Dairy')
     expect(within(dialog).getByLabelText('Note')).toHaveValue('low fat')
   })
 
@@ -39,7 +40,7 @@ describe('ItemEditor', () => {
 
     await userEvent.clear(within(dialog).getByLabelText('Name'))
     await userEvent.type(within(dialog).getByLabelText('Name'), ' Oat milk ')
-    await userEvent.selectOptions(within(dialog).getByLabelText('Category'), 'veg')
+    await chooseCategory(dialog, 'Vegetables')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
 
     expect(onSave).toHaveBeenCalledWith({ name: 'Oat milk', categoryId: 'veg' })
@@ -52,7 +53,7 @@ describe('ItemEditor', () => {
     await userEvent.clear(within(dialog).getByLabelText('Note'))
     await userEvent.clear(within(dialog).getByLabelText('Amount'))
     await userEvent.selectOptions(within(dialog).getByLabelText('Unit'), '')
-    await userEvent.selectOptions(within(dialog).getByLabelText('Category'), '')
+    await chooseCategory(dialog, 'No category')
     await userEvent.type(within(dialog).getByLabelText('Name'), '{Enter}')
 
     expect(onSave).toHaveBeenCalledWith({ note: null, quantity: null, unit: null, categoryId: null })

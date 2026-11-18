@@ -2,10 +2,11 @@ import { useState } from 'react'
 import type { Catalog } from '../api/catalog'
 import type { EditableField, Item } from '../api/lists'
 import { Dialog, DialogActions } from '../components/Dialog'
-import { Button, SelectField, TextField } from '../components/ui'
+import { Button, TextField } from '../components/ui'
 import { t } from '../i18n/messages'
 import { isValidAmount } from './amount'
 import { AmountUnitFields } from './AmountUnitFields'
+import { CategoryPicker } from './CategoryPicker'
 
 /**
  * Details of one item (opened with ⋯). Only changed fields are sent, so concurrent edits of other fields
@@ -40,14 +41,7 @@ export function ItemEditor(props: {
     <Dialog title={item.name} onClose={props.onClose} onSubmit={save}>
       <AmountUnitFields quantity={quantity} unit={unit} units={props.catalog?.units ?? []} onQuantityChange={setQuantity} onUnitChange={setUnit} />
       <TextField label={t('item.name')} required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
-      <SelectField label={t('item.category')} value={categoryId} onChange={setCategoryId}>
-        <option value="">{t('item.noCategory')}</option>
-        {props.catalog?.categories.map((category) => (
-          <option key={category.id} value={category.id}>
-            {category.name}
-          </option>
-        ))}
-      </SelectField>
+      <CategoryPicker label={t('item.category')} value={categoryId} onChange={setCategoryId} categories={props.catalog?.categories ?? []} noneLabel={t('item.noCategory')} />
       <TextField label={t('item.note')} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
       <DialogActions>
         <Button

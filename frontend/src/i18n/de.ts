@@ -75,6 +75,8 @@ export const de: Record<MessageKey, string> = {
   'item.noUnit': '–',
   'item.note': 'Notiz',
   'item.category': 'Kategorie',
+  'category.search': 'Kategorie suchen',
+  'category.noMatch': 'Keine passende Kategorie',
   'item.noCategory': 'Keine Kategorie',
   'list.section.other': 'Sonstiges',
   'list.section.checked': 'Erledigt',

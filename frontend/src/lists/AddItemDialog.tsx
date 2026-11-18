@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useSuggestions, type Catalog, type Suggestion } from '../api/catalog'
 import { Dialog, DialogActions } from '../components/Dialog'
 import { Icon } from '../components/Icon'
-import { Button, SelectField } from '../components/ui'
+import { Button } from '../components/ui'
 import { t } from '../i18n/messages'
 import { isValidAmount } from './amount'
 import { AmountUnitFields } from './AmountUnitFields'
+import { CategoryPicker } from './CategoryPicker'
 import { isVoiceInputSupported, listenOnce } from './voiceInput'
 
 export interface NewItem {
@@ -182,14 +183,7 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
         )}
       </div>
       {voiceFailed && <p className="text-sm text-danger">{t('voice.error')}</p>}
-      <SelectField label={t('item.category')} value={categoryId} onChange={setCategoryId}>
-        <option value="">{t('item.categoryAuto')}</option>
-        {catalog?.categories.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </SelectField>
+      <CategoryPicker label={t('item.category')} value={categoryId} onChange={setCategoryId} categories={catalog?.categories ?? []} noneLabel={t('item.categoryAuto')} />
       <DialogActions>
         <Button variant="ghost" className="mr-auto" onClick={onClose}>
           {t('common.cancel')}

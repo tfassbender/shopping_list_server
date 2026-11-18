@@ -4,8 +4,9 @@ import { useParams } from 'react-router'
 import { catalogApi, catalogKeys, useCatalog, useHistory, type Catalog, type HistoryEntry } from '../../api/catalog'
 import { Page, useBackTo } from '../../components/AppBar'
 import { Dialog, DialogActions } from '../../components/Dialog'
-import { Button, ErrorText, Hint, LoadError, Loading, Row, SelectField, TextField } from '../../components/ui'
+import { Button, ErrorText, Hint, LoadError, Loading, Row, TextField } from '../../components/ui'
 import { t } from '../../i18n/messages'
+import { CategoryPicker } from '../../lists/CategoryPicker'
 import { OnlineOnly } from '../../offline/online'
 
 /**
@@ -97,14 +98,7 @@ function HistoryEntryDialog({ spaceId, entry, catalog, onClose }: { spaceId: str
     <Dialog title={entry.name} onClose={onClose} onSubmit={save}>
       <TextField label={t('item.name')} required autoFocus maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
       <p className="text-sm text-muted">{t('history.renameHint')}</p>
-      <SelectField label={t('item.category')} value={categoryId} onChange={setCategoryId}>
-        <option value="">{t('item.noCategory')}</option>
-        {catalog?.categories.map((category) => (
-          <option key={category.id} value={category.id}>
-            {category.name}
-          </option>
-        ))}
-      </SelectField>
+      <CategoryPicker label={t('item.category')} value={categoryId} onChange={setCategoryId} categories={catalog?.categories ?? []} noneLabel={t('item.noCategory')} />
       <ErrorText error={change.error} />
       <DialogActions>
         <Button variant="ghost" className="mr-auto text-danger" disabled={change.isPending} onClick={() => change.mutate(() => catalogApi.removeHistory(spaceId, entry.name))}>
