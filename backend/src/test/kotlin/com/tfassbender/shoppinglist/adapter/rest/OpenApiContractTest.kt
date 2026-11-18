@@ -94,6 +94,7 @@ class OpenApiContractTest {
         val required = listOf(
             "/api/spaces/{spaceId}/catalog/history" to "put",
             "/api/spaces/{spaceId}/catalog/history" to "delete",
+            "/api/spaces/{spaceId}/catalog/history/category" to "put",
         )
         required.forEach { (path, method) ->
             val flag = spec.get<Boolean?>("paths.'$path'.$method.parameters.find { it.name == 'name' }.required")

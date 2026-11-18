@@ -77,6 +77,11 @@ data class RenameHistoryRequest(
     val name: String = "",
 )
 
+data class HistoryCategoryRequest(
+    @field:Schema(description = "Category the item is placed in automatically from now on; null for none")
+    val categoryId: String? = null,
+)
+
 /** Categories (ordered, colored), units and the item history of a space. Every member may edit them. */
 @Path("/api/spaces/{spaceId}/catalog")
 @Produces(MediaType.APPLICATION_JSON)
@@ -162,6 +167,17 @@ class CatalogResource(
         request: RenameHistoryRequest,
     ): List<HistoryEntryDto> =
         catalogService.renameHistory(currentUser.id(), SpaceId(spaceId), name ?: "", request.name).map(HistoryEntryDto::from)
+
+    @PUT
+    @Path("/history/category")
+    @Operation(operationId = "setHistoryItemCategory", summary = "Change the category of an item of the history (used for automatic placement); returns the history")
+    fun setHistoryCategory(
+        @PathParam("spaceId") spaceId: String,
+        @QueryParam("name") @Parameter(required = true, description = ITEM_NAME_DESCRIPTION) name: String?,
+        request: HistoryCategoryRequest,
+    ): List<HistoryEntryDto> =
+        catalogService.setHistoryCategory(currentUser.id(), SpaceId(spaceId), name ?: "", request.categoryId?.let(::CategoryId))
+            .map(HistoryEntryDto::from)
 
     @DELETE
     @Path("/history")

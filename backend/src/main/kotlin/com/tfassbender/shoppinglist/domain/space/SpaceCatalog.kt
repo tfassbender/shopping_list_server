@@ -184,6 +184,13 @@ data class SpaceCatalog(
         return copy(history = history - key + (newKey to merged))
     }
 
+    /** Changes the category a remembered item is placed in automatically (null: no category). */
+    fun setHistoryCategory(name: String, categoryId: CategoryId?): SpaceCatalog {
+        val key = requireHistoryKey(name)
+        categoryId?.let(::requireCategory)
+        return copy(history = history + (key to history.getValue(key).copy(categoryId = categoryId)))
+    }
+
     private fun merge(renamed: HistoryEntry, existing: HistoryEntry): HistoryEntry {
         val newer = if (renamed.lastUsed >= existing.lastUsed) renamed else existing
         val older = if (newer === renamed) existing else renamed

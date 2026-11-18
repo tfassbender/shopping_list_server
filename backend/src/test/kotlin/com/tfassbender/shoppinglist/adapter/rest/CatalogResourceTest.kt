@@ -6,6 +6,7 @@ import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.hasItem
 import org.hamcrest.Matchers.hasItems
 import org.hamcrest.Matchers.not
+import org.hamcrest.Matchers.nullValue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -89,6 +90,13 @@ class CatalogResourceTest {
         user.request().queryParam("name", "mlich").body(mapOf("name" to "Milch")).put("${catalog()}/history")
             .then().statusCode(200).body("name", contains("Brot/Brötchen", "Milch"))
         user.request().queryParam("q", "mi").get("${catalog()}/suggestions").then().body("[0].name", equalTo("Milch"))
+
+        user.request().queryParam("name", "milch").body(mapOf("categoryId" to null)).put("${catalog()}/history/category")
+            .then().statusCode(200).body("find { it.name == 'Milch' }.categoryId", nullValue())
+        user.request().queryParam("name", "Milch").body(mapOf("categoryId" to "dairy")).put("${catalog()}/history/category")
+            .then().statusCode(200).body("find { it.name == 'Milch' }.categoryId", equalTo("dairy"))
+        user.request().queryParam("name", "Milch").body(mapOf("categoryId" to "nope")).put("${catalog()}/history/category")
+            .then().statusCode(404).body("code", equalTo("CATEGORY_NOT_FOUND"))
 
         // names with a slash work because they are passed as query parameter
         user.request().queryParam("name", "Brot/Brötchen").delete("${catalog()}/history")

@@ -59,6 +59,9 @@ class CatalogService(
     fun renameHistory(userId: UserId, spaceId: SpaceId, name: String, newName: String): List<HistoryEntry> =
         modify(userId, spaceId) { it.renameHistory(name, newName) }.historyEntries()
 
+    fun setHistoryCategory(userId: UserId, spaceId: SpaceId, name: String, categoryId: CategoryId?): List<HistoryEntry> =
+        modify(userId, spaceId) { it.setHistoryCategory(name, categoryId) }.historyEntries()
+
     fun removeHistory(userId: UserId, spaceId: SpaceId, name: String): List<HistoryEntry> =
         modify(userId, spaceId) { it.removeHistory(name) }.historyEntries()
 

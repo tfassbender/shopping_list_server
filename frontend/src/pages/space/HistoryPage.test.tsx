@@ -14,10 +14,12 @@ describe('items used before', () => {
     let entries = [entry('Brot/Brötchen'), entry('Mlich', 3)]
     const spy = mockApi({
       'GET /api/users/me': testUser,
-      'GET /api/spaces/s1/catalog': { categories: [{ id: 'dairy', name: 'Dairy', color: '#0000ff' }], units: [] },
+      'GET /api/spaces/s1/catalog': { categories: [{ id: 'dairy', name: 'Dairy', color: '#0000ff' }, { id: 'bakery', name: 'Bakery', color: '#aa8800' }], units: [] },
       'GET /api/spaces/s1/catalog/history': () => entries,
       'PUT /api/spaces/s1/catalog/history': (body: unknown, url: URL) =>
         (entries = entries.map((e) => (e.name === url.searchParams.get('name') ? { ...e, name: (body as { name: string }).name } : e))),
+      'PUT /api/spaces/s1/catalog/history/category': (body: unknown, url: URL) =>
+        (entries = entries.map((e) => (e.name === url.searchParams.get('name') ? { ...e, categoryId: (body as { categoryId: string | null }).categoryId } : e))),
       'DELETE /api/spaces/s1/catalog/history': (_: unknown, url: URL) => (entries = entries.filter((e) => e.name !== url.searchParams.get('name'))),
     })
     renderWithProviders(<AppRoutes />, '/spaces/s1/history')
@@ -38,6 +40,13 @@ describe('items used before', () => {
     await userEvent.type(name, 'Milch{Enter}')
     expect(await screen.findByRole('button', { name: /^Milch/ })).toBeInTheDocument()
     expect(sentBodies(spy, 'PUT', '/api/spaces/s1/catalog/history')).toEqual([{ name: 'Milch' }])
+
+    // issue #5: the category can be changed in the same dialog
+    await userEvent.click(screen.getByRole('button', { name: /^Brot\/Brötchen/ }))
+    await userEvent.selectOptions(within(screen.getByRole('dialog')).getByLabelText('Category'), 'Bakery')
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Save' }))
+    expect(await screen.findByRole('button', { name: /^Brot\/Brötchen/ })).toHaveTextContent('Brot/BrötchenBakery')
+    expect(sentBodies(spy, 'PUT', '/api/spaces/s1/catalog/history/category')).toEqual([{ categoryId: 'bakery' }])
 
     await userEvent.click(screen.getByRole('button', { name: /^Brot\/Brötchen/ }))
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Remove' }))

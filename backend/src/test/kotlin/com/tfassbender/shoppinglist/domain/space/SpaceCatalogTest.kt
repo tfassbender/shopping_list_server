@@ -231,10 +231,21 @@ class SpaceCatalogTest {
         }
 
         @Test
+        fun `the category of a remembered item can be changed or removed`() {
+            val changed = history.setHistoryCategory("MILK", bakery.id)
+            assertEquals(bakery.id, changed.historyFor("milk")!!.categoryId)
+            assertEquals(bakery.id, changed.suggestedCategory("Milk"))
+            assertEquals("l", changed.historyFor("milk")!!.unit)
+            assertNull(changed.setHistoryCategory("milk", null).historyFor("milk")!!.categoryId)
+        }
+
+        @Test
         fun `validation`() {
             assertEquals("HISTORY_ENTRY_NOT_FOUND", assertThrows<DomainException> { history.removeHistory("Cheese") }.code)
             assertEquals("HISTORY_ENTRY_NOT_FOUND", assertThrows<DomainException> { history.renameHistory("Cheese", "Brie") }.code)
             assertEquals("INVALID_NAME", assertThrows<DomainException> { history.renameHistory("Milk", "  ") }.code)
+            assertEquals("HISTORY_ENTRY_NOT_FOUND", assertThrows<DomainException> { history.setHistoryCategory("Cheese", null) }.code)
+            assertEquals("CATEGORY_NOT_FOUND", assertThrows<DomainException> { history.setHistoryCategory("Milk", CategoryId("nope")) }.code)
             assertEquals("INVALID_NAME", assertThrows<DomainException> { history.renameHistory("Milk", "x".repeat(101)) }.code)
         }
     }

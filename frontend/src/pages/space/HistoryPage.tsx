@@ -1,16 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useParams } from 'react-router'
-import { catalogApi, catalogKeys, useCatalog, useHistory, type HistoryEntry } from '../../api/catalog'
+import { catalogApi, catalogKeys, useCatalog, useHistory, type Catalog, type HistoryEntry } from '../../api/catalog'
 import { Page, useBackTo } from '../../components/AppBar'
 import { Dialog, DialogActions } from '../../components/Dialog'
-import { Button, ErrorText, Hint, LoadError, Loading, Row, TextField } from '../../components/ui'
+import { Button, ErrorText, Hint, LoadError, Loading, Row, SelectField, TextField } from '../../components/ui'
 import { t } from '../../i18n/messages'
 import { OnlineOnly } from '../../offline/online'
 
 /**
  * "Items used before": the item history of a space, which feeds the suggestions in the add dialog and the
- * automatic category. Tap an item to rename it (e.g. a typo) or remove it. A search field filters the list.
+ * automatic category. Tap an item to rename it (e.g. a typo), change its category or remove it. A search
+ * field filters the list.
  */
 export function HistoryPage() {
   const { spaceId = '' } = useParams()
@@ -58,15 +59,19 @@ export function HistoryPage() {
           })}
         </div>
       </OnlineOnly>
-      {editing && <HistoryEntryDialog spaceId={spaceId} entry={editing} onClose={() => setEditing(null)} />}
+      {editing && <HistoryEntryDialog spaceId={spaceId} entry={editing} catalog={catalog} onClose={() => setEditing(null)} />}
     </Page>
   )
 }
 
-/** Rename (merged with an existing entry of the new name) or remove one remembered item. */
-function HistoryEntryDialog({ spaceId, entry, onClose }: { spaceId: string; entry: HistoryEntry; onClose: () => void }) {
+/**
+ * Rename (merged with an existing entry of the new name), change the category or remove one remembered
+ * item. The category is saved first: after a rename the entry is addressed by its new name.
+ */
+function HistoryEntryDialog({ spaceId, entry, catalog, onClose }: { spaceId: string; entry: HistoryEntry; catalog?: Catalog; onClose: () => void }) {
   const queryClient = useQueryClient()
   const [name, setName] = useState(entry.name)
+  const [categoryId, setCategoryId] = useState(entry.categoryId ?? '')
   const change = useMutation({
     mutationFn: (call: () => Promise<HistoryEntry[]>) => call(),
     onSuccess: (entries) => {
@@ -77,15 +82,29 @@ function HistoryEntryDialog({ spaceId, entry, onClose }: { spaceId: string; entr
       onClose()
     },
   })
-  const rename = () => {
-    if (name.trim() && name.trim() !== entry.name) change.mutate(() => catalogApi.renameHistory(spaceId, entry.name, name.trim()))
-    else onClose()
+  const save = () => {
+    const renamed = name.trim() && name.trim() !== entry.name
+    const recategorized = categoryId !== (entry.categoryId ?? '')
+    if (!renamed && !recategorized) return onClose()
+    change.mutate(async () => {
+      let entries = recategorized ? await catalogApi.setHistoryCategory(spaceId, entry.name, categoryId || null) : []
+      if (renamed) entries = await catalogApi.renameHistory(spaceId, entry.name, name.trim())
+      return entries
+    })
   }
 
   return (
-    <Dialog title={entry.name} onClose={onClose} onSubmit={rename}>
+    <Dialog title={entry.name} onClose={onClose} onSubmit={save}>
       <TextField label={t('item.name')} required autoFocus maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
       <p className="text-sm text-muted">{t('history.renameHint')}</p>
+      <SelectField label={t('item.category')} value={categoryId} onChange={setCategoryId}>
+        <option value="">{t('item.noCategory')}</option>
+        {catalog?.categories.map((category) => (
+          <option key={category.id} value={category.id}>
+            {category.name}
+          </option>
+        ))}
+      </SelectField>
       <ErrorText error={change.error} />
       <DialogActions>
         <Button variant="ghost" className="mr-auto text-danger" disabled={change.isPending} onClick={() => change.mutate(() => catalogApi.removeHistory(spaceId, entry.name))}>

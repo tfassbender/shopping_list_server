@@ -41,6 +41,8 @@ export const catalogApi = {
   history: (spaceId: string) => api.get<HistoryEntry[]>(`${base(spaceId)}/history`),
   renameHistory: (spaceId: string, name: string, newName: string) =>
     api.put<HistoryEntry[]>(`${base(spaceId)}/history?name=${encodeURIComponent(name)}`, { name: newName }),
+  setHistoryCategory: (spaceId: string, name: string, categoryId: string | null) =>
+    api.put<HistoryEntry[]>(`${base(spaceId)}/history/category?name=${encodeURIComponent(name)}`, { categoryId }),
   removeHistory: (spaceId: string, name: string) => api.delete<HistoryEntry[]>(`${base(spaceId)}/history?name=${encodeURIComponent(name)}`),
 }
 
