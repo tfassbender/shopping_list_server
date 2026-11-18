@@ -25,7 +25,7 @@ A shopping list app with user accounts and lists shared between users.
 
 ## Status
 
-Version 1.0.0 is live at https://shopping-list.tobias-fassbender.com. All phases of the
+Version 1.1.0 is live at https://shopping-list.tobias-fassbender.com. All phases of the
 [implementation plan](doc/implementation_plan.md) up to deployment (Phase 12) are done. The Android app
 ([shopping_list_android](https://github.com/tfassbender/shopping_list_android)) works against this server.
 

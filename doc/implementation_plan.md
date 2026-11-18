@@ -4,8 +4,9 @@ Phased roadmap based on `doc/features.md` (what) and `doc/tech_stack.md` (how).
 Every phase ends with a working, tested state – backend **and** web frontend – so the app is usable
 after each phase. Update the checkboxes and the status as work completes.
 
-**Status:** Phases 0–12 are done: version 1.0.0 runs on the server (2026-11-12). The Android app works
-against it (https://github.com/tfassbender/shopping_list_android).
+**Status:** Phases 0–12 are done: version 1.0.0 went live on 2026-11-12; version 1.1.0 runs on the server
+since 2026-11-18 (GitHub issues #5–#10). The Android app works against it
+(https://github.com/tfassbender/shopping_list_android).
 
 ## Guiding principles
 
@@ -417,6 +418,7 @@ Open from the review, deliberately not done yet:
       `start_all.sh` / `stop_all.sh` (they call `start.sh` / `stop.sh` where there is no `start-server.sh`)
 - [ ] Ubuntu server: cron for the daily backup (`backup.sh`), copy of `backups/` off the server
 - [x] Tag `v1.0.0`
+- [x] Version 1.1.0 (tag `v1.1.0`, GitHub release) deployed 2026-11-18
 
 Decided: HTTPS through the existing cloudflared tunnel instead of a reverse proxy (as for the other
 projects on the server).
