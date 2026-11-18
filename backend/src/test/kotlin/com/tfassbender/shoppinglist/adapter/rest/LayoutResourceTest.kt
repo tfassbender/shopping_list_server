@@ -42,7 +42,7 @@ class LayoutResourceTest {
 
         user.request().queryParam("sort", layoutId).get(list()).then().statusCode(200)
             .body("sortedBy", equalTo(layoutId))
-            .body("items.name", contains("Bread", "Cheese", "Milk", "Apples"))
+            .body("items.name", contains("Bread", "Milk", "Cheese", "Apples")) // in a category: order of adding
 
         // unsorted: order of adding
         user.request().get(list()).then().body("sortedBy", nullValue()).body("items.name", contains("Milk", "Bread", "Apples", "Cheese"))

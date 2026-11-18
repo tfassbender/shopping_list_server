@@ -27,6 +27,7 @@ import com.tfassbender.shoppinglist.domain.space.SpaceId
 import com.tfassbender.shoppinglist.domain.user.ApiToken
 import com.tfassbender.shoppinglist.domain.user.ApiTokenId
 import com.tfassbender.shoppinglist.domain.user.Email
+import com.tfassbender.shoppinglist.domain.user.ItemOrder
 import com.tfassbender.shoppinglist.domain.user.Language
 import com.tfassbender.shoppinglist.domain.user.PendingToken
 import com.tfassbender.shoppinglist.domain.user.ThemePreference
@@ -72,7 +73,7 @@ abstract class RepositoryContract {
         passwordHash = "hash",
         emailVerified = false,
         createdAt = t0,
-        settings = UserSettings(Language.DE, ThemePreference.DARK, false, true),
+        settings = UserSettings(Language.DE, ThemePreference.DARK, false, true, ItemOrder.ALPHABETICAL),
         sessionVersion = 3,
         emailVerification = PendingToken("vhash-$name-$run", t0.plusSeconds(3600)),
         passwordReset = PendingToken("rhash-$name-$run", t0.plusSeconds(1800)),

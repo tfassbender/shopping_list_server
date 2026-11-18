@@ -8,7 +8,11 @@ export interface UserSettings {
   theme: 'SYSTEM' | 'LIGHT' | 'DARK'
   checkedItemsToEnd: boolean
   ignoreMergeWarnings: boolean
+  /** Order within a category of a list sorted for a shop (missing from older servers: ADDED). */
+  itemOrder?: ItemOrder
 }
+
+export type ItemOrder = 'ADDED' | 'ALPHABETICAL'
 
 export interface User {
   id: string

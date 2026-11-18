@@ -19,6 +19,7 @@ import com.tfassbender.shoppinglist.domain.list.ShopLayout
 import com.tfassbender.shoppinglist.domain.list.ShoppingList
 import com.tfassbender.shoppinglist.domain.space.SpaceId
 import com.tfassbender.shoppinglist.domain.user.UserId
+import com.tfassbender.shoppinglist.domain.user.UserSettings
 import jakarta.enterprise.context.ApplicationScoped
 import java.time.Clock
 import java.util.UUID
@@ -107,12 +108,13 @@ class LayoutService(
     /** Sorts the active items of a list for this user and shop (see [ItemSorter]). */
     fun sort(userId: UserId, list: ShoppingList, layoutId: LayoutId): List<Item> {
         val layout = get(userId, list.spaceId, layoutId)
-        val checkedToEnd = users.findById(userId)?.settings?.checkedItemsToEnd ?: true
+        val settings = users.findById(userId)?.settings ?: UserSettings()
         return ItemSorter.sort(
             items = list.activeItems,
             layout = layout,
             catalog = catalogs.find(list.spaceId),
-            checkedToEnd = checkedToEnd,
+            checkedToEnd = settings.checkedItemsToEnd,
+            itemOrder = settings.itemOrder,
         )
     }
 

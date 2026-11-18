@@ -4,6 +4,7 @@ import com.tfassbender.shoppinglist.domain.space.CategoryId
 import com.tfassbender.shoppinglist.domain.space.Category
 import com.tfassbender.shoppinglist.domain.space.SpaceCatalog
 import com.tfassbender.shoppinglist.domain.space.SpaceId
+import com.tfassbender.shoppinglist.domain.user.ItemOrder
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -36,7 +37,8 @@ class ItemSorterTest {
         layout: ShopLayout,
         catalog: SpaceCatalog = this.catalog,
         checkedToEnd: Boolean = false,
-    ) = ItemSorter.sort(items, layout, catalog, checkedToEnd).map { it.name }
+        itemOrder: ItemOrder = ItemOrder.ADDED,
+    ) = ItemSorter.sort(items, layout, catalog, checkedToEnd, itemOrder).map { it.name }
 
     @Nested
     inner class CategoryMode {
@@ -79,7 +81,8 @@ class ItemSorterTest {
         fun `items unknown to the layout come last, sorted by the remaining rules`() {
             val items = listOf(item("Zucchini"), item("Avocado"), item("Bread"))
             val layout = layout(LayoutMode.ITEMS, items = listOf("Bread"))
-            assertEquals(listOf("Bread", "Avocado", "Zucchini"), sortedNames(items, layout))
+            assertEquals(listOf("Bread", "Zucchini", "Avocado"), sortedNames(items, layout))
+            assertEquals(listOf("Bread", "Avocado", "Zucchini"), sortedNames(items, layout, itemOrder = ItemOrder.ALPHABETICAL))
         }
 
         @Test
@@ -93,21 +96,23 @@ class ItemSorterTest {
     @Nested
     inner class TieBreakers {
         @Test
-        fun `most bought first within the same layout position`() {
-            val history = catalog
-                .countUsage("Cheese", dairy, null, t0)
-                .countUsage("Butter", dairy, null, t0).countUsage("Butter", dairy, null, t0)
-            val items = listOf(item("Cheese", dairy), item("Butter", dairy), item("Ayran", dairy), item("Quark", dairy))
-            assertEquals(
-                listOf("Butter", "Cheese", "Ayran", "Quark"),
-                sortedNames(items, layout(categories = listOf(dairy)), history),
-            )
+        fun `order of adding within the same layout position by default`() {
+            val items = listOf(item("Quark", dairy), item("Butter", dairy), item("Ayran", dairy))
+            assertEquals(listOf("Quark", "Butter", "Ayran"), sortedNames(items.reversed(), layout(categories = listOf(dairy))))
         }
 
         @Test
-        fun `name is the last criterion, case-insensitive`() {
+        fun `alphabetically within the same layout position if the user wants that, case-insensitive`() {
             val items = listOf(item("banana"), item("Apple"), item("cherry"))
-            assertEquals(listOf("Apple", "banana", "cherry"), sortedNames(items, layout()))
+            assertEquals(listOf("Apple", "banana", "cherry"), sortedNames(items, layout(), itemOrder = ItemOrder.ALPHABETICAL))
+        }
+
+        @Test
+        fun `checking an item or buying it often never moves it`() {
+            // Regression for issue #8: the usage count (raised by checking) used to be a sort key.
+            val history = catalog.countUsage("Butter", dairy, null, t0).countUsage("Butter", dairy, null, t0)
+            val items = listOf(item("Cheese", dairy), item("Butter", dairy, checked = true))
+            assertEquals(listOf("Cheese", "Butter"), sortedNames(items, layout(categories = listOf(dairy)), history))
         }
 
         @Test
@@ -126,12 +131,12 @@ class ItemSorterTest {
 
         @Test
         fun `checked items go to the end, both groups sorted by the layout`() {
-            assertEquals(listOf("Cheese", "Milk", "Bread", "Carrots"), sortedNames(items, layout, checkedToEnd = true))
+            assertEquals(listOf("Milk", "Cheese", "Bread", "Carrots"), sortedNames(items, layout, checkedToEnd = true))
         }
 
         @Test
         fun `without the setting checked items stay in place`() {
-            assertEquals(listOf("Bread", "Cheese", "Milk", "Carrots"), sortedNames(items, layout, checkedToEnd = false))
+            assertEquals(listOf("Bread", "Milk", "Cheese", "Carrots"), sortedNames(items, layout, checkedToEnd = false))
         }
     }
 

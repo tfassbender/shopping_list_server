@@ -3,6 +3,7 @@ package com.tfassbender.shoppinglist.adapter.persistence.jpa
 import com.tfassbender.shoppinglist.domain.user.ApiToken
 import com.tfassbender.shoppinglist.domain.user.ApiTokenId
 import com.tfassbender.shoppinglist.domain.user.Email
+import com.tfassbender.shoppinglist.domain.user.ItemOrder
 import com.tfassbender.shoppinglist.domain.user.Language
 import com.tfassbender.shoppinglist.domain.user.PendingToken
 import com.tfassbender.shoppinglist.domain.user.ThemePreference
@@ -39,6 +40,7 @@ class UserEntity(
     var theme: String,
     var checkedItemsToEnd: Boolean,
     var ignoreMergeWarnings: Boolean,
+    var itemOrder: String,
     var sessionVersion: Int,
     var emailVerificationHash: String?,
     var emailVerificationExpiresAt: Instant?,
@@ -59,7 +61,7 @@ class UserEntity(
         passwordHash = passwordHash,
         emailVerified = emailVerified,
         createdAt = createdAt,
-        settings = UserSettings(Language.fromCode(language), ThemePreference.valueOf(theme), checkedItemsToEnd, ignoreMergeWarnings),
+        settings = UserSettings(Language.fromCode(language), ThemePreference.valueOf(theme), checkedItemsToEnd, ignoreMergeWarnings, ItemOrder.valueOf(itemOrder)),
         sessionVersion = sessionVersion,
         emailVerification = pendingToken(emailVerificationHash, emailVerificationExpiresAt),
         passwordReset = pendingToken(passwordResetHash, passwordResetExpiresAt),
@@ -81,6 +83,7 @@ class UserEntity(
             theme = user.settings.theme.name,
             checkedItemsToEnd = user.settings.checkedItemsToEnd,
             ignoreMergeWarnings = user.settings.ignoreMergeWarnings,
+            itemOrder = user.settings.itemOrder.name,
             sessionVersion = user.sessionVersion,
             emailVerificationHash = user.emailVerification?.hash,
             emailVerificationExpiresAt = user.emailVerification?.expiresAt,

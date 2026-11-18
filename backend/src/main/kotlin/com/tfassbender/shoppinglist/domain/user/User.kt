@@ -40,12 +40,16 @@ enum class Language(val code: String) {
 
 enum class ThemePreference { SYSTEM, LIGHT, DARK }
 
+/** Order of the items within a category (or within the unknown items) of a list sorted for a shop. */
+enum class ItemOrder { ADDED, ALPHABETICAL }
+
 /** Personal settings; they apply to all clients of the user (web, Android). */
 data class UserSettings(
     val language: Language = Language.EN,
     val theme: ThemePreference = ThemePreference.SYSTEM,
     val checkedItemsToEnd: Boolean = true,
     val ignoreMergeWarnings: Boolean = false,
+    val itemOrder: ItemOrder = ItemOrder.ADDED,
 )
 
 /** A hashed single-use token (email verification, password reset) with its expiry. */

@@ -26,6 +26,7 @@ import com.tfassbender.shoppinglist.domain.user.Email
 import com.tfassbender.shoppinglist.domain.user.Language
 import com.tfassbender.shoppinglist.domain.user.User
 import com.tfassbender.shoppinglist.domain.user.UserId
+import com.tfassbender.shoppinglist.domain.user.ItemOrder
 import com.tfassbender.shoppinglist.domain.user.UserSettings
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -56,7 +57,7 @@ class LayoutServiceTest {
     init {
         val now = clock.instant()
         users.save(User(anna, Email.of("anna@example.com"), "Anna", "h", true, now, UserSettings(checkedItemsToEnd = true)))
-        users.save(User(bob, Email.of("bob@example.com"), "Bob", "h", true, now, UserSettings(checkedItemsToEnd = false)))
+        users.save(User(bob, Email.of("bob@example.com"), "Bob", "h", true, now, UserSettings(checkedItemsToEnd = false, itemOrder = ItemOrder.ALPHABETICAL)))
         spaces.save(Space.create(spaceId, "Home", anna, now).addInvite(Invite(InviteId("i"), "h", anna, now, now.plusSeconds(60))).acceptInvite("h", bob, now))
         catalog.createDefaults(spaceId, Language.EN)
     }
@@ -70,7 +71,7 @@ class LayoutServiceTest {
     }
 
     @Test
-    fun `sorting uses the layout and the personal checked-to-end setting`() {
+    fun `sorting uses the layout and the personal settings (checked to end, item order)`() {
         val layout = service.create(anna, spaceId, "Aldi", LayoutMode.CATEGORIES)
         service.setCategoryOrder(anna, spaceId, layout.id, listOf(bakery, dairy, veg))
         lists.applyChanges(
@@ -86,9 +87,9 @@ class LayoutServiceTest {
         val list = lists.get(anna, spaceId, listId)
 
         val forAnna = service.sort(anna, list, layout.id)
-        assertEquals(listOf("Cheese", "Milk", "Apples", "Bread"), forAnna.map { it.name })
+        assertEquals(listOf("Milk", "Cheese", "Apples", "Bread"), forAnna.map { it.name }) // order of adding
 
-        // Bob: checked items stay in place
+        // Bob: checked items stay in place, items of a category alphabetically
         assertEquals(listOf("Bread", "Cheese", "Milk", "Apples"), service.sort(bob, list, layout.id).map { it.name })
     }
 

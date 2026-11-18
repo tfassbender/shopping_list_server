@@ -414,8 +414,8 @@ Other rules:
 - `ItemSorter` is a pure domain function that sorts a list's items for a layout, in this order:
   1. checked items last, if the user wants that,
   2. position in the layout,
-  3. usage count from the history,
-  4. name, then creation time.
+  3. the user's `itemOrder` setting: creation time then name (`ADDED`, default) or name then creation
+     time (`ALPHABETICAL`) - nothing that changes on checking, so checked items stay in place.
 
 **`SyncState`** – sync bookkeeping of a space, explained in the next sections.
 

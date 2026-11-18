@@ -1,3 +1,4 @@
+import type { ItemOrder } from '../api/auth'
 import type { Category } from '../api/catalog'
 import type { ShopLayout } from '../api/layouts'
 import type { Item } from '../api/lists'
@@ -13,31 +14,32 @@ export function normalizeName(name: string): string {
  * 1. checked items to the end (if the user wants that),
  * 2. position in the layout (category order in mode CATEGORIES – then the remaining categories in the
  *    space order, uncategorized last; item names in mode ITEMS – unknown items last),
- * 3. most bought, 4. name, 5. creation time.
+ * 3. the user's item order: order of adding (creation time, then name) or alphabetical (name, then
+ *    creation time). Nothing that changes when an item is checked, so checking never moves an item.
  * The test cases mirror the server's `ItemSorterTest`; keep both in sync.
  */
 export function sortForLayout(
   items: Item[],
   layout: ShopLayout,
   categories: Category[],
-  usage: Record<string, number>,
   checkedToEnd: boolean,
+  itemOrder: ItemOrder = 'ADDED',
 ): Item[] {
   const position = positionFunction(layout, categories)
   const keyed = items.map((item) => ({
     item,
     checked: checkedToEnd && item.checked ? 1 : 0,
     position: position(item),
-    usage: usage[normalizeName(item.name)] ?? 0,
     name: item.name.toLowerCase(),
   }))
+  type Keyed = (typeof keyed)[number]
+  const byName = (a: Keyed, b: Keyed) => compareText(a.name, b.name)
+  const byAdding = (a: Keyed, b: Keyed) => compareInstants(a.item.createdAt, b.item.createdAt)
   keyed.sort(
     (a, b) =>
       a.checked - b.checked ||
       a.position - b.position ||
-      b.usage - a.usage ||
-      compareText(a.name, b.name) ||
-      compareInstants(a.item.createdAt, b.item.createdAt),
+      (itemOrder === 'ALPHABETICAL' ? byName(a, b) || byAdding(a, b) : byAdding(a, b) || byName(a, b)),
   )
   return keyed.map((k) => k.item)
 }

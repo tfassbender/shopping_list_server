@@ -1,6 +1,8 @@
 package com.tfassbender.shoppinglist.adapter.rest
 
 import com.tfassbender.shoppinglist.application.auth.AuthResult
+import com.tfassbender.shoppinglist.domain.user.ItemOrder
+import org.eclipse.microprofile.openapi.annotations.media.Schema
 import com.tfassbender.shoppinglist.domain.user.Language
 import com.tfassbender.shoppinglist.domain.user.ThemePreference
 import com.tfassbender.shoppinglist.domain.user.User
@@ -27,8 +29,12 @@ data class SettingsDto(
     val theme: ThemePreference,
     val checkedItemsToEnd: Boolean,
     val ignoreMergeWarnings: Boolean,
+    // Nullable so clients that don't know the setting yet (older app versions) don't reset it on save.
+    @field:Schema(description = "Order of the items within a category of a sorted list; omitted on update: unchanged")
+    val itemOrder: ItemOrder? = null,
 ) {
-    fun toDomain() = UserSettings(Language.fromCode(language), theme, checkedItemsToEnd, ignoreMergeWarnings)
+    fun toDomain(current: UserSettings) =
+        UserSettings(Language.fromCode(language), theme, checkedItemsToEnd, ignoreMergeWarnings, itemOrder ?: current.itemOrder)
 
     companion object {
         fun from(settings: UserSettings) = SettingsDto(
@@ -36,6 +42,7 @@ data class SettingsDto(
             settings.theme,
             settings.checkedItemsToEnd,
             settings.ignoreMergeWarnings,
+            settings.itemOrder,
         )
     }
 }

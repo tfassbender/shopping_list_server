@@ -95,6 +95,18 @@ export function SettingsPage() {
             onChange={(theme) => change({ theme })}
           />
         </div>
+        <div className="space-y-2 border-b border-line px-2 py-3">
+          <span className="block">
+            {t('settings.itemOrder')}
+            <span className="block text-sm text-muted">{t('settings.itemOrderHint')}</span>
+          </span>
+          <Segmented
+            label={t('settings.itemOrder')}
+            options={(['ADDED', 'ALPHABETICAL'] as const).map((value) => ({ value, label: t(`settings.itemOrder.${value}`) }))}
+            value={user.settings.itemOrder ?? 'ADDED'}
+            onChange={(itemOrder) => change({ itemOrder })}
+          />
+        </div>
         <label className="flex min-h-15 items-center gap-3 border-b border-line px-2 py-2">
           <span className="min-w-0 flex-1">
             {t('settings.mergeNotes')}

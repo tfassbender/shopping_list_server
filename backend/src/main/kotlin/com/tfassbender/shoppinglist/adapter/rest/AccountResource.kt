@@ -33,8 +33,10 @@ class AccountResource(
     @PUT
     @Path("/settings")
     @Operation(operationId = "updateSettings", summary = "Replace the personal settings")
-    fun updateSettings(settings: SettingsDto) =
-        UserDto.from(accountService.updateSettings(currentUser.id(), settings.toDomain()))
+    fun updateSettings(settings: SettingsDto): UserDto {
+        val current = accountService.me(currentUser.id()).settings
+        return UserDto.from(accountService.updateSettings(currentUser.id(), settings.toDomain(current)))
+    }
 
     @PUT
     @Path("/display-name")

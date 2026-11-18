@@ -81,6 +81,13 @@ class AuthResourceTest {
             .then().statusCode(200)
             .body("settings.theme", equalTo("DARK"))
             .body("settings.checkedItemsToEnd", equalTo(false))
+            .body("settings.itemOrder", equalTo("ADDED"))
+
+        // the item order is kept if a client (an older app version) doesn't send it
+        user.request().body(mapOf("language" to "de", "theme" to "DARK", "checkedItemsToEnd" to false, "ignoreMergeWarnings" to true, "itemOrder" to "ALPHABETICAL"))
+            .put("/api/users/me/settings").then().statusCode(200).body("settings.itemOrder", equalTo("ALPHABETICAL"))
+        user.request().body(mapOf("language" to "de", "theme" to "LIGHT", "checkedItemsToEnd" to false, "ignoreMergeWarnings" to true))
+            .put("/api/users/me/settings").then().statusCode(200).body("settings.itemOrder", equalTo("ALPHABETICAL"))
 
         user.request().body(mapOf("displayName" to "New Name")).put("/api/users/me/display-name")
             .then().statusCode(200).body("displayName", equalTo("New Name"))

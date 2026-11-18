@@ -2,6 +2,7 @@ package com.tfassbender.shoppinglist.adapter.persistence
 
 import com.tfassbender.shoppinglist.application.port.UserRepository
 import com.tfassbender.shoppinglist.domain.user.Email
+import com.tfassbender.shoppinglist.domain.user.ItemOrder
 import com.tfassbender.shoppinglist.domain.user.Language
 import com.tfassbender.shoppinglist.domain.user.PendingToken
 import com.tfassbender.shoppinglist.domain.user.ThemePreference
@@ -62,6 +63,7 @@ data class UserFile(
     val theme: String = "SYSTEM",
     val checkedItemsToEnd: Boolean = true,
     val ignoreMergeWarnings: Boolean = false,
+    val itemOrder: String = ItemOrder.ADDED.name,
     val sessionVersion: Int = 0,
     val emailVerification: PendingTokenFile? = null,
     val passwordReset: PendingTokenFile? = null,
@@ -79,6 +81,7 @@ data class UserFile(
             theme = ThemePreference.valueOf(theme),
             checkedItemsToEnd = checkedItemsToEnd,
             ignoreMergeWarnings = ignoreMergeWarnings,
+            itemOrder = ItemOrder.valueOf(itemOrder),
         ),
         sessionVersion = sessionVersion,
         emailVerification = emailVerification?.toDomain(),
@@ -98,6 +101,7 @@ data class UserFile(
             theme = user.settings.theme.name,
             checkedItemsToEnd = user.settings.checkedItemsToEnd,
             ignoreMergeWarnings = user.settings.ignoreMergeWarnings,
+            itemOrder = user.settings.itemOrder.name,
             sessionVersion = user.sessionVersion,
             emailVerification = PendingTokenFile.fromDomain(user.emailVerification),
             passwordReset = PendingTokenFile.fromDomain(user.passwordReset),

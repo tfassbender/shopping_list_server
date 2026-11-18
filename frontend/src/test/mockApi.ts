@@ -44,5 +44,5 @@ export const testUser = {
   email: 'anna@example.com',
   displayName: 'Anna',
   emailVerified: true,
-  settings: { language: 'en', theme: 'SYSTEM', checkedItemsToEnd: true, ignoreMergeWarnings: false },
+  settings: { language: 'en', theme: 'SYSTEM', checkedItemsToEnd: true, ignoreMergeWarnings: false, itemOrder: 'ADDED' },
 }

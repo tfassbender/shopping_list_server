@@ -5,6 +5,7 @@ import { useCatalog, type Category } from '../api/catalog'
 import { rememberedLayout, rememberLayout, useLayouts, type ShopLayout } from '../api/layouts'
 import { listsApi, newId, type Item } from '../api/lists'
 import { useSpace } from '../api/spaces'
+import { useCurrentUser } from '../auth/useAuth'
 import { iconButtonClass, Page, useBackTo } from '../components/AppBar'
 import { ConfirmDialog, Dialog } from '../components/Dialog'
 import { Icon } from '../components/Icon'
@@ -42,6 +43,7 @@ export function ListPage() {
   const lostChanges = useSpaceAccessLost(spaceId)
   const { data: space } = useSpace(spaceId)
   const { data: catalog } = useCatalog(spaceId)
+  const { data: user } = useCurrentUser()
   const { apply } = useListActions(spaceId, listId)
   const deleteList = useMutation({
     mutationFn: () => listsApi.delete(spaceId, listId),
@@ -84,7 +86,7 @@ export function ListPage() {
   // Without a shop the list is exactly in the order of adding - no category groups, which would look like
   // a shop's sorting.
   const grouped = layout
-    ? groupSorted(sortForLayout(list.items, layout, categories, catalog?.usage ?? {}, false), categories, layout.mode, movedToEnd)
+    ? groupSorted(sortForLayout(list.items, layout, categories, false, user?.settings.itemOrder), categories, layout.mode, movedToEnd)
     : groupSorted(sortItems(list.items), categories, 'ITEMS', movedToEnd)
   // Headers off: same order, the category shows as a colored bar at each item instead.
   const sections = showHeaders ? grouped : withoutCategoryHeaders(grouped)

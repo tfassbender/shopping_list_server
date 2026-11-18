@@ -120,8 +120,10 @@ members only see the display name.
 - **Shop layouts** define the sort order of a list for a specific shop (e.g. grocery list sorted by the
   supermarket layout, not by the hardware store layout).
 - Layouts are created by a user, belong to the space and can be **connected to several lists**.
-- Per shop: sort by **"most used first"**. (Personal favorites per shop existed until 2026-11-12 and
-  were removed: their effect - first within a category - was too small to be worth the switch.)
+- Within a category (or among the items unknown to an item layout) the order is a **user setting**:
+  order of adding (default) or alphabetical. Checking an item never moves it. ("Most used first" was
+  dropped on 2026-11-18, issue #8: checking counts as a purchase, so items jumped when checked. Personal
+  favorites per shop were removed on 2026-11-12: too small an effect to be worth the switch.)
 - **Config option: checked items move to the end** of the list (no scrolling past checked items).
 
 Decided:
