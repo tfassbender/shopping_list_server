@@ -1,7 +1,7 @@
 // Version of the app (also shown by /api/health via shoppinglist.info.version, and in frontend/package.json).
 allprojects {
     group = "com.tfassbender.shoppinglist"
-    version = "1.0.0"
+    version = "1.1.0"
 }
 
 // Packaging the SPA: `./gradlew :backend:build -PwithFrontend` builds the React app and puts it into the
