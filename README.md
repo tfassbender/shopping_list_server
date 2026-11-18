@@ -75,3 +75,7 @@ and backups: [doc/deployment.md](doc/deployment.md).
 - [Deployment](doc/deployment.md)
 - [Manual offline test checklist](doc/offline_test_checklist.md)
 - [QA findings of the test run on 2026-11-11](doc/qa_findings.md)
+
+## License
+
+[MIT](LICENSE) © 2026 Tobias Faßbender
