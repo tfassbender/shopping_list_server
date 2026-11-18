@@ -107,6 +107,8 @@ export const en = {
   'layouts.modeHint.ITEMS': 'Exact order of products; unknown items go to the end.',
   'layouts.sortBy': 'Sort',
   'layouts.dragHint': 'Drag the categories into the order of the shop.',
+  'layouts.categoryInShopHint': "Switch off categories this shop doesn't have - their items go to the end of the list.",
+  'layouts.categoryInShop': '{category} in this shop',
   'layouts.editCategories': 'Edit categories',
   'layouts.itemsHint': 'Drag the items into the order of the shop.',
   'layouts.newEntry': 'Add item',

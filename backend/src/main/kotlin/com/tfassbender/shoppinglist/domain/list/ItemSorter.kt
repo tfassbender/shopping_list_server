@@ -7,8 +7,9 @@ import com.tfassbender.shoppinglist.domain.user.ItemOrder
  * Sorts the items of a list for walking through a shop. Keys, most important first:
  * 1. checked items to the end (if the user wants that),
  * 2. position in the layout – the item's category (mode CATEGORIES) or the item itself (mode ITEMS);
- *    categories missing in the layout follow in the space's category order, items without category
- *    or unknown to the layout come last,
+ *    categories missing in the layout follow in the space's category order, then items without
+ *    category, then the categories the shop doesn't have (disabled in the layout) - or, in mode ITEMS,
+ *    items unknown to the layout come last,
  * 3. the user's [ItemOrder]: order of adding (creation time, then name) or name (case-insensitive, then
  *    creation time). Deliberately nothing that changes when an item is checked (like "most bought"), so
  *    checking an item never moves it.
@@ -36,11 +37,14 @@ object ItemSorter {
 
     private fun positionFunction(layout: ShopLayout, catalog: SpaceCatalog): (Item) -> Int = when (layout.mode) {
         LayoutMode.CATEGORIES -> {
-            // Layout order first, then remaining categories of the space in their default order.
+            // Layout order first, then remaining categories of the space in their default order; the
+            // disabled ones are moved behind the uncategorized items (the shop doesn't have them).
             val existing = catalog.categories.map { it.id }
             val order = layout.categoryOrder.filter { it in existing } + existing.filterNot { it in layout.categoryOrder }
-            val index = order.withIndex().associate { (i, id) -> id to i }
-            val unknown = order.size
+            val (disabled, enabled) = order.partition { it in layout.disabledCategories }
+            val unknown = enabled.size
+            val disabledIndex = disabled.withIndex().associate { (i, id) -> id to unknown + 1 + i }
+            val index = enabled.withIndex().associate { (i, id) -> id to i } + disabledIndex
             { item -> item.categoryId?.let { index[it] } ?: unknown }
         }
         LayoutMode.ITEMS -> {

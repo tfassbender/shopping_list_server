@@ -15,6 +15,7 @@ import { CategoryPicker } from './CategoryPicker'
 export function ItemEditor(props: {
   item: Item
   catalog?: Catalog
+  inactiveCategoryIds?: ReadonlySet<string>
   onSave: (changed: Partial<Record<EditableField, string | null>>) => void
   onDelete: () => void
   onClose: () => void
@@ -41,7 +42,7 @@ export function ItemEditor(props: {
     <Dialog title={item.name} onClose={props.onClose} onSubmit={save}>
       <AmountUnitFields quantity={quantity} unit={unit} units={props.catalog?.units ?? []} onQuantityChange={setQuantity} onUnitChange={setUnit} />
       <TextField label={t('item.name')} required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
-      <CategoryPicker label={t('item.category')} value={categoryId} onChange={setCategoryId} categories={props.catalog?.categories ?? []} noneLabel={t('item.noCategory')} />
+      <CategoryPicker label={t('item.category')} value={categoryId} onChange={setCategoryId} categories={props.catalog?.categories ?? []} noneLabel={t('item.noCategory')} inactiveIds={props.inactiveCategoryIds} />
       <TextField label={t('item.note')} maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
       <DialogActions>
         <Button

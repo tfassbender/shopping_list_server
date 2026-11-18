@@ -135,6 +135,26 @@ describe('layout editor', () => {
     expect(await screen.findByRole('heading', { name: 'Aldi' })).toBeInTheDocument()
   })
 
+  it("switches off categories the shop doesn't have (issue #7)", async () => {
+    let current = layout
+    const spy = mockApi({
+      'GET /api/users/me': testUser,
+      'GET /api/spaces/s1/catalog': catalog,
+      'GET /api/spaces/s1/layouts': () => [current],
+      'GET /api/spaces/s1/lists': [],
+      'PUT /api/spaces/s1/layouts/aldi/disabled-categories': (body: unknown) =>
+        (current = { ...current, disabledCategories: (body as { entries: string[] }).entries }),
+    })
+    renderWithProviders(<AppRoutes />, '/spaces/s1/layouts/aldi')
+
+    const bakery = await screen.findByRole('switch', { name: 'Bakery in this shop' })
+    expect(bakery).toBeChecked()
+    await userEvent.click(bakery)
+    await waitFor(() => expect(screen.getByRole('switch', { name: 'Bakery in this shop' })).not.toBeChecked())
+    await userEvent.click(screen.getByRole('switch', { name: 'Bakery in this shop' }))
+    await waitFor(() => expect(sentBodies(spy, 'PUT', '/api/spaces/s1/layouts/aldi/disabled-categories')).toEqual([{ entries: ['bakery'] }, { entries: [] }]))
+  })
+
   it('copies a shop under a new name and opens the copy', async () => {
     let layouts = [layout]
     const spy = mockApi({

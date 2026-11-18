@@ -18,11 +18,11 @@ const suggestions = [
   { name: 'Millet', categoryId: null, unit: null, usageCount: 1 },
 ]
 
-function setup() {
+function setup(props: { inactiveCategoryIds?: ReadonlySet<string> } = {}) {
   mockApi({ 'GET /api/spaces/s1/catalog/suggestions': (_: unknown, url: URL) => (url.searchParams.get('q') === 'mil' ? suggestions : []) })
   const onAdd = vi.fn()
   const onClose = vi.fn()
-  renderWithProviders(<AddItemDialog spaceId="s1" catalog={catalog} onAdd={onAdd} onClose={onClose} />)
+  renderWithProviders(<AddItemDialog spaceId="s1" catalog={catalog} onAdd={onAdd} onClose={onClose} {...props} />)
   return { onAdd, onClose, name: screen.getByRole('combobox', { name: 'Name' }) }
 }
 
@@ -118,6 +118,15 @@ describe('AddItemDialog', () => {
     await userEvent.keyboard('{Escape}')
     expect(screen.getByRole('dialog')).toBeInTheDocument() // Escape closed only the list
     expect(screen.queryByRole('listbox', { name: 'Category' })).not.toBeInTheDocument()
+  })
+
+  it("puts the categories the shop doesn't have last (issue #7)", async () => {
+    setup({ inactiveCategoryIds: new Set(['dairy']) })
+
+    await userEvent.click(screen.getByLabelText('Category'))
+    const options = within(screen.getByRole('listbox', { name: 'Category' })).getAllByRole('option')
+    expect(options.map((o) => o.textContent)).toEqual(['Automatic', 'Vegetables', 'Dairy'])
+    expect(options[2]).toHaveClass('opacity-45')
   })
 
   it('adds the entered item with the chosen category; "Done" closes', async () => {

@@ -52,6 +52,8 @@ data class LayoutDto(
     val itemOrder: List<String>,
     val listIds: List<String>,
     val createdAt: Instant,
+    @field:Schema(description = "Categories the shop doesn't have (mode CATEGORIES): their items are sorted to the end")
+    val disabledCategories: List<String> = emptyList(),
 ) {
     companion object {
         fun from(layout: ShopLayout) = LayoutDto(
@@ -62,6 +64,7 @@ data class LayoutDto(
             layout.itemOrder,
             layout.listIds.map { it.value }.sorted(),
             layout.createdAt,
+            layout.disabledCategories.map { it.value }.sorted(),
         )
     }
 }
@@ -131,6 +134,17 @@ class LayoutResource(
     @Operation(operationId = "setLayoutCategoryOrder", summary = "Set the category order (mode CATEGORIES)")
     fun setCategoryOrder(@PathParam("spaceId") spaceId: String, @PathParam("layoutId") layoutId: String, request: EntriesRequest) =
         LayoutDto.from(layoutService.setCategoryOrder(currentUser.id(), SpaceId(spaceId), LayoutId(layoutId), request.entries.map(::CategoryId)))
+
+    @PUT
+    @Path("/{layoutId}/disabled-categories")
+    @Operation(
+        operationId = "setLayoutDisabledCategories",
+        summary = "Set the categories the shop doesn't have (complete set of category ids); their items are sorted to the end",
+    )
+    fun setDisabledCategories(@PathParam("spaceId") spaceId: String, @PathParam("layoutId") layoutId: String, request: EntriesRequest) =
+        LayoutDto.from(
+            layoutService.setDisabledCategories(currentUser.id(), SpaceId(spaceId), LayoutId(layoutId), request.entries.map(::CategoryId).toSet()),
+        )
 
     @PUT
     @Path("/{layoutId}/item-order")

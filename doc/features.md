@@ -129,6 +129,9 @@ members only see the display name.
 Decided:
 - A layout can sort by **categories** (default, e.g. vegetables → dairy → frozen – new items are placed
   automatically) **or by individual items**.
+- Categories can be **switched off per shop** (issue #7): their items go to the end of a list sorted for
+  that shop (after the uncategorized items), and in the category selection of the item dialogs they are
+  listed last and greyed out (still selectable).
 - A list can have **several layouts** (e.g. Aldi and Rewe for the grocery list); the user picks one.
 - "Checked items to the end" is a **personal setting** (per user).
 - **Without a shop** a list shows its items exactly in the **order of adding** (no category groups - they

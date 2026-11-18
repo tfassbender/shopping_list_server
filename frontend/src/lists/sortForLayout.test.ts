@@ -31,6 +31,12 @@ describe('sortForLayout', () => {
       .toEqual(['Bread', 'Carrots', 'Milk', 'Batteries'])
   })
 
+  it("categories the shop doesn't have come last, after the uncategorized items", () => {
+    const items = [item('Batteries'), item('Milk', 'dairy'), item('Bread', 'bakery'), item('Carrots', 'veg')]
+    expect(sorted(items, layout({ categoryOrder: ['bakery', 'dairy', 'veg'], disabledCategories: ['bakery', 'veg'] })))
+      .toEqual(['Milk', 'Batteries', 'Bread', 'Carrots'])
+  })
+
   it('ignores deleted categories', () => {
     expect(sorted([item('Ghost', 'deleted'), item('Milk', 'dairy')], layout({ categoryOrder: ['deleted', 'dairy'] }))).toEqual(['Milk', 'Ghost'])
   })

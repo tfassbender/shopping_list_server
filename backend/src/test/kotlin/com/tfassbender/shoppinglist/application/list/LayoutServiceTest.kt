@@ -100,6 +100,14 @@ class LayoutServiceTest {
     }
 
     @Test
+    fun `categories can be disabled for a shop - only existing ones`() {
+        val layout = service.create(anna, spaceId, "Aldi", LayoutMode.CATEGORIES)
+        assertEquals(setOf(bakery), service.setDisabledCategories(bob, spaceId, layout.id, setOf(bakery)).disabledCategories)
+        assertEquals(setOf(bakery), service.copy(anna, spaceId, layout.id, "Aldi 2").disabledCategories)
+        assertEquals("CATEGORY_NOT_FOUND", assertThrows<DomainException> { service.setDisabledCategories(anna, spaceId, layout.id, setOf(CategoryId("nope"))) }.code)
+    }
+
+    @Test
     fun `connect lists, which must exist`() {
         val layout = service.create(anna, spaceId, "Aldi", LayoutMode.ITEMS)
         assertEquals(setOf(listId), service.connectList(bob, spaceId, layout.id, listId).listIds)

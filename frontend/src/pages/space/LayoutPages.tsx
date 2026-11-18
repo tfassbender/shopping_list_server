@@ -134,6 +134,13 @@ export function LayoutEditorPage() {
     update.mutate(() => layoutsApi.setCategoryOrder(spaceId, layoutId, ids))
   }
 
+  function setCategoryInShop(categoryId: string, inShop: boolean) {
+    const others = (layout!.disabledCategories ?? []).filter((id) => id !== categoryId)
+    const disabled = inShop ? others : [...others, categoryId]
+    replaceCached({ ...layout!, disabledCategories: disabled })
+    update.mutate(() => layoutsApi.setDisabledCategories(spaceId, layoutId, disabled))
+  }
+
   function setItemOrder(names: string[]) {
     replaceCached({ ...layout!, itemOrder: names })
     update.mutate(() => layoutsApi.setItemOrder(spaceId, layoutId, names))
@@ -168,17 +175,24 @@ export function LayoutEditorPage() {
       {layout.mode === 'CATEGORIES' ? (
         <div className="space-y-2">
           <p className="text-sm text-muted">{t('layouts.dragHint')}</p>
+          <p className="text-sm text-muted">{t('layouts.categoryInShopHint')}</p>
           <SortableList
             items={categoriesInLayoutOrder(layout, catalog.categories)}
             getId={(c) => c.id}
             getLabel={(c) => c.name}
             onReorder={reorderCategories}
-            renderItem={(c) => (
-              <span className="flex min-h-12 items-center gap-2 pr-3">
-                <span className="size-3 rounded-full" style={{ backgroundColor: c.color }} />
-                {c.name}
-              </span>
-            )}
+            renderItem={(c) => {
+              const inShop = !layout.disabledCategories?.includes(c.id)
+              return (
+                <span className="flex min-h-12 items-center gap-2 pr-3">
+                  <span className={`flex min-w-0 flex-1 items-center gap-2 ${inShop ? '' : 'opacity-45'}`}>
+                    <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
+                    <span className="truncate">{c.name}</span>
+                  </span>
+                  <Switch label={t('layouts.categoryInShop', { category: c.name })} checked={inShop} onChange={(on) => setCategoryInShop(c.id, on)} />
+                </span>
+              )
+            }}
           />
           {/* back from the categories leads to this shop again */}
           <Button variant="secondary" onClick={() => navigate(`/spaces/${spaceId}/catalog`, { state: { back: `/spaces/${spaceId}/layouts/${layoutId}` } })}>

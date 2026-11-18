@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useCatalog, type Category } from '../api/catalog'
-import { rememberedLayout, rememberLayout, useLayouts, type ShopLayout } from '../api/layouts'
+import { disabledCategoriesOf, rememberedLayout, rememberLayout, useLayouts, type ShopLayout } from '../api/layouts'
 import { listsApi, newId, type Item } from '../api/lists'
 import { useSpace } from '../api/spaces'
 import { useCurrentUser } from '../auth/useAuth'
@@ -167,6 +167,7 @@ export function ListPage() {
         <AddItemDialog
           spaceId={spaceId}
           catalog={catalog}
+          inactiveCategoryIds={disabledCategoriesOf(layout)}
           onAdd={(item) => apply({ type: 'addItem', item: { id: newId(), ...item } })}
           onClose={() => setDialog(null)}
         />
@@ -199,6 +200,7 @@ export function ListPage() {
         <ItemEditor
           item={editing}
           catalog={catalog}
+          inactiveCategoryIds={disabledCategoriesOf(layout)}
           onSave={(fields) => apply({ type: 'editItem', itemId: editing.id, fields })}
           onDelete={() => apply({ type: 'deleteItem', itemId: editing.id })}
           onClose={() => setEditing(null)}

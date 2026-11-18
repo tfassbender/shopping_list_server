@@ -348,6 +348,7 @@ classDiagram
             Set~ListId~ listIds
             Instant createdAt
             Long seq
+            Set~CategoryId~ disabledCategories
         }
         class LayoutMode {
             <<enumeration>>
@@ -408,12 +409,14 @@ Other rules:
 **`ShopLayout`** – the walking order through one shop.
 - It keeps both orders, so switching the mode loses nothing:
   - `categoryOrder` for mode `CATEGORIES`, the default: new items are placed automatically.
+  - `disabledCategories` (mode `CATEGORIES`): categories the shop doesn't have; their items go last.
   - `itemOrder` for mode `ITEMS`: item names matched case-insensitively, unique, at most 1000.
 - Lists and layouts are many-to-many. Only the layout side stores the link (`listIds`).
 - `copyAs` creates a second shop of the same chain with the same orders and lists.
 - `ItemSorter` is a pure domain function that sorts a list's items for a layout, in this order:
   1. checked items last, if the user wants that,
-  2. position in the layout,
+  2. position in the layout (mode `CATEGORIES`: layout order, remaining categories, uncategorized items,
+     then the disabled categories),
   3. the user's `itemOrder` setting: creation time then name (`ADDED`, default) or name then creation
      time (`ALPHABETICAL`) - nothing that changes on checking, so checked items stay in place.
 

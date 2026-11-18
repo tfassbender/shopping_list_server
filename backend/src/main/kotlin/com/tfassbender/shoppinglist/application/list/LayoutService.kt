@@ -92,6 +92,16 @@ class LayoutService(
             layout.withCategoryOrder(order)
         }
 
+    /** The categories the shop doesn't have (their items go to the end); the complete new set. */
+    fun setDisabledCategories(userId: UserId, spaceId: SpaceId, layoutId: LayoutId, categories: Set<CategoryId>): ShopLayout =
+        modify(userId, spaceId, layoutId) { layout ->
+            val existing = catalogs.find(spaceId).categories.map { it.id }.toSet()
+            if (!existing.containsAll(categories)) {
+                throw DomainException(ErrorKind.VALIDATION, "CATEGORY_NOT_FOUND", "Unknown category")
+            }
+            layout.withDisabledCategories(categories)
+        }
+
     fun setItemOrder(userId: UserId, spaceId: SpaceId, layoutId: LayoutId, order: List<String>): ShopLayout =
         modify(userId, spaceId, layoutId) { it.withItemOrder(order) }
 

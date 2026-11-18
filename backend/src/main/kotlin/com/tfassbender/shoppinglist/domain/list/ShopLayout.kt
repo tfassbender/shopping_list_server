@@ -22,6 +22,7 @@ enum class LayoutMode { CATEGORIES, ITEMS }
  * The walking order through one shop. Both orders are kept, so switching the mode loses nothing.
  * Item entries are names, matched case-insensitively, because the same product appears on many lists.
  * A layout can be connected to several lists and a list to several layouts.
+ * [disabledCategories] are categories the shop doesn't have: their items are sorted to the end.
  */
 data class ShopLayout(
     val id: LayoutId,
@@ -34,6 +35,7 @@ data class ShopLayout(
     val createdAt: Instant,
     /** Space sequence number of the last change (for sync). */
     val seq: Long = 0,
+    val disabledCategories: Set<CategoryId> = emptySet(),
 ) {
     init {
         if (name.isBlank() || name != name.trim() || name.length > MAX_NAME_LENGTH) {
@@ -48,6 +50,8 @@ data class ShopLayout(
         if (order.size != order.toSet().size) throw invalidOrder()
         return copy(categoryOrder = order)
     }
+
+    fun withDisabledCategories(categories: Set<CategoryId>): ShopLayout = copy(disabledCategories = categories)
 
     fun withItemOrder(order: List<String>): ShopLayout {
         val cleaned = order.map { it.trim() }.filter { it.isNotEmpty() }

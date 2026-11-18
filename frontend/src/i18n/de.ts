@@ -110,6 +110,8 @@ export const de: Record<MessageKey, string> = {
   'layouts.modeHint.ITEMS': 'Genaue Reihenfolge der Produkte; unbekannte Artikel kommen ans Ende.',
   'layouts.sortBy': 'Sortierung',
   'layouts.dragHint': 'Zieh die Kategorien in die Reihenfolge des Geschäfts.',
+  'layouts.categoryInShopHint': 'Schalte Kategorien aus, die es in diesem Geschäft nicht gibt - ihre Artikel kommen ans Ende der Liste.',
+  'layouts.categoryInShop': '{category} in diesem Geschäft',
   'layouts.editCategories': 'Kategorien bearbeiten',
   'layouts.itemsHint': 'Zieh die Artikel in die Reihenfolge des Geschäfts.',
   'layouts.newEntry': 'Artikel hinzufügen',

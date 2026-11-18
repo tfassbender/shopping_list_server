@@ -32,7 +32,20 @@ function useDebounced(value: string, ms: number) {
  * closes without adding. Suggestions from the item history appear below the name - tapping one adds it at
  * once with its last category and unit. The category "Automatic" lets the server fill it in from the history.
  */
-export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: string; catalog?: Catalog; onAdd: (item: NewItem) => void; onClose: () => void }) {
+export function AddItemDialog({
+  spaceId,
+  catalog,
+  inactiveCategoryIds,
+  onAdd,
+  onClose,
+}: {
+  spaceId: string
+  catalog?: Catalog
+  /** Categories the shop the list is sorted for doesn't have. */
+  inactiveCategoryIds?: ReadonlySet<string>
+  onAdd: (item: NewItem) => void
+  onClose: () => void
+}) {
   const [name, setName] = useState('')
   const [quantity, setQuantity] = useState('')
   const [unit, setUnit] = useState('')
@@ -183,7 +196,7 @@ export function AddItemDialog({ spaceId, catalog, onAdd, onClose }: { spaceId: s
         )}
       </div>
       {voiceFailed && <p className="text-sm text-danger">{t('voice.error')}</p>}
-      <CategoryPicker label={t('item.category')} value={categoryId} onChange={setCategoryId} categories={catalog?.categories ?? []} noneLabel={t('item.categoryAuto')} />
+      <CategoryPicker label={t('item.category')} value={categoryId} onChange={setCategoryId} categories={catalog?.categories ?? []} noneLabel={t('item.categoryAuto')} inactiveIds={inactiveCategoryIds} />
       <DialogActions>
         <Button variant="ghost" className="mr-auto" onClick={onClose}>
           {t('common.cancel')}

@@ -13,7 +13,8 @@ export function normalizeName(name: string): string {
  * Client-side copy of the server's `ItemSorter` (so sorting works offline). Keys, most important first:
  * 1. checked items to the end (if the user wants that),
  * 2. position in the layout (category order in mode CATEGORIES – then the remaining categories in the
- *    space order, uncategorized last; item names in mode ITEMS – unknown items last),
+ *    space order, then uncategorized, then the categories the shop doesn't have; item names in mode
+ *    ITEMS – unknown items last),
  * 3. the user's item order: order of adding (creation time, then name) or alphabetical (name, then
  *    creation time). Nothing that changes when an item is checked, so checking never moves an item.
  * The test cases mirror the server's `ItemSorterTest`; keep both in sync.
@@ -56,6 +57,10 @@ function positionFunction(layout: ShopLayout, categories: Category[]): (item: It
   }
   const existing = categories.map((c) => c.id)
   const order = [...layout.categoryOrder.filter((id) => existing.includes(id)), ...existing.filter((id) => !layout.categoryOrder.includes(id))]
-  const index = new Map(order.map((id, i) => [id, i]))
-  return (item) => (item.categoryId ? index.get(item.categoryId) : undefined) ?? order.length
+  const disabled = new Set(layout.disabledCategories ?? [])
+  const enabled = order.filter((id) => !disabled.has(id))
+  const unknown = enabled.length
+  // disabled categories come after the uncategorized items (position `unknown`)
+  const index = new Map([...enabled.map((id, i) => [id, i] as const), ...order.filter((id) => disabled.has(id)).map((id, i) => [id, unknown + 1 + i] as const)])
+  return (item) => (item.categoryId ? index.get(item.categoryId) : undefined) ?? unknown
 }

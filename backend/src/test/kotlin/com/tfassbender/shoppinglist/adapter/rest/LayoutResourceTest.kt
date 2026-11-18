@@ -46,6 +46,13 @@ class LayoutResourceTest {
 
         // unsorted: order of adding
         user.request().get(list()).then().body("sortedBy", nullValue()).body("items.name", contains("Milk", "Bread", "Apples", "Cheese"))
+
+        // the shop has no bakery: bread goes to the end
+        user.request().body(mapOf("entries" to listOf("bakery"))).put("${layouts()}/$layoutId/disabled-categories")
+            .then().statusCode(200).body("disabledCategories", contains("bakery"))
+        user.request().queryParam("sort", layoutId).get(list()).then().body("items.name", contains("Milk", "Cheese", "Apples", "Bread"))
+        user.request().body(mapOf("entries" to listOf("nope"))).put("${layouts()}/$layoutId/disabled-categories")
+            .then().statusCode(400).body("code", equalTo("CATEGORY_NOT_FOUND"))
     }
 
     @Test

@@ -29,8 +29,12 @@ class ItemSorterTest {
     private fun item(name: String, category: CategoryId? = null, checked: Boolean = false) =
         Item(ItemId(name.replace(' ', '-')), name, categoryId = category, checked = checked, createdAt = t0.plusSeconds(created++), seq = 1)
 
-    private fun layout(mode: LayoutMode = LayoutMode.CATEGORIES, categories: List<CategoryId> = emptyList(), items: List<String> = emptyList()) =
-        ShopLayout(LayoutId("shop"), spaceId, "Shop", mode, categories, items, emptySet(), t0)
+    private fun layout(
+        mode: LayoutMode = LayoutMode.CATEGORIES,
+        categories: List<CategoryId> = emptyList(),
+        items: List<String> = emptyList(),
+        disabled: Set<CategoryId> = emptySet(),
+    ) = ShopLayout(LayoutId("shop"), spaceId, "Shop", mode, categories, items, emptySet(), t0, disabledCategories = disabled)
 
     private fun sortedNames(
         items: List<Item>,
@@ -59,6 +63,13 @@ class ItemSorterTest {
         fun `deleted categories in the layout or on items are ignored`() {
             val items = listOf(item("Ghost", CategoryId("deleted")), item("Milk", dairy))
             assertEquals(listOf("Milk", "Ghost"), sortedNames(items, layout(categories = listOf(CategoryId("deleted"), dairy))))
+        }
+
+        @Test
+        fun `categories the shop doesn't have come last, after the uncategorized items, in their order`() {
+            val items = listOf(item("Batteries"), item("Milk", dairy), item("Bread", bakery), item("Carrots", veg))
+            val layout = layout(categories = listOf(bakery, dairy, veg), disabled = setOf(bakery, veg))
+            assertEquals(listOf("Milk", "Batteries", "Bread", "Carrots"), sortedNames(items, layout))
         }
 
         @Test

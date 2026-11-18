@@ -7,6 +7,7 @@ import { t } from '../i18n/messages'
  * Category field of the item dialogs. A native <select> can't be searched (on phones it opens the system
  * picker), and a space can have many categories - so this is a button that opens a list right below it,
  * with a search field on top. The first entry is "no category" (or "automatic"), labelled by `noneLabel`.
+ * `inactiveIds` (categories the chosen shop doesn't have) come last and greyed out, but can be chosen.
  *
  * Keyboard: typing filters, Enter takes the first match, Escape closes only the list (not the dialog).
  */
@@ -16,6 +17,7 @@ export function CategoryPicker(props: {
   onChange: (categoryId: string) => void
   categories: Category[]
   noneLabel: string
+  inactiveIds?: ReadonlySet<string>
 }) {
   const id = useId()
   const [open, setOpen] = useState(false)
@@ -23,7 +25,9 @@ export function CategoryPicker(props: {
   const selected = props.categories.find((c) => c.id === props.value)
 
   const q = query.trim().toLowerCase()
-  const matches = props.categories.filter((c) => c.name.toLowerCase().includes(q))
+  const inactive = (id: string) => props.inactiveIds?.has(id) ?? false
+  const filtered = props.categories.filter((c) => c.name.toLowerCase().includes(q))
+  const matches = [...filtered.filter((c) => !inactive(c.id)), ...filtered.filter((c) => inactive(c.id))]
   // "none" only while not searching: a search is for finding a category
   const options: { id: string; name: string; color?: string }[] = q ? matches : [{ id: '', name: props.noneLabel }, ...matches]
 
@@ -83,7 +87,7 @@ export function CategoryPicker(props: {
                   role="option"
                   aria-selected={option.id === props.value}
                   onClick={() => choose(option.id)}
-                  className={`flex min-h-[2.6rem] w-full items-center gap-2 border-b border-line px-3 text-left last:border-b-0 hover:bg-raised ${option.id === props.value ? 'font-semibold' : ''}`}
+                  className={`flex min-h-[2.6rem] w-full items-center gap-2 border-b border-line px-3 text-left last:border-b-0 hover:bg-raised ${option.id === props.value ? 'font-semibold' : ''} ${option.id && inactive(option.id) ? 'opacity-45' : ''}`}
                 >
                   <ColorDot color={option.color} />
                   <span className="flex-1">{option.name}</span>

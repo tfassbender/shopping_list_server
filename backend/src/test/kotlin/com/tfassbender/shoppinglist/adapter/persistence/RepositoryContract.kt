@@ -228,7 +228,10 @@ abstract class RepositoryContract {
         assertEquals(layout, layouts.findById(spaceId, layout.id))
         assertEquals(setOf(id("aldi"), id("rewe")), layouts.findBySpace(spaceId).map { it.id.value }.toSet())
 
-        val changed = layout.copy(categoryOrder = layout.categoryOrder.reversed(), itemOrder = listOf("Milk"), listIds = setOf(ListId("l2"), ListId("l3")))
+        val changed = layout.copy(
+            categoryOrder = layout.categoryOrder.reversed(), itemOrder = listOf("Milk"), listIds = setOf(ListId("l2"), ListId("l3")),
+            disabledCategories = setOf(layout.categoryOrder.first()),
+        )
         layouts.save(changed)
         assertEquals(changed, layouts.findById(spaceId, layout.id))
 

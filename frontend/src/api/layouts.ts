@@ -11,6 +11,13 @@ export interface ShopLayout {
   itemOrder: string[]
   listIds: string[]
   createdAt: string
+  /** Categories the shop doesn't have: their items go to the end (missing from older servers). */
+  disabledCategories?: string[]
+}
+
+/** The categories a list sorted for this shop puts last (only mode CATEGORIES uses categories). */
+export function disabledCategoriesOf(layout: ShopLayout | null | undefined): ReadonlySet<string> {
+  return new Set(layout?.mode === 'CATEGORIES' ? (layout.disabledCategories ?? []) : [])
 }
 
 const base = (spaceId: string) => `/api/spaces/${spaceId}/layouts`
@@ -24,6 +31,8 @@ export const layoutsApi = {
   copy: (spaceId: string, id: string, name: string) => api.post<ShopLayout>(`${base(spaceId)}/${id}/copy`, { name }),
   setCategoryOrder: (spaceId: string, id: string, entries: string[]) =>
     api.put<ShopLayout>(`${base(spaceId)}/${id}/category-order`, { entries }),
+  setDisabledCategories: (spaceId: string, id: string, entries: string[]) =>
+    api.put<ShopLayout>(`${base(spaceId)}/${id}/disabled-categories`, { entries }),
   setItemOrder: (spaceId: string, id: string, entries: string[]) => api.put<ShopLayout>(`${base(spaceId)}/${id}/item-order`, { entries }),
   connect: (spaceId: string, id: string, listId: string) => api.put<ShopLayout>(`${base(spaceId)}/${id}/lists/${listId}`, {}),
   disconnect: (spaceId: string, id: string, listId: string) => api.delete<ShopLayout>(`${base(spaceId)}/${id}/lists/${listId}`),

@@ -167,7 +167,7 @@ class ItemEntity(
     )
 }
 
-/** Tables `shop_layouts`, `layout_category_order`, `layout_item_order`, `layout_lists`. */
+/** Tables `shop_layouts`, `layout_category_order`, `layout_item_order`, `layout_lists`, `layout_disabled_categories`. */
 @Entity
 @Table(name = "shop_layouts")
 class ShopLayoutEntity(
@@ -199,6 +199,11 @@ class ShopLayoutEntity(
     @Column(name = "list_id")
     var listIds: MutableSet<String> = mutableSetOf()
 
+    @ElementCollection
+    @CollectionTable(name = "layout_disabled_categories", joinColumns = [JoinColumn(name = "layout_pk")])
+    @Column(name = "category_id")
+    var disabledCategories: MutableSet<String> = mutableSetOf()
+
     fun updateFrom(layout: ShopLayout) {
         name = layout.name
         mode = layout.mode.name
@@ -207,6 +212,7 @@ class ShopLayoutEntity(
         categoryOrder.syncWith(layout.categoryOrder.map { it.value })
         itemOrder.syncWith(layout.itemOrder)
         listIds.syncWith(layout.listIds.map { it.value }.toSet())
+        disabledCategories.syncWith(layout.disabledCategories.map { it.value }.toSet())
     }
 
     fun toDomain() = ShopLayout(
@@ -219,6 +225,7 @@ class ShopLayoutEntity(
         listIds = listIds.map(::ListId).toSet(),
         createdAt = createdAt,
         seq = seq,
+        disabledCategories = disabledCategories.map(::CategoryId).toSet(),
     )
 
     companion object {
