@@ -31,6 +31,9 @@ describe('SettingsPage', () => {
     expect(await screen.findByText('anna@example.com')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Display name.*Anna/ })).toBeInTheDocument()
     expect(await screen.findByText(/version 1\.2\.3/)).toBeInTheDocument()
+    expect(screen.getByText('Made by Tobias Faßbender')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Source code on GitHub' })).toHaveAttribute('href', 'https://github.com/tfassbender/shopping_list_server')
+    expect(screen.getByRole('link', { name: 'Android app on GitHub' })).toHaveAttribute('href', 'https://github.com/tfassbender/shopping_list_android')
     expect(await screen.findByRole('button', { name: /API tokens for AI agents.*2/ })).toBeInTheDocument()
     // the current choices are marked as pressed
     expect(within(screen.getByRole('group', { name: 'Language' })).getByRole('button', { name: 'English' })).toHaveAttribute('aria-pressed', 'true')

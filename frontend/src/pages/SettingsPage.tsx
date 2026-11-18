@@ -151,9 +151,7 @@ export function SettingsPage() {
           title={t('nav.logout')}
         />
         <Row onClick={() => setDialog('delete')} title={t('settings.deleteAccount')} danger />
-        <p className="px-2 pt-6 text-sm text-muted">
-          {t('appName')} {health.data ? t('settings.version', { version: health.data.version }) : ''}
-        </p>
+        <About version={health.data?.version} />
       </OnlineOnly>
 
       {dialog === 'name' && (
@@ -206,6 +204,31 @@ export function SettingsPage() {
         />
       )}
     </Page>
+  )
+}
+
+const SERVER_REPOSITORY = 'https://github.com/tfassbender/shopping_list_server'
+const ANDROID_REPOSITORY = 'https://github.com/tfassbender/shopping_list_android'
+
+/** Version, creator and links to the source code, at the bottom of the settings. */
+function About({ version }: { version?: string }) {
+  const link = 'text-accent underline-offset-2 hover:underline'
+  return (
+    <div className="space-y-1 px-2 pt-6 text-sm text-muted">
+      <p>
+        {t('appName')} {version ? t('settings.version', { version }) : ''}
+      </p>
+      <p>{t('settings.createdBy', { name: 'Tobias Faßbender' })}</p>
+      <p className="flex flex-wrap gap-x-4">
+        {/* external links open in a new tab, so the app stays open */}
+        <a href={SERVER_REPOSITORY} target="_blank" rel="noreferrer" className={link}>
+          {t('settings.sourceCode')}
+        </a>
+        <a href={ANDROID_REPOSITORY} target="_blank" rel="noreferrer" className={link}>
+          {t('settings.androidApp')}
+        </a>
+      </p>
+    </div>
   )
 }
 
