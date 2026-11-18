@@ -7,7 +7,7 @@ import { groupSorted, withoutCategoryHeaders } from '../../lists/sortItems'
 import { fakeSyncServer } from '../../test/fakeSyncServer'
 import { mockApi, sentBodies, testUser } from '../../test/mockApi'
 import { loginForTest, renderWithProviders } from '../../test/render'
-import { categoriesInLayoutOrder } from './LayoutPages'
+import { categoriesForEditor, categoriesInLayoutOrder, savedOrderAfterDrag } from './LayoutPages'
 
 const categories = [
   { id: 'veg', name: 'Vegetables', color: '#00ff00' },
@@ -27,6 +27,20 @@ describe('layout helpers', () => {
     expect(categoriesInLayoutOrder({ ...layout, categoryOrder: ['bakery', 'deleted', 'veg'] }, categories).map((c) => c.id)).toEqual([
       'bakery', 'veg', 'dairy',
     ])
+  })
+
+  it('shows switched-off categories last in the editor, without changing the saved order', () => {
+    const withOff = { ...layout, categoryOrder: ['bakery', 'dairy', 'veg'], disabledCategories: ['bakery'] }
+    expect(categoriesForEditor(withOff, categories).map((c) => c.id)).toEqual(['dairy', 'veg', 'bakery'])
+    // switched on again: back at its old place
+    expect(categoriesForEditor({ ...withOff, disabledCategories: [] }, categories).map((c) => c.id)).toEqual(['bakery', 'dairy', 'veg'])
+  })
+
+  it('a drag in the editor keeps the saved place of switched-off categories', () => {
+    const off = new Set(['dairy'])
+    // saved: bakery, dairy (off), veg - shown: bakery, veg, dairy - dragged: veg, bakery, dairy
+    expect(savedOrderAfterDrag(['bakery', 'dairy', 'veg'], ['veg', 'bakery', 'dairy'], off)).toEqual(['veg', 'dairy', 'bakery'])
+    expect(savedOrderAfterDrag(['bakery', 'dairy', 'veg'], ['bakery', 'veg', 'dairy'], off)).toEqual(['bakery', 'dairy', 'veg'])
   })
 
   it('groups a server-sorted list into consecutive category sections, checked last', () => {

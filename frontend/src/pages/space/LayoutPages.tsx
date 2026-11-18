@@ -69,6 +69,27 @@ export function categoriesInLayoutOrder(layout: ShopLayout, categories: Category
   return [...ordered, ...categories.filter((c) => !layout.categoryOrder.includes(c.id))]
 }
 
+/**
+ * The editor shows the switched-off categories at the end. Only shown there: the saved order keeps their
+ * place, so a category switched on again returns to where it was.
+ */
+export function categoriesForEditor(layout: ShopLayout, categories: Category[]): Category[] {
+  const disabled = new Set(layout.disabledCategories ?? [])
+  const all = categoriesInLayoutOrder(layout, categories)
+  return [...all.filter((c) => !disabled.has(c.id)), ...all.filter((c) => disabled.has(c.id))]
+}
+
+/**
+ * Turns an order dragged in the editor (switched-off categories shown last) back into the saved order:
+ * the switched-on categories take the slots of switched-on ones in the saved order, the switched-off ones
+ * keep theirs.
+ */
+export function savedOrderAfterDrag(savedOrder: string[], draggedOrder: string[], disabled: ReadonlySet<string>): string[] {
+  const enabled = draggedOrder.filter((id) => !disabled.has(id))
+  const off = draggedOrder.filter((id) => disabled.has(id))
+  return savedOrder.map((id) => (disabled.has(id) ? off.shift() : enabled.shift()) ?? id)
+}
+
 export function LayoutEditorPage() {
   const { spaceId = '', layoutId = '' } = useParams()
   const { data: layouts, error: layoutsError, refetch: refetchLayouts } = useLayouts(spaceId)
@@ -129,7 +150,9 @@ export function LayoutEditorPage() {
     update.mutate(() => layoutsApi.update(spaceId, layoutId, layout!.name, mode))
   }
 
-  function reorderCategories(ids: string[]) {
+  function reorderCategories(dragged: string[]) {
+    const saved = categoriesInLayoutOrder(layout!, catalog!.categories).map((c) => c.id)
+    const ids = savedOrderAfterDrag(saved, dragged, new Set(layout!.disabledCategories ?? []))
     replaceCached({ ...layout!, categoryOrder: ids })
     update.mutate(() => layoutsApi.setCategoryOrder(spaceId, layoutId, ids))
   }
@@ -177,7 +200,7 @@ export function LayoutEditorPage() {
           <p className="text-sm text-muted">{t('layouts.dragHint')}</p>
           <p className="text-sm text-muted">{t('layouts.categoryInShopHint')}</p>
           <SortableList
-            items={categoriesInLayoutOrder(layout, catalog.categories)}
+            items={categoriesForEditor(layout, catalog.categories)}
             getId={(c) => c.id}
             getLabel={(c) => c.name}
             onReorder={reorderCategories}

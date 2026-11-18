@@ -132,6 +132,8 @@ Decided:
 - Categories can be **switched off per shop** (issue #7): their items go to the end of a list sorted for
   that shop (after the uncategorized items), and in the category selection of the item dialogs they are
   listed last and greyed out (still selectable).
+  The shop editor shows them at the end of the category list - only there: the saved order keeps
+  their place, so a category switched on again returns to it.
 - A list can have **several layouts** (e.g. Aldi and Rewe for the grocery list); the user picks one.
 - "Checked items to the end" is a **personal setting** (per user).
 - **Without a shop** a list shows its items exactly in the **order of adding** (no category groups - they
