@@ -315,7 +315,7 @@ export const en = {
   'settings.logoutEverywhereButton': 'Log out others',
   'settings.deleteAccountTitle': 'Delete your account?',
   'settings.version': 'version {version}',
-  'settings.createdBy': 'Made by {name}',
+  'settings.createdBy': 'Made by',
   'settings.sourceCode': 'Source code on GitHub',
   'settings.androidApp': 'Android app on GitHub',
   'tokens.empty': 'No tokens yet. Create one with +.',

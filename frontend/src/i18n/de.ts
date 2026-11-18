@@ -314,7 +314,7 @@ export const de: Record<MessageKey, string> = {
   'settings.logoutEverywhereButton': 'Andere abmelden',
   'settings.deleteAccountTitle': 'Konto löschen?',
   'settings.version': 'Version {version}',
-  'settings.createdBy': 'Entwickelt von {name}',
+  'settings.createdBy': 'Entwickelt von',
   'settings.sourceCode': 'Quellcode auf GitHub',
   'settings.androidApp': 'Android-App auf GitHub',
   'tokens.empty': 'Noch keine Tokens. Leg eines mit + an.',

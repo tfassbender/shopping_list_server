@@ -209,6 +209,7 @@ export function SettingsPage() {
 
 const SERVER_REPOSITORY = 'https://github.com/tfassbender/shopping_list_server'
 const ANDROID_REPOSITORY = 'https://github.com/tfassbender/shopping_list_android'
+const HOMEPAGE = 'https://tobias-fassbender.com'
 
 /** Version, creator and links to the source code, at the bottom of the settings. */
 function About({ version }: { version?: string }) {
@@ -218,7 +219,12 @@ function About({ version }: { version?: string }) {
       <p>
         {t('appName')} {version ? t('settings.version', { version }) : ''}
       </p>
-      <p>{t('settings.createdBy', { name: 'Tobias Faßbender' })}</p>
+      <p>
+        {t('settings.createdBy')}{' '}
+        <a href={HOMEPAGE} target="_blank" rel="noreferrer" className={link}>
+          Tobias Faßbender
+        </a>
+      </p>
       <p className="flex flex-wrap gap-x-4">
         {/* external links open in a new tab, so the app stays open */}
         <a href={SERVER_REPOSITORY} target="_blank" rel="noreferrer" className={link}>

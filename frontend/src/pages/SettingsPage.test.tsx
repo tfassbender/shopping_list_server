@@ -31,7 +31,7 @@ describe('SettingsPage', () => {
     expect(await screen.findByText('anna@example.com')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Display name.*Anna/ })).toBeInTheDocument()
     expect(await screen.findByText(/version 1\.2\.3/)).toBeInTheDocument()
-    expect(screen.getByText('Made by Tobias Faßbender')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Tobias Faßbender' })).toHaveAttribute('href', 'https://tobias-fassbender.com')
     expect(screen.getByRole('link', { name: 'Source code on GitHub' })).toHaveAttribute('href', 'https://github.com/tfassbender/shopping_list_server')
     expect(screen.getByRole('link', { name: 'Android app on GitHub' })).toHaveAttribute('href', 'https://github.com/tfassbender/shopping_list_android')
     expect(await screen.findByRole('button', { name: /API tokens for AI agents.*2/ })).toBeInTheDocument()
