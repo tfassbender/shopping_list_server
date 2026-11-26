@@ -220,7 +220,6 @@ export const de: Record<MessageKey, string> = {
   'tokens.revokeConfirm': 'Agenten, die dieses Token nutzen, verlieren sofort den Zugriff.',
   'offline.badge': 'Offline',
   'offline.badgePending': 'Offline · {count} ungespeichert',
-  'offline.saving': 'Speichert...',
   'offline.storageFailedShort': 'Nicht auf dem Gerät gespeichert',
   'offline.storageFailed': 'Dieses Gerät konnte deine Daten nicht speichern. Offline gemachte Änderungen gehen beim Schließen der App verloren.',
   'offline.needsConnection': 'Du bist offline. Das hier braucht eine Verbindung zum Server - Listen funktionieren auch offline.',

@@ -217,7 +217,6 @@ export const en = {
   'tokens.revokeConfirm': 'Agents using this token lose access immediately.',
   'offline.badge': 'Offline',
   'offline.badgePending': 'Offline · {count} unsaved',
-  'offline.saving': 'Saving...',
   'offline.storageFailedShort': 'Not saved on device',
   'offline.storageFailed': 'This device could not store your data. Changes made offline will be lost when the app is closed.',
   'offline.needsConnection': 'You are offline. This needs a connection to the server - lists still work offline.',

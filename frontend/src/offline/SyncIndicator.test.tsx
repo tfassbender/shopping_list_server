@@ -150,7 +150,7 @@ describe('SyncIndicator', () => {
     expect(screen.getByRole('status')).not.toHaveTextContent(/unsaved/)
   })
 
-  it('shows "Saving..." while changes are being sent', async () => {
+  it('shows no badge while changes are being sent online', async () => {
     let answer: (response: Response) => void = () => {}
     vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise<Response>((resolve) => (answer = resolve)))
     renderWithProviders(<SyncIndicator />)
@@ -161,14 +161,13 @@ describe('SyncIndicator', () => {
       running = syncEngine.sync('s1')
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
-    expect(screen.getByRole('status')).toHaveTextContent('Saving...')
+    // checking items sends changes all the time - a badge for that would only flicker
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
 
-    // the server fails: the change stays queued, the badge goes away (no tight retry)
     await act(async () => {
       answer(new Response(JSON.stringify({ code: 'BOOM' }), { status: 500 }))
       await running
     })
-    expect(screen.queryByText('Saving...')).not.toBeInTheDocument()
     expect(syncEngine.pendingCount()).toBe(1)
   })
 })

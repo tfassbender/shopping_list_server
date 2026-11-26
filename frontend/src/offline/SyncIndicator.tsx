@@ -9,10 +9,13 @@ import { syncEngine, useMergeWarnings, useSyncStatus } from './engine'
 import { useOnline } from './online'
 import type { StoredWarning } from './syncEngine'
 
-/** Header badges: offline / pending changes, and the merge warning icon (unless the user hides it). */
+/**
+ * Header badges: offline / pending changes, and the merge warning icon (unless the user hides it). Sending
+ * changes while online shows nothing: it happens with every checked item and is done in a moment.
+ */
 export function SyncIndicator({ compact = false }: { compact?: boolean }) {
   const online = useOnline()
-  const { status, pending, storageFailed } = useSyncStatus()
+  const { pending, storageFailed } = useSyncStatus()
   const warnings = useMergeWarnings()
   const { data: user } = useCurrentUser()
   const [open, setOpen] = useState(false)
@@ -26,11 +29,6 @@ export function SyncIndicator({ compact = false }: { compact?: boolean }) {
         </span>
       )}
       {!online && <OfflineBadge pending={pending} />}
-      {online && status === 'syncing' && pending > 0 && (
-        <span className="rounded-full bg-brand-ink/10 px-2.5 py-0.5 text-sm whitespace-nowrap" role="status">
-          {t('offline.saving')}
-        </span>
-      )}
       {showWarnings && (
         <button
           onClick={() => setOpen(true)}
