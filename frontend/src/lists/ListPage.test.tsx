@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { chooseCategory } from '../test/chooseCategory'
 import { AppRoutes } from '../App'
@@ -105,6 +105,36 @@ describe('ListPage', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: 'Milk' }))
     expect(order()).toEqual(['Milk', 'Bread'])
     expect(screen.queryByRole('list', { name: 'Checked' })).not.toBeInTheDocument()
+  })
+
+  it('a long press opens the editor instead of checking the item', async () => {
+    const { server } = setup([item('1', 'Milk')])
+    const row = await screen.findByRole('checkbox', { name: 'Milk' })
+
+    fireEvent.pointerDown(row, { button: 0, clientX: 10, clientY: 10 })
+    expect(await screen.findByRole('dialog', {}, { timeout: 2000 })).toBeInTheDocument()
+    // lifting the finger clicks: that click must neither check the item nor close the editor
+    fireEvent.pointerUp(row)
+    fireEvent.click(row)
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Milk' })).toHaveAttribute('aria-checked', 'false')
+    expect(server.received('CHECK_ITEM')).toHaveLength(0)
+  })
+
+  it('a short tap after a long press checks the item again; moving the finger cancels the long press', async () => {
+    setup([item('1', 'Milk')])
+    const row = await screen.findByRole('checkbox', { name: 'Milk' })
+
+    // scrolling: the finger moves, no editor opens
+    fireEvent.pointerDown(row, { button: 0, clientX: 10, clientY: 10 })
+    fireEvent.pointerMove(row, { clientX: 10, clientY: 40 })
+    await new Promise((resolve) => setTimeout(resolve, 700))
+    fireEvent.pointerUp(row)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await userEvent.click(row)
+    expect(row).toHaveAttribute('aria-checked', 'true')
   })
 
   it('opens the shops from the menu, back leads to the list (also from a shop)', async () => {

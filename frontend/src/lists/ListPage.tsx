@@ -20,6 +20,7 @@ import { useListActions } from './listChanges'
 import { sortForLayout } from './sortForLayout'
 import { categoryHeadersShown, rememberCategoryHeaders } from './categoryHeaders'
 import { amountText, groupSorted, sortItems, withoutCategoryHeaders, type ItemSection } from './sortItems'
+import { useLongPress } from './useLongPress'
 
 type DialogName = 'add' | 'shop' | 'rename' | 'delete' | null
 
@@ -303,10 +304,14 @@ function ItemSectionView(props: {
   )
 }
 
-/** One item: tapping the row checks/unchecks it; ⋯ opens the details. No checkbox - checked = struck through. */
+/**
+ * One item: tapping the row checks/unchecks it; pressing it for half a second or the pencil opens the
+ * details. No checkbox - checked = struck through.
+ */
 function ItemRow(props: { item: Item; barColor?: string; onToggle: () => void; onEdit: () => void }) {
   const { item } = props
   const amount = amountText(item)
+  const press = useLongPress(props.onEdit, props.onToggle)
   return (
     <li className="flex items-stretch border-b border-line hover:bg-raised">
       {props.barColor && (
@@ -321,8 +326,9 @@ function ItemRow(props: { item: Item; barColor?: string; onToggle: () => void; o
         role="checkbox"
         aria-checked={item.checked}
         aria-label={item.name}
-        onClick={props.onToggle}
-        className="flex min-h-14 min-w-0 flex-1 items-center px-2 py-3 text-left text-lg"
+        {...press}
+        // no text selection or iOS callout menu on a long press
+        className="flex min-h-14 min-w-0 flex-1 items-center px-2 py-3 text-left text-lg select-none [-webkit-touch-callout:none]"
       >
         {/* wrap-anywhere: a long word without spaces wraps instead of widening the page */}
         <span className={`min-w-0 wrap-anywhere ${item.checked ? 'text-muted line-through' : ''}`}>
