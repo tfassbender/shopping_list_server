@@ -48,6 +48,8 @@ data class SpaceCatalog(
     val spaceId: SpaceId,
     val categories: List<Category> = emptyList(),
     val units: List<String> = emptyList(),
+    /** Unit the clients preselect for new items (one of [units]); null: no unit (issue #12). */
+    val defaultUnit: String? = null,
     val history: Map<String, HistoryEntry> = emptyMap(),
     /**
      * Space sequence number of the last change clients must take over as a whole: categories, units, or
@@ -107,7 +109,17 @@ data class SpaceCatalog(
         if (cleaned.size > MAX_UNITS) {
             throw DomainException(ErrorKind.VALIDATION, "TOO_MANY_UNITS", "At most $MAX_UNITS units")
         }
-        return copy(units = cleaned)
+        // The default survives as long as its unit is still there (possibly with a new spelling).
+        val keptDefault = defaultUnit?.let { default -> cleaned.firstOrNull { it.equals(default, ignoreCase = true) } }
+        return copy(units = cleaned, defaultUnit = keptDefault)
+    }
+
+    /** Sets the unit preselected for new items (case-insensitive match against [units]); null: no unit. */
+    fun withDefaultUnit(unit: String?): SpaceCatalog {
+        if (unit == null || unit.isBlank()) return copy(defaultUnit = null)
+        val existing = units.firstOrNull { it.equals(unit.trim(), ignoreCase = true) }
+            ?: throw DomainException(ErrorKind.NOT_FOUND, "UNIT_NOT_FOUND", "No unit '${unit.trim()}'")
+        return copy(defaultUnit = existing)
     }
 
     /** An item with this name was added or edited: remember its category and unit. */

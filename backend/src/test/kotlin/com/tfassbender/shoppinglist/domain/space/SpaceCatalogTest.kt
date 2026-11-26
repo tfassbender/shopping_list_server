@@ -98,6 +98,21 @@ class SpaceCatalogTest {
         assertEquals("TOO_MANY_UNITS", assertThrows<DomainException> { catalog.withUnits(max + "one-more") }.code)
     }
 
+    @Test
+    fun `the default unit must be one of the units and takes its spelling`() {
+        val withUnits = catalog.withUnits(listOf("kg", "Stk"))
+        assertEquals("Stk", withUnits.withDefaultUnit(" stk ").defaultUnit)
+        assertNull(withUnits.withDefaultUnit("Stk").withDefaultUnit(null).defaultUnit)
+        assertEquals("UNIT_NOT_FOUND", assertThrows<DomainException> { withUnits.withDefaultUnit("l") }.code)
+    }
+
+    @Test
+    fun `replacing the units keeps the default only while its unit is there`() {
+        val withDefault = catalog.withUnits(listOf("kg", "Stk")).withDefaultUnit("Stk")
+        assertEquals("STK", withDefault.withUnits(listOf("kg", "STK")).defaultUnit)
+        assertNull(withDefault.withUnits(listOf("kg")).defaultUnit)
+    }
+
     @Nested
     inner class History {
         @Test

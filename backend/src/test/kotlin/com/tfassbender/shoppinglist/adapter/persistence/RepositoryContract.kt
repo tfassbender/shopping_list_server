@@ -174,11 +174,12 @@ abstract class RepositoryContract {
             .reorderCategories(defaults.categories.map { it.id }.reversed())
             .learn("Milch", CategoryId("dairy"), "l", t0)
             .countUsage("Brot", null, null, t0)
+            .withDefaultUnit(defaults.units.last())
         catalogs.save(catalog)
         assertEquals(catalog, catalogs.find(spaceId))
 
         val smaller = catalog.stampHistoryChanges(catalog.removeHistory("Brot"), 5)
-            .copy(categories = catalog.categories.drop(2), units = catalog.units.drop(1))
+            .copy(categories = catalog.categories.drop(2), units = catalog.units.drop(1), defaultUnit = null)
         catalogs.save(smaller)
         assertEquals(smaller, catalogs.find(spaceId))
     }

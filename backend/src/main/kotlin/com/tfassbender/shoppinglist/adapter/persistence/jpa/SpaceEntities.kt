@@ -126,6 +126,8 @@ class CatalogEntity(
     @Id var spaceId: String,
     var seq: Long,
 ) {
+    var defaultUnit: String? = null
+
     @ElementCollection
     @CollectionTable(name = "catalog_categories", joinColumns = [JoinColumn(name = "space_id")])
     @OrderColumn(name = "position")
@@ -144,6 +146,7 @@ class CatalogEntity(
 
     fun updateFrom(catalog: SpaceCatalog) {
         seq = catalog.seq
+        defaultUnit = catalog.defaultUnit
         categories.syncWith(catalog.categories.map(CategoryEmbeddable::fromDomain))
         units.syncWith(catalog.units)
         history.syncWith(catalog.history.mapValues { HistoryEmbeddable.fromDomain(it.value) })
@@ -153,6 +156,7 @@ class CatalogEntity(
         spaceId = SpaceId(spaceId),
         categories = categories.map { it.toDomain() },
         units = units.toList(),
+        defaultUnit = defaultUnit,
         history = history.mapValues { it.value.toDomain() },
         seq = seq,
     )

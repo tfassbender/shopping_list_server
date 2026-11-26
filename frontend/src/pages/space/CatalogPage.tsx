@@ -39,8 +39,15 @@ export function CatalogPage() {
 
   function setUnits(units: string[]) {
     // Optimistic: a second quick tap must build on this change, not on the units before it.
-    queryClient.setQueryData(catalogKeys.catalog(spaceId), { ...catalog!, units })
+    // The server drops the default unit with its unit; show that right away too.
+    const defaultUnit = units.includes(catalog!.defaultUnit ?? '') ? catalog!.defaultUnit : null
+    queryClient.setQueryData(catalogKeys.catalog(spaceId), { ...catalog!, units, defaultUnit })
     update.mutate(() => catalogApi.setUnits(spaceId, units))
+  }
+
+  function setDefaultUnit(unit: string | null) {
+    queryClient.setQueryData(catalogKeys.catalog(spaceId), { ...catalog!, defaultUnit: unit })
+    update.mutate(() => catalogApi.setDefaultUnit(spaceId, unit))
   }
 
   function reorder(ids: string[]) {
@@ -74,7 +81,7 @@ export function CatalogPage() {
         <NewCategoryForm onAdd={(name, color) => update.mutate(() => catalogApi.addCategory(spaceId, name, color))} />
       </div>
 
-      <UnitsEditor units={catalog.units} onChange={setUnits} />
+      <UnitsEditor units={catalog.units} defaultUnit={catalog.defaultUnit ?? null} onChange={setUnits} onDefaultChange={setDefaultUnit} />
       </div>
       </OnlineOnly>
       {deleting && (
@@ -149,19 +156,41 @@ function NewCategoryForm({ onAdd }: { onAdd: (name: string, color: string) => vo
   )
 }
 
-function UnitsEditor({ units, onChange }: { units: string[]; onChange: (units: string[]) => void }) {
+/**
+ * The units as chips. Tapping a unit's name makes it the default (preselected for new items, marked with a
+ * star); tapping the default again clears it. The server clears the default when its unit is removed.
+ */
+function UnitsEditor(props: {
+  units: string[]
+  defaultUnit: string | null
+  onChange: (units: string[]) => void
+  onDefaultChange: (unit: string | null) => void
+}) {
+  const { units, defaultUnit, onChange, onDefaultChange } = props
   return (
     <section className="space-y-3">
       <SectionTitle>{t('catalog.units')}</SectionTitle>
+      <p className="text-sm text-muted">{t('catalog.unitsHint')}</p>
       <ul className="flex flex-wrap gap-2">
-        {units.map((unit) => (
-          <li key={unit} className="flex items-center gap-1 rounded-full bg-raised py-1 pr-1 pl-3">
-            {unit}
-            <button aria-label={t('catalog.removeUnit', { name: unit })} onClick={() => onChange(units.filter((u) => u !== unit))} className="-my-1 flex size-10 items-center justify-center rounded-full hover:bg-raised">
-              ✕
-            </button>
-          </li>
-        ))}
+        {units.map((unit) => {
+          const isDefault = unit === defaultUnit
+          return (
+            <li key={unit} className={`flex items-center gap-1 rounded-full py-1 pr-1 pl-1 ${isDefault ? 'bg-accent/20 font-medium' : 'bg-raised'}`}>
+              <button
+                aria-pressed={isDefault}
+                aria-label={t('catalog.defaultUnit', { name: unit })}
+                onClick={() => onDefaultChange(isDefault ? null : unit)}
+                className="-my-1 min-h-10 rounded-full px-2"
+              >
+                {isDefault && <span aria-hidden="true">★ </span>}
+                {unit}
+              </button>
+              <button aria-label={t('catalog.removeUnit', { name: unit })} onClick={() => onChange(units.filter((u) => u !== unit))} className="-my-1 flex size-10 items-center justify-center rounded-full hover:bg-raised">
+                ✕
+              </button>
+            </li>
+          )
+        })}
       </ul>
       <InlineForm label={t('catalog.newUnit')} submitLabel={t('common.create')} maxLength={20} clearOnSubmit onSubmit={(unit) => onChange([...units, unit])} />
     </section>

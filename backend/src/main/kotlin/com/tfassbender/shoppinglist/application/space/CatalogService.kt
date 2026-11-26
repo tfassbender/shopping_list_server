@@ -51,6 +51,9 @@ class CatalogService(
     fun setUnits(userId: UserId, spaceId: SpaceId, units: List<String>): SpaceCatalog =
         modify(userId, spaceId) { it.withUnits(units) }
 
+    fun setDefaultUnit(userId: UserId, spaceId: SpaceId, unit: String?): SpaceCatalog =
+        modify(userId, spaceId) { it.withDefaultUnit(unit) }
+
     fun suggestions(userId: UserId, spaceId: SpaceId, query: String, limit: Int): List<HistoryEntry> =
         get(userId, spaceId).suggestions(query, limit.coerceIn(1, 50))
 

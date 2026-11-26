@@ -11,6 +11,8 @@ export interface Category {
 export interface Catalog {
   categories: Category[]
   units: string[]
+  /** Unit preselected for new items (one of `units`); null or missing: no unit. */
+  defaultUnit?: string | null
   /** How often each item was bought (normalized name -> count), for "most used first". */
   usage?: Record<string, number>
   /** The complete item history - lets the app suggest items offline (see [rankSuggestions]). */
@@ -35,6 +37,7 @@ export const catalogApi = {
   deleteCategory: (spaceId: string, id: string) => api.delete<Catalog>(`${base(spaceId)}/categories/${id}`),
   reorderCategories: (spaceId: string, ids: string[]) => api.put<Catalog>(`${base(spaceId)}/categories/order`, { ids }),
   setUnits: (spaceId: string, units: string[]) => api.put<Catalog>(`${base(spaceId)}/units`, { units }),
+  setDefaultUnit: (spaceId: string, unit: string | null) => api.put<Catalog>(`${base(spaceId)}/units/default`, { unit }),
   suggestions: (spaceId: string, query: string) =>
     api.get<Suggestion[]>(`${base(spaceId)}/suggestions?q=${encodeURIComponent(query)}&limit=${SUGGESTION_LIMIT}`),
   // History entries are addressed by name as query parameter (names may contain '/').

@@ -36,12 +36,18 @@ data class CategoryRequest(
 
 data class OrderRequest(val ids: List<String> = emptyList())
 data class UnitsRequest(val units: List<String> = emptyList())
+data class DefaultUnitRequest(
+    @field:Schema(description = "One of the space's units (case-insensitive); null for no default")
+    val unit: String? = null,
+)
 
 data class CategoryDto(val id: String, val name: String, val color: String)
 
 data class CatalogDto(
     val categories: List<CategoryDto>,
     val units: List<String>,
+    @field:Schema(description = "Unit clients preselect for new items (one of `units`); null: no unit")
+    val defaultUnit: String? = null,
     @field:Schema(description = "How often each item was bought (normalized lowercase name -> count); for client-side sorting. Derived from `history`")
     val usage: Map<String, Int> = emptyMap(),
     @field:Schema(description = "The complete item history (alphabetically), so clients can rank suggestions offline like `getSuggestions`")
@@ -51,6 +57,7 @@ data class CatalogDto(
         fun from(catalog: SpaceCatalog) = CatalogDto(
             catalog.categories.map { CategoryDto(it.id.value, it.name, it.color) },
             catalog.units,
+            catalog.defaultUnit,
             catalog.history.filterValues { it.usageCount > 0 }.mapValues { it.value.usageCount },
             catalog.historyEntries().map(HistoryEntryDto::from),
         )
@@ -132,6 +139,17 @@ class CatalogResource(
     @Operation(operationId = "setUnits", summary = "Replace the list of units")
     fun setUnits(@PathParam("spaceId") spaceId: String, request: UnitsRequest) =
         CatalogDto.from(catalogService.setUnits(currentUser.id(), SpaceId(spaceId), request.units))
+
+    @PUT
+    @Path("/units/default")
+    @Operation(
+        operationId = "setDefaultUnit",
+        summary = "Set the unit preselected for new items (null: no unit)",
+        description = "Only a preselection for clients: the server never fills in a unit. Removing the unit from " +
+            "the units clears the default.",
+    )
+    fun setDefaultUnit(@PathParam("spaceId") spaceId: String, request: DefaultUnitRequest) =
+        CatalogDto.from(catalogService.setDefaultUnit(currentUser.id(), SpaceId(spaceId), request.unit))
 
     @GET
     @Path("/suggestions")

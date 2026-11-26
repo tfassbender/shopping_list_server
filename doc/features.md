@@ -56,6 +56,7 @@ Reviewed and prioritized. Details in the sections below the table.
 | Spaces as the unit of sharing (lists, layouts, history, ...)     | Idea            | Must ([3.1](#31-spaces-sharing-and-permissions)) |
 | Multiple lists per space                                         | Common          | Must          |
 | Quantity / unit / note per item                                  | Common          | Must          |
+| Default unit per space, preselected for new items (#12)          | Idea            | Should        |
 | Categories for items (e.g. dairy, vegetables)                    | Reference app   | Must          |
 | Colors for categories                                            | Reference (Pro) | Must          |
 | Sort items by shop layout, "most used first"                     | Reference (Pro) | Must ([3.2](#32-shops-and-sorting)) |

@@ -54,6 +54,16 @@ class CatalogResourceTest {
     }
 
     @Test
+    fun `a default unit can be set and cleared`() {
+        user.request().body(mapOf("unit" to "stk")).put("${catalog()}/units/default")
+            .then().statusCode(200).body("defaultUnit", equalTo("Stk"))
+        user.request().get(catalog()).then().statusCode(200).body("defaultUnit", equalTo("Stk"))
+        user.request().body(mapOf("unit" to "Fass")).put("${catalog()}/units/default").then().statusCode(404)
+        user.request().body(mapOf("unit" to null)).put("${catalog()}/units/default")
+            .then().statusCode(200).body("defaultUnit", nullValue())
+    }
+
+    @Test
     fun `suggestions come from added and checked items, with category`() {
         val listId: String = user.request().body(mapOf("name" to "Einkauf")).post("/api/spaces/$spaceId/lists").then().extract().path("id")
         val items = "/api/spaces/$spaceId/lists/$listId/items"

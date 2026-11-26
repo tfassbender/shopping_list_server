@@ -48,7 +48,10 @@ export function AddItemDialog({
 }) {
   const [name, setName] = useState('')
   const [quantity, setQuantity] = useState('')
-  const [unit, setUnit] = useState('')
+  // null until the user picks a unit: until then the space's default unit is shown (the catalog may still
+  // be loading when the dialog opens, so it is not copied into the state once).
+  const [chosenUnit, setChosenUnit] = useState<string | null>(null)
+  const unit = chosenUnit ?? catalog?.defaultUnit ?? ''
   const [categoryId, setCategoryId] = useState('')
   const [highlighted, setHighlighted] = useState(-1)
   const [listening, setListening] = useState(false)
@@ -77,7 +80,7 @@ export function AddItemDialog({
     onAdd(item)
     setName('')
     setQuantity('')
-    setUnit('')
+    setChosenUnit(null)
     setCategoryId('')
     setHighlighted(-1)
     nameInput.current?.focus()
@@ -91,10 +94,13 @@ export function AddItemDialog({
     else if (name.trim()) add({ name: name.trim(), quantity: quantity.trim() || null, unit: unit.trim() || null, categoryId: categoryId || null })
   }
 
-  /** A suggestion brings its last category and unit; an amount or unit typed before is kept. */
+  /**
+   * A suggestion brings its last category and unit; an amount or unit chosen before is kept. The default
+   * unit doesn't count as chosen - the unit the item was used with last time fits it better.
+   */
   function addSuggestion(suggestion: Suggestion) {
     if (!amountValid) return
-    add({ name: suggestion.name, categoryId: suggestion.categoryId, quantity: quantity.trim() || null, unit: unit.trim() || suggestion.unit })
+    add({ name: suggestion.name, categoryId: suggestion.categoryId, quantity: quantity.trim() || null, unit: chosenUnit?.trim() || suggestion.unit })
   }
 
   function done() {
@@ -126,7 +132,7 @@ export function AddItemDialog({
 
   return (
     <Dialog title={t('addItem.title')} onClose={onClose} onSubmit={addCurrent}>
-      <AmountUnitFields quantity={quantity} unit={unit} units={catalog?.units ?? []} onQuantityChange={setQuantity} onUnitChange={setUnit} />
+      <AmountUnitFields quantity={quantity} unit={unit} units={catalog?.units ?? []} onQuantityChange={setQuantity} onUnitChange={setChosenUnit} />
       {/*
         * The suggestions are a dropdown laid over the fields below (absolute position), so the dialog keeps
         * its height; it scrolls when there are more than fit. Its height ends above the dialog buttons, so a

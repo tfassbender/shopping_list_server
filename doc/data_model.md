@@ -225,6 +225,7 @@ classDiagram
             SpaceId spaceId
             List~Category~ categories
             List~String~ units
+            String? defaultUnit
             Map~String, HistoryEntry~ history
             Long seq
         }
@@ -275,6 +276,8 @@ classDiagram
 - Deleting a category clears it from the history. Items and layouts keep the id, and items show up as
   uncategorized.
 - Units: at most 50, each 1–20 characters, deduplicated ignoring case.
+- Default unit (issue #12): one of the units or none; clients preselect it for new items (the server never
+  fills it in). Replacing the units keeps it only while its unit is still there.
 - History: keyed by normalized item name. It remembers the last category and unit (for automatic placement
   and autocomplete) and a usage count (incremented on check, for "most used first"). At most 2000 entries;
   beyond that the least used (then least recently used) are forgotten. The entry being added or updated is

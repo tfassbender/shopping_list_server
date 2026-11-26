@@ -18,11 +18,11 @@ const suggestions = [
   { name: 'Millet', categoryId: null, unit: null, usageCount: 1 },
 ]
 
-function setup(props: { inactiveCategoryIds?: ReadonlySet<string> } = {}) {
+function setup(props: { inactiveCategoryIds?: ReadonlySet<string>; catalog?: typeof catalog & { defaultUnit?: string } } = {}) {
   mockApi({ 'GET /api/spaces/s1/catalog/suggestions': (_: unknown, url: URL) => (url.searchParams.get('q') === 'mil' ? suggestions : []) })
   const onAdd = vi.fn()
   const onClose = vi.fn()
-  renderWithProviders(<AddItemDialog spaceId="s1" catalog={catalog} onAdd={onAdd} onClose={onClose} {...props} />)
+  renderWithProviders(<AddItemDialog spaceId="s1" onAdd={onAdd} onClose={onClose} {...props} catalog={props.catalog ?? catalog} />)
   return { onAdd, onClose, name: screen.getByRole('combobox', { name: 'Name' }) }
 }
 
@@ -86,6 +86,28 @@ describe('AddItemDialog', () => {
     await userEvent.keyboard('{Enter}')
 
     expect(onAdd).toHaveBeenCalledWith({ name: 'mil', quantity: null, unit: null, categoryId: null })
+  })
+
+  it('preselects the default unit of the space, also again for the next item', async () => {
+    const { onAdd, name } = setup({ catalog: { ...catalog, defaultUnit: 'kg' } })
+
+    expect(screen.getByLabelText('Unit')).toHaveValue('kg')
+    await userEvent.type(name, 'Flour{Enter}')
+    expect(onAdd).toHaveBeenLastCalledWith({ name: 'Flour', quantity: null, unit: 'kg', categoryId: null })
+    expect(screen.getByLabelText('Unit')).toHaveValue('kg')
+
+    await userEvent.selectOptions(screen.getByLabelText('Unit'), '')
+    await userEvent.type(name, 'Salt{Enter}')
+    expect(onAdd).toHaveBeenLastCalledWith({ name: 'Salt', quantity: null, unit: null, categoryId: null })
+  })
+
+  it('a suggestion brings its own unit instead of the default unit', async () => {
+    const { onAdd, name } = setup({ catalog: { ...catalog, defaultUnit: 'kg' } })
+
+    await userEvent.type(name, 'mil')
+    await userEvent.click(await screen.findByRole('button', { name: /Milk/ }))
+
+    expect(onAdd).toHaveBeenCalledWith({ name: 'Milk', categoryId: 'dairy', quantity: null, unit: 'l' })
   })
 
   it('keeps an amount and unit typed before picking a suggestion', async () => {

@@ -30,6 +30,7 @@ data class CatalogFile(
     val schemaVersion: Int = 1,
     val categories: List<CategoryFile> = emptyList(),
     val units: List<String> = emptyList(),
+    val defaultUnit: String? = null,
     val history: List<HistoryFile> = emptyList(),
     val seq: Long = 0,
 ) {
@@ -37,6 +38,7 @@ data class CatalogFile(
         spaceId = spaceId,
         categories = categories.map { Category(CategoryId(it.id), it.name, it.color) },
         units = units,
+        defaultUnit = defaultUnit,
         history = history.associate {
             SpaceCatalog.normalize(it.name) to HistoryEntry(it.name, it.categoryId?.let(::CategoryId), it.unit, it.usageCount, it.lastUsed, it.seq)
         },
@@ -47,6 +49,7 @@ data class CatalogFile(
         fun fromDomain(catalog: SpaceCatalog) = CatalogFile(
             categories = catalog.categories.map { CategoryFile(it.id.value, it.name, it.color) },
             units = catalog.units,
+            defaultUnit = catalog.defaultUnit,
             history = catalog.history.values.sortedBy { it.name.lowercase() }
                 .map { HistoryFile(it.name, it.categoryId?.value, it.unit, it.usageCount, it.lastUsed, it.seq) },
             seq = catalog.seq,

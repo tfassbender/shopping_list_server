@@ -25,6 +25,7 @@ describe('CatalogPage', () => {
         body: { ...catalog, categories: [...catalog.categories, { id: 'new', ...(body as object) }] },
       }),
       'PUT /api/spaces/s1/catalog/units': (body) => ({ ...catalog, ...(body as object) }),
+      'PUT /api/spaces/s1/catalog/units/default': (body) => ({ ...catalog, defaultUnit: (body as { unit: string | null }).unit }),
       'PUT /api/spaces/s1/catalog/categories/dairy': (body) => ({ ...catalog, categories: [catalog.categories[0], { id: 'dairy', ...(body as object) }] }),
       'DELETE /api/spaces/s1/catalog/categories/veg': { ...catalog, categories: [catalog.categories[1]] },
     })
@@ -141,5 +142,17 @@ describe('CatalogPage', () => {
     await userEvent.type(screen.getByLabelText('New unit'), 'box')
     await userEvent.click(screen.getAllByRole('button', { name: 'Create' })[1])
     await waitFor(() => expect(sentBodies(spy, 'PUT', '/api/spaces/s1/catalog/units')).toHaveLength(2))
+  })
+
+  it('marks a unit as default and clears it again', async () => {
+    const spy = setup()
+    renderWithProviders(<AppRoutes />, '/spaces/s1/catalog')
+
+    const kg = await screen.findByRole('button', { name: 'Use kg as default unit' })
+    expect(kg).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(kg)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Use kg as default unit' })).toHaveAttribute('aria-pressed', 'true'))
+    await userEvent.click(screen.getByRole('button', { name: 'Use kg as default unit' }))
+    await waitFor(() => expect(sentBodies(spy, 'PUT', '/api/spaces/s1/catalog/units/default')).toEqual([{ unit: 'kg' }, { unit: null }]))
   })
 })
